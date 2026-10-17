@@ -36,7 +36,10 @@ from kpl_official_core import (  # noqa: E402
 OUT_DIR = SITE / "assets" / "replay"
 INDEX_PATH = OUT_DIR / "index.js"
 MANIFEST_PATH = OUT_DIR / ".manifest.json"
-ANALYSIS = PROJ / "data" / "analysis" / "battles.csv"
+# 数据源不再依赖 02 仓库每天重建的分析表：直接用站点自己的"场次→局"索引 + 全部赛程，
+# 这样当天刚打完的局也能立刻复盘（分析表是日更的，会滞后一天）。
+GAMES_INDEX = SITE / "assets" / "games" / "index.js"
+SCHEDULE_ALL = SITE / "assets" / "schedule_all.js"
 MIN_FRAMES = 6
 MAX_FRAMES = 40
 POS_COUNT = 5
@@ -47,6 +50,12 @@ def jload(path: Path, default):
         return json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return default
+
+
+def jload_js(path: Path):
+    """读站点里的 `X = {...};` 形式的 JS 数据文件。"""
+    text = path.read_text(encoding="utf-8")
+    return json.loads(text[text.index("=") + 1:].rstrip().rstrip(";"))
 
 
 def _pos_golds(snap: dict, camp: int) -> list[int]:
@@ -200,14 +209,11 @@ def main() -> None:
     args = ap.parse_args()
 
     t0 = time.time()
-    if not ANALYSIS.exists():
-        print(f"缺少分析表 {ANALYSIS}，先跑 02 仓库的 build_history_dataset.py")
+    if not GAMES_INDEX.exists():
+        print(f"缺少 {GAMES_INDEX}，先跑 build_game_details.py")
         return
-    df = pd.read_csv(ANALYSIS)
-    df = df[df["has_timeline"].astype(bool)]
-    if df.empty:
-        print("分析表里没有带分钟级曲线的对局")
-        return
+    game_index = jload_js(GAMES_INDEX)                 # {matchId: {lg, b: [[bid, seq, dur, winCamp, winTeam]]}}
+    sched = {str(r.get("matchId")): r for r in jload_js(SCHEDULE_ALL)}
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     manifest = {} if args.force else jload(MANIFEST_PATH, {})
@@ -215,8 +221,28 @@ def main() -> None:
     built_battles = 0
     index: dict[str, dict] = {}
     by_match: dict[str, list[dict]] = {}
-    for _, row in df.iterrows():
-        by_match.setdefault(str(row["match_id"]), []).append(row.to_dict())
+    for mid, entry in game_index.items():
+        rows = []
+        for row in (entry.get("b") or []):
+            bid = str(row[0])
+            if not (RAW_DIR / bid).is_dir():
+                continue
+            meta = sched.get(str(mid)) or {}
+            rows.append({
+                "battle_id": bid,
+                "game_no": int(row[1] or 0),
+                "win_camp": int(row[3] or 0),
+                "winner": str(row[4] or ""),
+                "team1": str(meta.get("team1") or ""),
+                "team2": str(meta.get("team2") or ""),
+                "date": str(meta.get("date") or ""),
+                "league_id": str(entry.get("lg") or meta.get("leagueId") or ""),
+            })
+        if rows:
+            by_match.setdefault(str(mid), []).extend(rows)
+    if not by_match:
+        print("没有任何局具备分钟级快照")
+        return
 
     for match_id, rows in sorted(by_match.items()):
         rows.sort(key=lambda r: int(r.get("game_no") or 0))
