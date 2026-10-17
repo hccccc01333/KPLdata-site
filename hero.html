@@ -31,16 +31,80 @@
   var DT = KPL.details, K = KPL, $ = function (s) { return document.querySelector(s); };
   K.init();
   var id = new URLSearchParams(location.search).get("id");
+  // 两层数据：
+  //   H    = details.heroes 的逐局明细（本赛季高频英雄，含最近出场 / 对位 / 三人组合）
+  //   HIST = seasons 全量聚合（2019–2026 所有赛事，英雄列表就是从这里来的）
+  // 以前只查 H，列表里 133 个英雄有 109 个点进来直接"未找到"，等于死链。
   var H = null;
   (DT.heroes || []).forEach(function (h) { if (h.name === id) H = h; });
+  var HIST = null;
+  ((K.scopeOf("all") || {}).heroes || []).forEach(function (h) { if (h.name === id) HIST = h; });
 
-  if (!H) {
+  if (!H && !HIST) {
     $("#heroHead").innerHTML = '<header class="page-hero"><div class="wrap">' +
       '<div class="ph-kicker mono">HERO · 英雄</div><h1>未找到该英雄</h1>' +
-      "<p>英雄详情覆盖出场 Top " + (DT.heroes || []).length + " 的英雄；请在英雄页搜索。</p>" +
+      "<p>英雄名单覆盖 2019–2026 全部赛事共 " + (((K.scopeOf("all") || {}).heroes) || []).length +
+      " 个英雄；请从英雄页或站内搜索进入。</p>" +
       '<div class="slide-cta" style="margin-top:18px"><a class="btn primary" href="heroes.html">返回英雄梯度</a></div></div></header>';
     return;
   }
+
+  /* 年份趋势（HIST.by = [[年, 局数, 胜率, 禁用率], ...]） */
+  function yearTrendHTML(b, totalGames) {
+    if (!b || !b.length) return '<div class="empty-tip">暂无分年数据</div>';
+    var maxG = Math.max.apply(null, b.map(function (r) { return r[1] || 1; }));
+    return '<div class="yr-trend">' + b.map(function (r) {
+      var games = r[1] || 0, wr = r[2] || 0, ban = r[3] || 0;
+      return '<div class="yr-row"><span class="y mono">' + r[0] + "</span>" +
+        '<span class="bar"><i style="width:' + Math.max(2, games / maxG * 100).toFixed(1) + '%"></i></span>' +
+        '<span class="n mono">' + games + " 局</span>" +
+        '<span class="wr mono">' + K.pct(wr, 1) + "</span>" +
+        '<span class="ban mono">禁 ' + (ban ? K.pct(ban, 0) : "—") + "</span></div>";
+    }).join("") + '<div class="block-note mono">共 ' + totalGames + " 局 · 按年份拆分</div></div>";
+  }
+
+  /* 只有全量聚合、没有逐局明细时的兜底页（不留死链，讲清数据边界） */
+  function renderAggregateOnly(hero) {
+    var games = Number(hero.games || 0), wins = Number(hero.wins || 0);
+    // 极少数英雄只有被 BAN、没有出场记录（如列表里 games=0）：不要显示 0% 胜率，直接讲清事实
+    var headSub = games
+      ? "全部赛事 " + K.fmtInt(games) + " 次出场 · 赢下 " + K.fmtInt(wins) + " 局"
+      : "全部赛事无出场记录 · 被禁用 " + K.fmtInt(hero.bans) + " 次";
+    $("#heroHead").innerHTML = '<header class="page-hero"><div class="wrap"><div class="hd-top">' +
+      (hero.icon ? '<img class="hd-ava" src="' + K.esc(hero.icon) + '" alt="">' : "") +
+      '<div><div class="hd-name">' + K.esc(hero.name) +
+      ' <span class="tier ' + hero.tier + '" style="vertical-align:middle">' + hero.tier + "</span></div>" +
+      '<div class="hd-sub">' + headSub + "</div></div></div></div></header>";
+    var wr = hero.wr, cells =
+      '<div class="hd-stats">' +
+      '<div class="hd-cell hl"><div class="k">胜率</div><div class="v">' + (games ? K.pct(wr) : "—") + '</div><div class="s">' +
+      (games ? K.fmtInt(wins) + " 胜 / " + K.fmtInt(games) + " 局（2019–2026 全赛事）" : "无出场样本") + "</div></div>" +
+      '<div class="hd-cell"><div class="k">出场</div><div class="v">' + K.fmtInt(hero.games) + '</div><div class="s">全部赛事累计</div></div>' +
+      '<div class="hd-cell"><div class="k">禁用</div><div class="v">' + K.fmtInt(hero.bans) + '</div><div class="s">被禁次数</div></div>' +
+      '<div class="hd-cell"><div class="k">强度档位</div><div class="v">' + hero.tier + '</div><div class="s">按胜率分档 S/A/B/C</div></div>' +
+      "</div>";
+    var extra =
+      '<div class="panel" style="grid-column:1/-1"><div class="panel-title">联赛级均值 <em class="mono">该英雄出场的对局聚合</em></div>' +
+      '<div class="hd-stats">' +
+      '<div class="hd-cell"><div class="k">KDA</div><div class="v">' + (hero.kda == null ? "—" : Number(hero.kda).toFixed(2)) + '</div><div class="s">击杀/死亡/助攻综合</div></div>' +
+      '<div class="hd-cell"><div class="k">输出占比</div><div class="v">' + (hero.dmg == null ? "—" : Number(hero.dmg).toFixed(1) + "%") + '</div><div class="s">队内伤害占比</div></div>' +
+      '<div class="hd-cell"><div class="k">承伤占比</div><div class="v">' + (hero.bh == null ? "—" : Number(hero.bh).toFixed(1) + "%") + '</div><div class="s">队内承伤占比</div></div>' +
+      '<div class="hd-cell"><div class="k">场均经济</div><div class="v">' + (hero.gold == null ? "—" : K.fmtInt(hero.gold)) + '</div><div class="s">单局金币</div></div>' +
+      "</div></div>";
+    $("#main").innerHTML = cells +
+      '<div class="hd-grid" style="margin-top:18px">' +
+      '<div class="panel" style="grid-column:1/-1"><div class="panel-title">逐年表现 <em class="mono">出场数 / 胜率 / 禁用率</em></div>' +
+      yearTrendHTML(hero.by, hero.games) + "</div>" +
+      extra +
+      '<div class="panel" style="grid-column:1/-1"><div class="panel-title">数据边界说明</div>' +
+      '<div class="block-note">这个英雄暂时没有逐局明细（最近出场、同位置对位、三人组合需要分钟级 / BP 明细）。' +
+      "上面是从全部赛事聚合出来的可核对数据；本赛季高频英雄既有聚合也有逐局明细。" +
+      '<a href="heroes.html" style="color:var(--gold)"> 回英雄梯度 </a>按「数据范围」切换到具体赛段可以看当年的口径。</div></div>' +
+      "</div>";
+    K.refresh();
+  }
+
+  if (!H) { renderAggregateOnly(HIST); return; }
 
   var wrTxt = K.pct(H.wr), wins = Math.round(H.games * H.wr);
   $("#heroHead").innerHTML = '<header class="page-hero"><div class="wrap"><div class="hd-top">' +
@@ -123,7 +187,10 @@
       "</div></div>";
   }
 
-  $("#main").innerHTML = statCells +
+  var yearPanel = HIST ? '<div class="panel" style="grid-column:1/-1"><div class="panel-title">逐年表现' +
+    ' <em class="mono">全部赛事 ' + K.fmtInt(HIST.games) + " 局 · 本赛季 " + K.fmtInt(H.games) + " 局</em></div>" +
+    yearTrendHTML(HIST.by, HIST.games) + "</div>" : "";
+  $("#main").innerHTML = statCells + yearPanel +
     '<div class="hd-grid" style="margin-top:18px">' +
     '<div class="panel"><div class="panel-title">选手使用榜 <em class="mono">按使用场次</em></div>' + usageRows(H.players || [], "player") + "</div>" +
     '<div class="panel"><div class="panel-title">战队使用</div>' + usageRows(H.teams || [], "team") + "</div>" +
