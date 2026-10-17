@@ -484,3 +484,94 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,[t
   border-left:3px solid var(--accent);border-radius:0 11px 11px 0;font-size:13.5px;color:var(--ink2);line-height:1.75}
 .brief b{color:var(--ink);font-weight:800}
 .brief .ico{color:var(--accent);font-family:var(--mono);font-weight:800;font-size:12px;padding-top:2px;flex:none}
+
+/* ==================================================================
+   v6 · The Barely-There UI（按 DESIGN.md 规范重构）
+   透明度层级 / 发丝线 / 无盒子 / 零阴影零渐变 / 留白即容器 / 单字体
+   ================================================================== */
+:root{
+  /* 背景与墨色：off-black（规范禁纯黑） */
+  --bg:#0A0A0C; --bg2:#0E0E11;
+  --card:transparent;              /* 卡片不再是盒子 */
+  --card2:rgba(255,255,255,.045);
+  --inset:rgba(255,255,255,.028);
+  /* 发丝线：能感觉到，不刺眼 */
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.16);
+  /* 四级不透明度层级（规范核心） */
+  --ink:rgba(255,255,255,1);       /* 100% 标题/主数字 */
+  --ink2:rgba(255,255,255,.87);    /* 87% 正文 */
+  --muted:rgba(255,255,255,.6);    /* 60% 三级 */
+  --faint:rgba(255,255,255,.42);   /* 42% 注脚 */
+  /* 数据语义色保留（阵营/胜负必须可辨），UI 层只用黑白灰 */
+  --gold:#E9C755; --blue:#79A8DF; --red:#DE7073; --teal:#68BBAF;
+  --accent:rgba(255,255,255,.92); --accent-d:rgba(255,255,255,.66);
+}
+html{color-scheme:dark}
+
+/* —— 清掉此前所有装饰层（光斑 / 网格 / 渐变分隔） —— */
+body::before,body::after{display:none !important;content:none !important}
+.page-hero::after,.ph-kicker::before{display:none !important}
+.topbar{background:rgba(10,10,12,.82) !important;border-bottom:1px solid var(--line) !important;backdrop-filter:blur(12px)}
+.brand-mark{background:#F5F5F5 !important;color:#0A0A0C !important;border-radius:6px !important;box-shadow:none !important;font-weight:800}
+.brand-name{font-weight:600 !important;letter-spacing:.02em}
+
+/* —— 无盒子：所有卡片类溶解为开放区块，用留白与发丝线分组 —— */
+.panel,.tcard,.hcard,.combo-card,.player,.bp2-panel,.cmp-radar,.cmp-table,.pr-kpi,.live-card,.h2h-panel,.champ,.today-match,.entry,.filterbar,.scopebar,.brief,.q-wrap,.day-block,.seg,.stat-strip{
+  background:none !important;border:none !important;border-radius:0 !important;box-shadow:none !important;
+}
+.tcard:hover,.hcard:hover,.combo-card:hover,.player:hover,.entry:hover,.champ:hover{transform:none !important;box-shadow:none !important;background:rgba(255,255,255,.03) !important}
+.panel{border-bottom:1px solid var(--line) !important;padding:22px 2px !important}
+.filterbar,.scopebar{border-top:1px solid var(--line) !important;border-bottom:1px solid var(--line) !important;padding:14px 2px !important;margin-bottom:22px}
+.filterbar{border-top:none !important}
+.brief{border-bottom:1px solid var(--line) !important;padding:14px 2px !important;background:none !important}
+.brief .ico{color:var(--muted) !important}
+
+/* —— 结构标题：白色短竖条（规范：结构用黑白灰） —— */
+.block-head h2 i{background:#fff !important;width:3px !important;height:18px !important;border-radius:1px !important}
+.ph-kicker{color:var(--muted) !important;letter-spacing:.14em}
+.more{color:var(--ink2) !important}
+
+/* —— 按钮：白底黑字（深色模式的唯一主按钮形态） —— */
+.btn{border-radius:6px !important;font-weight:600 !important}
+.btn.primary{background:#F5F5F5 !important;color:#0A0A0C !important;border:1px solid transparent !important;box-shadow:none !important}
+.btn.primary:hover{background:#FFFFFF !important;transform:none !important;box-shadow:none !important}
+.btn.ghost{background:none !important;border:1px solid var(--line2) !important;color:var(--ink2) !important}
+.btn.ghost:hover{border-color:rgba(255,255,255,.4) !important;color:var(--ink) !important;background:none !important}
+
+/* —— 导航：active = 白字 + 底部细指示线（不用色块） —— */
+.nav a{border-radius:0 !important;padding:8px 12px !important}
+.nav a.on{background:none !important;color:#fff !important;font-weight:600 !important;box-shadow:none !important}
+.nav a.on::after{content:"";display:block;height:1.5px;background:#fff;border-radius:1px;margin-top:3px}
+.nav a:hover{background:none !important;color:#fff !important}
+
+/* —— 表格：横线体系（表头一条实线，行内发丝线） —— */
+.tbl thead th,.q-table thead th{color:var(--muted) !important;background:none !important;border-bottom:1px solid var(--line2) !important;font-weight:500 !important}
+.tbl td,.q-table td{border-bottom:1px solid var(--line) !important}
+.tbl tbody tr:hover,.tbl tr:hover,.q-table tbody tr:hover{background:rgba(255,255,255,.025) !important}
+.q-table thead th{position:sticky;top:0;background:#0A0A0C !important}
+
+/* —— 卡片内部：数字与标题的层级不透明度 —— */
+.num-cell,.hd-cell,.sim-kpi,.pr-kpi{border:none !important;background:none !important;padding:10px 0 !important}
+.num-cell .k,.hd-cell .k{color:var(--muted) !important}
+.hd-cell .v,.num-cell .v{color:var(--ink) !important}
+.hd-cell{border-right:1px solid var(--line) !important;border-radius:0 !important}
+.hd-cell:last-child{border-right:none !important}
+
+/* —— 细节：圆角与描边全面收敛 —— */
+input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-radius:6px !important}
+.p-ava,.hd-ava{border-radius:50% !important}
+.search,.fld select{background:none !important;border:1px solid var(--line) !important;border-radius:6px !important}
+.search:focus,.fld select:focus{outline:1px solid rgba(255,255,255,.5) !important;border-color:transparent !important}
+.search-box{background:none !important;border:1px solid var(--line) !important;border-radius:6px !important}
+.chip{border-radius:4px !important}
+.tier{border-radius:4px !important}
+.tier.S{background:#E9C755 !important}.tier.A{background:#79A8DF !important}.tier.B{background:rgba(255,255,255,.4) !important}.tier.C{background:rgba(255,255,255,.22) !important}
+
+/* —— 版式：留白架构（间距节奏加大） —— */
+.block{margin-top:60px !important}
+.pr-kpis,.hd-stats,.big-stats{gap:0 !important;border-bottom:1px solid var(--line) !important;border-top:1px solid var(--line) !important}
+.pr-kpis .pr-kpi,.hd-stats .hd-cell{padding:18px 20px 16px 0 !important}
+
+/* —— 动效：只留透明度与 16px 位移（规范） —— */
+.reveal{transition:opacity .42s ease-out, transform .42s ease-out !important}
+@media(prefers-reduced-motion:reduce){.reveal{transition:none !important}}
