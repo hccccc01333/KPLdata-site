@@ -7,3 +7,6 @@
 *.bat
 *.md
 __pycache__
+
+# 构建缓存（不是给用户看的产物）
+assets/replay/.manifest.json

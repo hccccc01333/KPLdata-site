@@ -9,3 +9,6 @@ __pycache__/
 # 系统文件
 Thumbs.db
 .DS_Store
+
+# 复盘构建缓存
+assets/replay/.manifest.json

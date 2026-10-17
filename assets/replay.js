@@ -9,6 +9,10 @@ window.KPL_REPLAY = (function () {
     });
   };
   var pct = function (v, d) { return v == null ? "—" : (Number(v) * 100).toFixed(d == null ? 0 : d) + "%"; };
+  // 本组件独立于 common.js 的变量作用域：只从 window.KPL 取需要的工具，不能直接用 K
+  var fmtInt = (window.KPL && window.KPL.fmtInt)
+    ? function (n) { return window.KPL.fmtInt(n); }
+    : function (n) { return Number(n || 0).toLocaleString("en-US"); };
   var signed = function (v, d) { var n = Number(v || 0); return (n >= 0 ? "+" : "") + n.toFixed(d == null ? 0 : d); };
   var cache = {};
 
@@ -76,9 +80,9 @@ window.KPL_REPLAY = (function () {
     for (var i = 0; i < Math.max(g1.length, g2.length); i++) {
       var a = g1[i] || 0, c = g2[i] || 0;
       var n1 = (b.names || [])[i] || "?", n2 = (b.names || [])[i + 5] || "?";
-      rows.push('<tr><td class="n">' + esc(n1) + '</td><td class="num">' + K.fmtInt(a) + '</td>' +
+      rows.push('<tr><td class="n">' + esc(n1) + '</td><td class="num">' + fmtInt(a) + '</td>' +
         '<td class="d ' + (a - c >= 0 ? "up" : "down") + '">' + signed(a - c) + "</td>" +
-        '<td class="num">' + K.fmtInt(c) + '</td><td class="n r">' + esc(n2) + "</td></tr>");
+        '<td class="num">' + fmtInt(c) + '</td><td class="n r">' + esc(n2) + "</td></tr>");
     }
     return '<div class="rp-panel"><div class="rp-pt">经济状态 <em class="mono">金差 ' + signed(gd) +
       (prev ? " · 较上一帧 " + signed(d) : "") + '</em></div>' +
