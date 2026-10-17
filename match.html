@@ -285,10 +285,16 @@
         if (box.style.display === "none") {
           box.style.display = "";
           if (!box.querySelector("svg")) {
+            // 曲线统一画"收官预判胜方"的胜率：pts[1] 是本局 camp1 的胜率，
+            // 若预判胜方是 camp2，就把整条曲线翻成 1-p，避免出现
+            // 上面写"KSG 82%"、下面曲线却标着对手一路跌到 18% 的割裂感。
+            var h = hs[i];
+            var lp = h.pts[h.pts.length - 1][1];
+            var leadIsCamp1 = lp >= 0.5;
             K.wrChart(box, {
-              timeline: hs[i].pts.map(function (t) { return { m: t[0], p: t[1] }; }),
+              timeline: h.pts.map(function (t) { return { m: t[0], p: leadIsCamp1 ? t[1] : 1 - t[1] }; }),
               phases: [], events: [],
-            }, hs[i].t1);
+            }, leadIsCamp1 ? h.t1 : h.t2);
           }
         } else {
           box.style.display = "none";
