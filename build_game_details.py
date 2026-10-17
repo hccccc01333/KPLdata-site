@@ -176,7 +176,8 @@ def main() -> None:
     print(f"matches: {len(index)} | games: {n_games} | equips: {len(equip_icons)}")
 
     # 派生索引跟着局索引一起刷新（新增比赛后搜索/复盘能立刻用上）
-    for script_name in ("build_search_index.py", "build_replay_frames.py", "build_team_data.py"):
+    for script_name in ("build_search_index.py", "build_replay_frames.py", "build_team_data.py",
+                        "build_picks.py"):
         script = SITE / script_name
         if not script.exists():
             continue

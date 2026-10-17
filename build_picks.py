@@ -62,8 +62,10 @@ def analyze(b: dict) -> dict | None:
             continue
         if p <= MIN_PROB:
             candidates.append((p, m, gd_win))
+    worst_pick = None
     if candidates:
         p_w, m_w, gd_w = min(candidates, key=lambda x: x[0])
+        worst_pick = (p_w, m_w, gd_w)
         tags.append({"k": "comeback", "label": "翻盘局",
                      "note": f"第 {m_w:.0f} 分钟胜率仅 {p_w * 100:.0f}%，经济落后 {abs(gd_w):,}"})
 
@@ -100,8 +102,8 @@ def analyze(b: dict) -> dict | None:
         # 最低胜率点：只记"满足翻盘条件"的那一个（第 6 分钟后 + 经济落后 3000+），
         # 这样卡片上的"最低胜率 X%"和翻盘标签是同一件事，不会一个标签两种口径
         "swing": round(swing_best[0], 3),
-        "minProb": round(candidates[0][0], 3) if candidates else None,
-        "minMinute": round(candidates[0][1], 1) if candidates else None,
+        "minProb": round(worst_pick[0], 3) if worst_pick else None,
+        "minMinute": round(worst_pick[1], 1) if worst_pick else None,
         "events": ev,
         "tags": tags,
         "score": round(score, 2),
