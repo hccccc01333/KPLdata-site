@@ -93,43 +93,100 @@ window.KPL = (function () {
       '<a href="about.html">数据说明 · 免责</a></div></div>';
   }
 
-  /* ---------- 站内搜索 ---------- */
+  /* ---------- 站内搜索（统一索引 · 全历史深链） ---------- */
+  var SEARCH_INDEX = null;      // assets/search.js：战队/选手/英雄/2,884 场比赛
+  var SEARCH_LOADING = false;
+  function loadSearchIndex(cb) {
+    if (SEARCH_INDEX) { cb(SEARCH_INDEX); return; }
+    if (SEARCH_LOADING) return;
+    SEARCH_LOADING = true;
+    var sc = document.createElement("script");
+    sc.src = "assets/search.js?ts=" + Date.now();
+    sc.onload = function () {
+      SEARCH_INDEX = window.KPL_SEARCH || [];
+      SEARCH_LOADING = false;
+      sc.remove();
+      cb(SEARCH_INDEX);
+    };
+    sc.onerror = function () { SEARCH_LOADING = false; sc.remove(); };
+    document.head.appendChild(sc);
+  }
+
   function initSearch() {
     var input = document.getElementById("siteSearch");
     var pop = document.getElementById("searchPop");
     if (!input || !pop) return;
-    var items = [];
+    // 首屏可用：用当前页已有的数据先兜底（秒出结果），完整索引按需懒加载
+    var local = [];
     (D.standings || []).forEach(function (s) {
-      items.push({ kind: "战队", label: s.team, icon: s.icon, href: "teams.html", kw: s.team });
+      local.push({ k: "战队", n: s.team, i: s.icon, h: "teams.html", kw: (s.team || "").toLowerCase() });
     });
     var plist = (window.KPL_SEASONS && KPL_SEASONS.scopes && KPL_SEASONS.scopes.all.players) || D.players || [];
     plist.forEach(function (p) {
-      items.push({ kind: "选手", label: p.name + " · " + p.team, icon: p.icon || p.teamIcon,
-                   href: "player.html?id=" + encodeURIComponent(p.name), kw: p.name + " " + p.team });
+      local.push({ k: "选手", n: p.name + " · " + p.team, i: p.icon || p.teamIcon,
+                   h: "player.html?id=" + encodeURIComponent(p.name), kw: (p.name + " " + p.team).toLowerCase() });
     });
     (D.heroes || []).forEach(function (h) {
-      items.push({ kind: "英雄", label: h.name, icon: h.icon,
-                   href: "hero.html?id=" + encodeURIComponent(h.name), kw: h.name });
+      local.push({ k: "英雄", n: h.name, i: h.icon, h: "hero.html?id=" + encodeURIComponent(h.name),
+                   kw: (h.name || "").toLowerCase() });
     });
     (D.schedule || []).slice(0, 200).forEach(function (r) {
-      items.push({ kind: "比赛", label: r.date + " " + r.team1 + " vs " + r.team2, icon: "",
-                   href: r.score1 >= 0 && DT.matches.some(function (m) { return m.matchId === r.matchId; })
-                     ? "match.html?id=" + r.matchId : "schedule.html",
-                   kw: r.team1 + " " + r.team2 });
+      local.push({ k: "比赛", n: r.team1 + " vs " + r.team2, i: r.icon1 || "",
+                   h: "match.html?id=" + encodeURIComponent(r.matchId),
+                   kw: (r.team1 + " " + r.team2 + " " + r.date).toLowerCase() });
     });
+
+    function pool() {
+      if (!SEARCH_INDEX) return local;
+      var out = local.slice(), seen = {};
+      local.forEach(function (it) { seen[it.h + "|" + it.n] = 1; });
+      SEARCH_INDEX.forEach(function (it) {
+        var key = it.h + "|" + it.n;
+        if (seen[key]) return;
+        seen[key] = 1;
+        out.push({ k: it.k, n: it.n, i: it.i, h: it.h, kw: ((it.n || "") + " " + (it.s || "")).toLowerCase() });
+      });
+      return out;
+    }
+
     function render(q) {
       if (!q) { pop.classList.remove("on"); pop.innerHTML = ""; return; }
-      var hits = items.filter(function (it) { return it.kw.indexOf(q) >= 0; }).slice(0, 9);
-      pop.innerHTML = hits.length
-        ? hits.map(function (h) {
-            return '<a href="' + h.href + '">' + (h.icon ? '<img src="' + esc(h.icon) + '" alt="">' : "") +
-              "<span>" + esc(h.label) + '</span><span class="k">' + h.kind + "</span></a>";
-          }).join("")
+      var ql = q.toLowerCase();
+      var hits = pool().filter(function (it) { return it.kw.indexOf(ql) >= 0; });
+      // 名称前缀 > 名称包含 > 关键词命中，同级保持索引顺序（比赛按时间倒序）
+      hits.sort(function (a, b) {
+        return rankOf(a.n, ql) - rankOf(b.n, ql);
+      });
+      var shown = hits.slice(0, 12);
+      pop.innerHTML = shown.length
+        ? shown.map(function (h) {
+            return '<a href="' + esc(h.h) + '">' + (h.i ? '<img src="' + esc(h.i) + '" alt="">' : "") +
+              "<span>" + esc(h.n) + '</span><span class="k">' + esc(h.k) + "</span></a>";
+          }).join("") +
+          (hits.length > shown.length
+            ? '<a><span style="color:var(--muted)">还有 ' + (hits.length - shown.length) + " 条结果，输入更多关键词缩小范围</span></a>"
+            : "")
         : '<a><span style="color:var(--muted)">没有匹配结果</span></a>';
       pop.classList.add("on");
     }
-    input.addEventListener("input", function () { render(input.value.trim()); });
-    input.addEventListener("focus", function () { render(input.value.trim()); });
+    function rankOf(name, ql) {
+      var n = String(name || "").toLowerCase();
+      if (n.indexOf(ql) === 0) return 0;
+      if (n.indexOf(ql) >= 0) return 1;
+      return 2;
+    }
+    function refreshFromIndex() {
+      if (SEARCH_INDEX) render(input.value.trim());
+    }
+    // 输入时懒加载完整索引，加载完自动补一次渲染
+    input.addEventListener("input", function () {
+      render(input.value.trim());
+      loadSearchIndex(refreshFromIndex);
+    });
+    input.addEventListener("focus", function () {
+      render(input.value.trim());
+      loadSearchIndex(refreshFromIndex);
+    });
     document.addEventListener("click", function (e) {
       if (!e.target.closest(".search-wrap")) pop.classList.remove("on");
     });
