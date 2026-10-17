@@ -22,6 +22,8 @@
 
 <script src="assets/data.js?v=42"></script>
 <script src="assets/seasons.js?v=42"></script>
+<script src="assets/replay/index.js?v=42"></script>
+<script src="assets/replay.js?v=42"></script>
 <script src="assets/schedule_all.js?v=42"></script>
 <script src="assets/games/index.js?v=42"></script>
 <script src="assets/equip_icons.js?v=42"></script>
@@ -135,8 +137,14 @@
       }).join("");
     }
 
+    var hasReplay = window.KPL_REPLAY && KPL_REPLAY.hasReplay(MID);
     $("#main").innerHTML =
-      '<div class="bp-grid">' +
+      '<div class="block-head"><h2><i></i>复盘工作台</h2><span class="block-note mono">' +
+      (hasReplay ? "拖动时间轴 · 经济 / 资源 / 选手 / 模型胜率同步刷新"
+                 : "本局没有分钟级快照 · 只有基础比分 / BP / 选手明细") + "</span></div>" +
+      '<div class="panel" style="padding:14px"><div id="replayWorkbench">' +
+      (hasReplay ? "" : '<div class="empty-tip">本局暂无分钟级复盘数据</div>') + "</div></div>" +
+      '<div class="bp-grid" style="margin-top:18px">' +
       '<div class="bp-side blue"><div class="hd">' + K.esc(g.t1) + "（蓝方）</div>" +
       '<div class="bp-picks">' + pickChips(picks1) + "</div>" +
       '<div class="bp-bans">ban：' + banChips(bans1) + "</div></div>" +
@@ -152,6 +160,10 @@
       "</div>" +
       '<div class="panel-foot mono" style="margin-top:12px">数据来源：官方逐局数据 · ' +
       K.esc(MID) + " 第 " + g.seq + " 局" + (g.video ? "" : "（本局无回放视频）") + "</div>";
+    if (hasReplay) {
+      KPL_REPLAY.mount(document.getElementById("replayWorkbench"), { matchId: MID, battleId: BID });
+    }
+
     /* 数据曲线（比赛期间采集的指标序列，如已归档） */
     (function () {
       var sc = document.createElement("script");

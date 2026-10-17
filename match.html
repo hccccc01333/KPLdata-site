@@ -25,6 +25,8 @@
 <script src="assets/schedule_all.js?v=42"></script>
 <script src="assets/games/index.js?v=42"></script>
 <script src="assets/seasons.js?v=42"></script>
+<script src="assets/replay/index.js?v=42"></script>
+<script src="assets/replay.js?v=42"></script>
 <script src="assets/common.js?v=42"></script>
 <script>
 (function () {
@@ -104,6 +106,7 @@
         '<span class="block-note mono">腾讯视频 · 官方录像</span></div>' : "") +
       "</div></header>";
     $("#main").innerHTML =
+      replaySectionHTML(sr.matchId) +
       '<div class="live-zone" id="liveZone" style="display:none"></div>' +
       '<div class="live-zone" id="histZone" style="display:none"></div>' +
       '<div class="block-head"><h2><i></i>本大场对局</h2>' +
@@ -119,6 +122,7 @@
         "BP / 开局准备中——第一局开始后，实时胜率、指标与对局数据会自动出现在这里。</div>" +
         '<div class="mnav"><a href="schedule.html">返回赛程中心</a></div>';
     }
+    mountReplay(sr.matchId, "");
     if (liveNow) initLive(sr.matchId);
     initTodayOverlay(sr.matchId);
     K.refresh();
@@ -303,6 +307,26 @@
     });
   }
 
+  /* ---------- 复盘工作台（V4 阶段二：一条时间轴联动经济 / 资源 / 选手 / 胜率） ---------- */
+  function replaySectionHTML(matchId) {
+    var has = window.KPL_REPLAY && KPL_REPLAY.hasReplay(matchId);
+    return '<div class="block-head"><h2><i></i>复盘工作台</h2>' +
+      '<span class="block-note mono">' +
+      (has ? "拖动时间轴 · 同一时刻的经济 / 资源 / 选手 / 模型胜率同步刷新"
+           : "本场没有分钟级快照 · 只有基础比分 / BP / 选手明细") + "</span></div>" +
+      '<div class="panel" style="padding:14px"><div id="replayWorkbench">' +
+      (has ? "" : '<div class="empty-tip">该场暂无分钟级复盘数据（仅覆盖有逐分钟快照的 ' +
+        ((Object.keys(window.KPL_REPLAY_INDEX || {}).length) || 0) + " 场比赛）</div>") +
+      "</div></div>";
+  }
+  function mountReplay(matchId, battleId) {
+    var box = document.getElementById("replayWorkbench");
+    if (!box) return;
+    if (window.KPL_REPLAY && KPL_REPLAY.hasReplay(matchId)) {
+      KPL_REPLAY.mount(box, { matchId: matchId, battleId: battleId || "" });
+    }
+  }
+
   /* ---------- 头图 ---------- */
   var strip = (M.battles || []).map(function (b) {
     var kw = b.gameNo === KEY.gameNo;
@@ -374,6 +398,7 @@
   $("#main").innerHTML =
     '<div class="live-zone" id="liveZone" style="display:none"></div>' +
     '<div class="live-zone" id="histZone" style="display:none"></div>' +
+    replaySectionHTML(M.matchId) +
     '<div class="block-head"><h2><i></i>关键局复盘 · G' + KEY.gameNo +
     (KEY.comeback ? ' <span class="demo-tag">翻盘局</span>' : "") + "</h2>" +
     '<span class="block-note mono">' + K.dateCN(M.date) + " · 时长 " + KEY.duration.toFixed(0) +
@@ -396,6 +421,7 @@
     (next ? '<a href="match.html?id=' + K.esc(next.matchId) + '">' + K.esc(next.date) + " " + K.esc(next.team1) + " vs " + K.esc(next.team2) + " →</a>" : "<span></span>") +
     "</div>";
 
+  mountReplay(M.matchId, KEY.battleId);
   K.wrChart($("#wrChart"), KEY, M.team1);
   initLive(M.matchId);
   initTodayOverlay(M.matchId);

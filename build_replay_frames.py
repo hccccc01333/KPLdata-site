@@ -26,6 +26,7 @@ PROJ = SITE.parent / "02-KPL实时胜率预测系统"
 sys.path.insert(0, str(PROJ / "scripts"))
 
 from kpl_official_core import (  # noqa: E402
+    PREDICTION_DIR,
     RAW_DIR,
     _replay_v11_timeline,
     detect_events,
@@ -74,17 +75,39 @@ def build_battle(battle_id: str, meta: dict) -> dict | None:
         return None
 
     # 模型胜率（camp1 视角），按分钟归并
+    # 口径优先级：直播时真实写下的 predictions CSV > 赛后重放（重放在回补局上波动很大，
+    # 只能当参考；CSV 才是"当时模型说的话"，复盘页面必须优先用它）。
     prob_by_bin: dict[int, float] = {}
-    try:
-        tl = _replay_v11_timeline(battle_id)
-        if tl is not None and len(tl):
-            for _, r in tl.iterrows():
-                b = int(r.get("minute_bin") or 0)
+    low_bin: set[int] = set()
+    source = "replay"
+    csv_path = PREDICTION_DIR / f"{battle_id}.csv"
+    if csv_path.exists():
+        try:
+            pred = pd.read_csv(csv_path)
+            for _, r in pred.iterrows():
                 v = r.get("camp1_win_prob")
-                if b and pd.notna(v):
-                    prob_by_bin[b] = round(float(v), 3)
-    except Exception:
-        prob_by_bin = {}
+                m = r.get("minute")
+                if pd.isna(v) or pd.isna(m):
+                    continue
+                b = int(float(m)) or 1
+                prob_by_bin[b] = round(float(v), 3)
+            if prob_by_bin:
+                source = "live"
+        except (OSError, pd.errors.ParserError):
+            pass
+    if not prob_by_bin:
+        try:
+            tl = _replay_v11_timeline(battle_id)
+            if tl is not None and len(tl):
+                for _, r in tl.iterrows():
+                    b = int(r.get("minute_bin") or 0)
+                    v = r.get("camp1_win_prob")
+                    if b and pd.notna(v):
+                        prob_by_bin[b] = round(float(v), 3)
+                    if b and bool(r.get("low_confidence")):
+                        low_bin.add(b)
+        except Exception:
+            prob_by_bin = {}
 
     # 每帧字段：同分钟取最后一帧
     by_bin: dict[int, dict] = {}
@@ -114,6 +137,7 @@ def build_battle(battle_id: str, meta: dict) -> dict | None:
         frames.append({
             "m": minute,
             "p": prob_by_bin.get(mb),
+            "lc": 1 if mb in low_bin else 0,
             "gd": int(s.get("camp1_gold") or 0) - int(s.get("camp2_gold") or 0),
             "k": [int(s.get("camp1_kill") or 0), int(s.get("camp2_kill") or 0)],
             "t": [int(s.get("camp1_tower") or 0), int(s.get("camp2_tower") or 0)],
@@ -159,6 +183,7 @@ def build_battle(battle_id: str, meta: dict) -> dict | None:
 
     return {
         "battleId": battle_id,
+        "src": source,          # live = 直播时真实预测；replay = 赛后重放
         "seq": int(meta.get("game_no") or 0),
         "win": win,
         "dur": round(float(last.get("minute") or 0), 1),
