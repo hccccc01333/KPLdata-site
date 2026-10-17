@@ -225,14 +225,76 @@ window.KPL = (function () {
     });
   }
 
+  /* ---------- 收藏 / 关注（localStorage，无需账户） ---------- */
+  var FAV_KEY = "kpl_fav_v1";
+  function favList() {
+    try { return JSON.parse(localStorage.getItem(FAV_KEY) || "[]") || []; } catch (e) { return []; }
+  }
+  function favSave(list) {
+    try { localStorage.setItem(FAV_KEY, JSON.stringify(list.slice(0, 60))); } catch (e) {}
+  }
+  function favHas(kind, id) {
+    return favList().some(function (f) { return f.kind === kind && f.id === id; });
+  }
+  function favToggle(item) {
+    var list = favList();
+    var i = -1;
+    for (var k = 0; k < list.length; k++) if (list[k].kind === item.kind && list[k].id === item.id) { i = k; break; }
+    if (i >= 0) list.splice(i, 1); else list.unshift(item);
+    favSave(list);
+    return i < 0;
+  }
+  /* 星标按钮：kind = team|player|match */
+  function favBtn(item) {
+    var on = favHas(item.kind, item.id);
+    return '<button type="button" class="fav-btn' + (on ? " on" : "") + '" data-kind="' + esc(item.kind) +
+      '" data-id="' + esc(item.id) + '" data-label="' + esc(item.label || item.id) +
+      '" data-icon="' + esc(item.icon || "") + '" data-href="' + esc(item.href || "") + '" ' +
+      'aria-pressed="' + (on ? "true" : "false") + '" title="' + (on ? "取消收藏" : "收藏") + '">' +
+      (on ? "★ 已收藏" : "☆ 收藏") + "</button>";
+  }
+  function initFav() {
+    document.addEventListener("click", function (e) {
+      var btn = e.target.closest(".fav-btn");
+      if (!btn) return;
+      e.preventDefault();
+      var item = {
+        kind: btn.getAttribute("data-kind"), id: btn.getAttribute("data-id"),
+        label: btn.getAttribute("data-label"), icon: btn.getAttribute("data-icon"),
+        href: btn.getAttribute("data-href")
+      };
+      var nowOn = favToggle(item);
+      btn.classList.toggle("on", nowOn);
+      btn.setAttribute("aria-pressed", nowOn ? "true" : "false");
+      btn.textContent = nowOn ? "★ 已收藏" : "☆ 收藏";
+      btn.title = nowOn ? "取消收藏" : "收藏";
+      var strip = document.getElementById("favStrip");
+      if (strip) renderFavStrip(strip);
+    });
+  }
+  function renderFavStrip(el) {
+    if (!el) return;
+    var list = favList();
+    if (!list.length) { el.innerHTML = ""; el.style.display = "none"; return; }
+    el.style.display = "";
+    el.innerHTML = '<div class="fav-strip"><div class="fav-cap mono">我的关注 ' + list.length + '</div>' +
+      '<div class="fav-items">' + list.map(function (f) {
+        var href = f.href || "index.html";
+        return '<a class="fav-chip" href="' + esc(href) + '">' +
+          (f.icon ? '<img src="' + esc(f.icon) + '" alt="">' : "") + esc(f.label) +
+          '<span class="k">' + esc(f.kind === "team" ? "战队" : f.kind === "player" ? "选手" : "比赛") + "</span></a>";
+      }).join("") + "</div></div>";
+  }
+
   /* ---------- 数据完整度徽标（V4：点进去之前就知道能看到什么） ---------- */
   // mask: bit0 比分 · bit1 完整BP · bit2 选手明细 · bit3 分钟级曲线 · bit4 模型估算
+  // 「模型」徽标曾独立存在，但它的判定条件（有重放包且有概率）与「分钟级」完全一致，
+  // 独立展示只会让用户以为是两件事 —— 合并成一枚，说明里写清"含模型胜率曲线"。
   var COV_ITEMS = [
     ["比分", 1, "官方比分与用时"],
     ["BP", 2, "完整 BP（双方 10 个选人）"],
     ["选手", 4, "逐局选手数据（KDA / 经济 / 出装）"],
-    ["分钟级", 8, "逐分钟经济 / 资源 / 击杀序列"],
-    ["模型", 16, "模型胜率曲线（估算，非官方）"]
+    ["分钟级", 24, "逐分钟经济 / 资源 / 击杀序列，含模型胜率曲线（估算）"]
   ];
 
   function coverageMask(matchId) {
@@ -509,6 +571,7 @@ window.KPL = (function () {
     if (f) f.innerHTML = footer();
     initSearch();
     initNav();
+    initFav();
     scan();
     autoRefresh();
   }
@@ -724,6 +787,7 @@ window.KPL = (function () {
     countdown: countdown, scopeBar: scopeBar, scopeOf: scopeOf, scopeName: scopeName,
     isLive: isLive, liveBadge: liveBadge, exportCSV: exportCSV, lineChart: lineChart,
     coverageMask: coverageMask, battleCoverageMask: battleCoverageMask, coverageBadges: coverageBadges,
+    favBtn: favBtn, favList: favList, favHas: favHas, favToggle: favToggle, renderFavStrip: renderFavStrip,
     brief: brief,
     init: init, refresh: scan
   };

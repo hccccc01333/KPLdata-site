@@ -73,10 +73,22 @@
 
 <main class="wrap" style="margin-top:22px">
   <div class="pr-kpis">
-    <div class="pr-kpi hl"><div class="k">直播预测命中率（已归档 4 局起）</div><div class="v" id="kRate">—</div><div class="s" id="kRateS">—</div></div>
+    <div class="pr-kpi hl"><div class="k">第 8 分钟命中率 <em class="mono">可信口径</em></div><div class="v" id="kCp8">—</div><div class="s" id="kCp8S">—</div></div>
+    <div class="pr-kpi"><div class="k">第 12 / 16 分钟命中率</div><div class="v" id="kCp12">—</div><div class="s" id="kCp12S">—</div></div>
     <div class="pr-kpi"><div class="k">回测总体准确率（近 8 局 holdout）</div><div class="v" id="kAcc">—</div><div class="s" id="kAccS">—</div></div>
-    <div class="pr-kpi"><div class="k">早期/中期准确率</div><div class="v" id="kEarly">—</div><div class="s" id="kEarlyS">—</div></div>
-    <div class="pr-kpi"><div class="k">最低谷：后期准确率</div><div class="v" id="kLate">—</div><div class="s">双方经济咬死时最难判 · 诚实展示</div></div>
+    <div class="pr-kpi"><div class="k">最后一帧（参考，不可当能力）</div><div class="v" id="kLast">—</div><div class="s">比赛已基本结束，命中率趋近 100% 属于口径而非模型</div></div>
+  </div>
+
+  <div class="panel" style="margin-top:14px">
+    <div class="panel-title">分时点命中率 <em class="mono">同一批对局，在不同时间点做预测</em></div>
+    <div class="table-panel"><table class="tbl">
+      <thead><tr><th>预测时点</th><th class="num">样本</th><th class="num">命中</th><th class="num">准确率</th><th class="num">Brier</th><th>说明</th></tr></thead>
+      <tbody id="cpRows"></tbody>
+    </table></div>
+    <div class="block-note mono" style="margin-top:8px">
+      口径：每个时间点取"该分钟及之前最后一帧"的预测，不插值、不外推；样本量小（当前 10 局），数字只代表这批对局，不足以支撑模型结论。
+      「最后一帧」加入对比是为了说明：把口径压在收官前，命中率会自然虚高。
+    </div>
   </div>
 
   <div class="brief" id="brief"></div>
@@ -130,21 +142,37 @@
   $("#prN").textContent = acc.n;
   $("#prAt").textContent = P.updatedAt;
   $("#prTrained").textContent = (P.backtest || {}).trainedAt || "—";
-  $("#kRate").textContent = acc.n ? Math.round(acc.rate * 100) + "%" : "—";
-  $("#kRateS").textContent = "命中 " + acc.hits + " / " + acc.n + " 局（逐局可核对）";
+
+  /* 分时点命中率 */
+  var cps = P.checkpoints || [];
+  var lastF = P.lastFrame || {};
+  function cpAt(m) { return cps.filter(function (c) { return c.m === m; })[0]; }
+  var c8 = cpAt(8), c12 = cpAt(12), c16 = cpAt(16);
+  if (c8) {
+    $("#kCp8").textContent = Math.round(c8.acc * 100) + "%";
+    $("#kCp8S").textContent = "命中 " + c8.hits + " / " + c8.n + " 局 · Brier " + c8.brier.toFixed(3);
+  }
+  if (c12) {
+    $("#kCp12").textContent = Math.round(c12.acc * 100) + " / " + (c16 ? Math.round(c16.acc * 100) : "—") + "%";
+    $("#kCp12S").textContent = "样本 " + c12.n + " 局 · 越往后越接近真实结果";
+  }
+  $("#kLast").textContent = lastF.n ? Math.round((lastF.acc || 0) * 100) + "%" : "—";
+  var cpRows = cps.slice();
+  if (lastF.n) cpRows.push({ m: "最后一帧", n: lastF.n, hits: Math.round((lastF.acc || 0) * lastF.n), acc: lastF.acc || 0, brier: lastF.brier || 0, last: true });
+  $("#cpRows").innerHTML = cpRows.map(function (c) {
+    return "<tr><td>" + (c.last ? "最后一帧" : "第 " + c.m + " 分钟") + "</td>" +
+      '<td class="num mono">' + c.n + "</td>" +
+      '<td class="num mono">' + c.hits + "</td>" +
+      '<td class="num mono"' + (c.last ? ' style="color:var(--muted)"' : "") + ">" + Math.round(c.acc * 100) + "%</td>" +
+      '<td class="num mono">' + Number(c.brier || 0).toFixed(3) + "</td>" +
+      "<td>" + (c.last ? "比赛已基本结束，命中率高是口径使然" : "赛前中期，样本少，仅供参考") + "</td></tr>";
+  }).join("") || '<tr><td colspan="6" style="color:var(--muted)">暂无预测档案</td></tr>';
 
   var bt = P.backtest || {};
   var ph = bt.phases || {};
   if (ph.all) {
     $("#kAcc").textContent = Math.round(ph.all.acc * 100) + "%";
     $("#kAccS").textContent = "共 " + ph.all.n + " 个采样阶段样本";
-  }
-  if (ph.early && ph.mid) {
-    $("#kEarly").textContent = Math.round(ph.early.acc * 100) + " / " + Math.round(ph.mid.acc * 100) + "%";
-    $("#kEarlyS").textContent = "开局与中期阶段";
-  }
-  if (ph.late) {
-    $("#kLate").textContent = Math.round(ph.late.acc * 100) + "%";
   }
   $("#prGate").textContent = bt.gatesPassed ? "全部通过 ✓" : "部分未达标";
 

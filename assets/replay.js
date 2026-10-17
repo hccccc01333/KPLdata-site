@@ -162,6 +162,15 @@ window.KPL_REPLAY = (function () {
         for (var i = 0; i < battles.length; i++) if (battles[i].battleId === opts.battleId) { bi = i; break; }
       }
       var frameIdx = 0;
+      // 支持从链接直接回到某一分钟（?g=3&m=12）
+      if (opts.initialMinute != null && !isNaN(Number(opts.initialMinute))) {
+        var targetM = Number(opts.initialMinute);
+        var bestI = 0;
+        for (var k = 0; k < battles[bi].frames.length; k++) {
+          if (Math.abs(battles[bi].frames[k].m - targetM) < Math.abs(battles[bi].frames[bestI].m - targetM)) bestI = k;
+        }
+        frameIdx = bestI;
+      }
 
       function frameCount() { return battles[bi].frames.length; }
 
@@ -179,7 +188,8 @@ window.KPL_REPLAY = (function () {
           '<div class="rp-meta mono">' + esc(b.t1) + " vs " + esc(b.t2) + " · 时长 " + b.dur.toFixed(0) + "′ · " +
           (b.win === 1 ? esc(b.t1) : b.win === 2 ? esc(b.t2) : "—") + " 胜出" +
           ' <span class="rp-src ' + (b.src === "live" ? "live" : "replay") + '">' +
-          (b.src === "live" ? "胜率=直播当时预测" : "胜率=赛后重放") + "</span></div>" +
+          (b.src === "live" ? "胜率=直播当时预测" : "胜率=赛后重放") + "</span>" +
+          ' <button type="button" class="rp-share" id="rpShare">复制本帧链接</button>' +
           "</div>" +
           (b.src === "replay"
             ? '<div class="rp-warn">本局没有直播期预测记录，曲线是赛后用当前模型重放的结果，只作参考；复盘结论请以经济 / 资源等客观指标为主。</div>'
@@ -229,6 +239,23 @@ window.KPL_REPLAY = (function () {
             setFrame(best);
           });
         });
+        var share = document.getElementById("rpShare");
+        if (share) {
+          share.addEventListener("click", function () {
+            var b0 = battles[bi];
+            var url = location.origin + location.pathname + "?id=" + encodeURIComponent(matchId) +
+              "&g=" + (b0.seq || 1) + "&m=" + Math.round(b0.frames[frameIdx].m);
+            var done = function () {
+              share.textContent = "已复制 ✓";
+              setTimeout(function () { share.textContent = "复制本帧链接"; }, 1600);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(url).then(done, function () { share.textContent = url; });
+            } else {
+              share.textContent = url;
+            }
+          });
+        }
         var chart = document.getElementById("rpChart");
         if (chart) {
           chart.addEventListener("click", function (e) {

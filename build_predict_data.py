@@ -29,8 +29,11 @@ def jload(path: Path, default=None):
         return default
 
 
+CHECKPOINTS = (8, 12, 16)   # 固定时间点：用于避免"只报最后一帧"的乐观口径
+
+
 def read_pred_csv(bid: str):
-    """直播逐帧预测的最后置信值 + 帧数。"""
+    """直播逐帧预测：最后置信值 + 帧数 + 各固定时间点的概率。"""
     path = REALTIME / "predictions" / f"{bid}.csv"
     if not path.exists():
         return None
@@ -38,6 +41,7 @@ def read_pred_csv(bid: str):
     n = 0
     win_camp = 0
     last_gd = None
+    frames: list[tuple[float, float]] = []
     try:
         with path.open("r", encoding="utf-8-sig", newline="") as fh:
             for row in csv.DictReader(fh):
@@ -49,6 +53,12 @@ def read_pred_csv(bid: str):
                     continue
                 last_prob = p
                 n += 1
+                try:
+                    m = float(row.get("minute") or "")
+                except (TypeError, ValueError):
+                    m = None
+                if m is not None:
+                    frames.append((m, p))
                 try:
                     last_gd = int(float(row.get("gold_diff") or 0))
                 except (TypeError, ValueError):
@@ -63,7 +73,14 @@ def read_pred_csv(bid: str):
         return None
     if last_prob is None:
         return None
-    return {"lastProb": round(last_prob, 3), "frames": n, "winCamp": win_camp, "lastGd": last_gd}
+    # 每个固定时间点取"该分钟及之前最后一帧"的概率（没有就不计入，不插值、不外推）
+    cps: dict[int, float] = {}
+    for cp in CHECKPOINTS:
+        upto = [p for (m, p) in frames if m <= cp]
+        if upto:
+            cps[cp] = round(upto[-1], 3)
+    return {"lastProb": round(last_prob, 3), "frames": n, "winCamp": win_camp,
+            "lastGd": last_gd, "cps": cps}
 
 
 def main() -> None:
@@ -104,7 +121,37 @@ def main() -> None:
         "n": len(archived),
         "hits": hits,
         "rate": round(hits / len(archived), 3) if archived else 0,
+        # 最后一帧口径本身几乎没有信息量（比赛基本已定），单独标注，别当能力指标
+        "note": "last-frame",
     }
+
+    # ---- 固定时间点命中率（可信口径） ----
+    cp_rows = []
+    for cp in CHECKPOINTS:
+        n = hit = 0
+        brier_sum = 0.0
+        for bid, v in hist.items():
+            info = read_pred_csv(bid)
+            win = int(v.get("win") or 0)
+            if not info or win not in (1, 2):
+                continue
+            p = (info.get("cps") or {}).get(cp)
+            if p is None:
+                continue
+            n += 1
+            brier_sum += (p - (1.0 if win == 1 else 0.0)) ** 2
+            if (1 if p >= 0.5 else 2) == win:
+                hit += 1
+        cp_rows.append({
+            "m": cp, "n": n, "hits": hit,
+            "acc": round(hit / n, 3) if n else 0,
+            "brier": round(brier_sum / n, 4) if n else 0,
+        })
+    last_n = len(archived)
+    last_brier = 0.0
+    for a in archived:
+        last_brier += (a["prob"] - (1.0 if a["win"] == 1 else 0.0)) ** 2
+    last_brier = round(last_brier / last_n, 4) if last_n else 0
 
     hr = backtest.get("holdout_real") or {}
     phases = {}
@@ -122,6 +169,8 @@ def main() -> None:
         "updatedAt": __import__("time").strftime("%Y-%m-%d %H:%M:%S"),
         "archived": archived,
         "accuracy": accuracy,
+        "checkpoints": cp_rows,
+        "lastFrame": {"n": last_n, "acc": accuracy["rate"], "brier": last_brier},
         "backtest": {
             "version": str(backtest.get("version") or ""),
             "trainedAt": str(backtest.get("trained_at") or "")[:10],

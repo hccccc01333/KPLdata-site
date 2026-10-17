@@ -34,7 +34,11 @@
   "use strict";
   var D = KPL.data, DT = KPL.details, K = KPL, $ = function (s) { return document.querySelector(s); };
   K.init();
-  var id = new URLSearchParams(location.search).get("id");
+  var QS = new URLSearchParams(location.search);
+  var id = QS.get("id");
+  // 复盘分享链接：?g=3&m=12 → 直接落到第 3 局第 12 分钟
+  var SHARE_SEQ = parseInt(QS.get("g") || "", 10);
+  var SHARE_MIN = QS.get("m") != null ? parseFloat(QS.get("m")) : null;
   var list = DT.matches || [];
   var idx = -1;
   for (var i = 0; i < list.length; i++) if (list[i].matchId === id) { idx = i; break; }
@@ -324,7 +328,20 @@
     var box = document.getElementById("replayWorkbench");
     if (!box) return;
     if (window.KPL_REPLAY && KPL_REPLAY.hasReplay(matchId)) {
-      KPL_REPLAY.mount(box, { matchId: matchId, battleId: battleId || "" });
+      // 分享链接带了局号时，用它覆盖默认选中的局
+      var wantBattle = battleId || "";
+      if (SHARE_SEQ) {
+        var gi = (window.KPL_GAME_INDEX || {})[matchId];
+        if (gi) {
+          for (var i = 0; i < (gi.b || []).length; i++) {
+            if (Number(gi.b[i][1]) === SHARE_SEQ) { wantBattle = gi.b[i][0]; break; }
+          }
+        }
+      }
+      KPL_REPLAY.mount(box, {
+        matchId: matchId, battleId: wantBattle,
+        initialMinute: SHARE_MIN != null && !isNaN(SHARE_MIN) ? SHARE_MIN : null
+      });
     }
   }
 

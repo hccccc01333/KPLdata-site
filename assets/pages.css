@@ -781,3 +781,7 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
            padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card2);cursor:pointer}
 .wb-toggle input{accent-color:#F6C021;width:15px;height:15px}
 .cmp-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+
+.rp-share{margin-left:8px;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:10.5px;
+          border:1px solid var(--line2);background:var(--card2);color:var(--ink2)}
+.rp-share:hover{border-color:var(--gold);color:var(--gold)}
