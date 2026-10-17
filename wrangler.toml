@@ -6,3 +6,5 @@ compatibility_date = "2026-10-17"
 directory = "."
 # 站点自带 404.html，交给静态资产路由处理
 not_found_handling = "404-page"
+# .html 直出，避免 307 重定向（分享链接/爬虫友好）
+html_handling = "none"
