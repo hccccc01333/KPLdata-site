@@ -344,3 +344,71 @@
 .champ b{font-size:13.5px;display:block}
 .champ b em{font-style:normal;font-size:10.5px;color:var(--orange);font-weight:700}
 .champ span{font-size:11px;color:var(--muted);display:block;margin-top:1px}
+
+/* ================ v4 质感升级层（最高优先级） ================ */
+/* ---- 全站氛围：顶部光斑 + 细网格 ---- */
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(900px 420px at 22% -6%, rgba(246,192,33,.075), transparent 62%),
+    radial-gradient(760px 380px at 78% -10%, rgba(77,159,232,.085), transparent 64%),
+    radial-gradient(600px 500px at 50% 108%, rgba(43,179,163,.05), transparent 60%);}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.016) 1px, transparent 1px),
+                   linear-gradient(90deg, rgba(255,255,255,.016) 1px, transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(1100px 520px at 50% 0%, #000 20%, transparent 78%);
+  -webkit-mask-image:radial-gradient(1100px 520px at 50% 0%, #000 20%, transparent 78%);}
+
+/* ---- 页面头区：底部渐变细线 ---- */
+.page-hero{position:relative}
+.page-hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:linear-gradient(90deg, transparent, rgba(246,192,33,.5) 18%, rgba(77,159,232,.45) 55%, transparent 92%);}
+.ph-kicker{position:relative;padding-left:16px}
+.ph-kicker::before{content:"";position:absolute;left:0;top:50%;width:10px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,var(--gold),transparent);transform:translateY(-50%)}
+
+/* ---- 卡片统一质感（微渐变 + 顶部内高光 + 悬浮位移） ---- */
+.panel,.tcard,.hcard,.combo-card,.player,.bp2-panel,.cmp-radar,.cmp-table,.pr-kpi,.live-card,.h2h-panel{
+  background:linear-gradient(180deg,#1220355, #101D30 46%, #0E1929);
+  background:linear-gradient(180deg,#122035, #101D30 46%, #0E1929);
+  border-color:rgba(255,255,255,.065);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 1px 2px rgba(0,0,0,.25);
+  transition:border-color .18s, transform .18s, box-shadow .18s}
+.tcard:hover,.hcard:hover,.combo-card:hover,.player:hover{
+  transform:translateY(-2px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 10px 26px rgba(0,0,0,.32)}
+
+/* ---- 按钮质感 ---- */
+.btn.primary{background:linear-gradient(180deg,#FFD34E,var(--gold) 52%,#E0A800);
+  box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 6px 18px rgba(246,192,33,.22);
+  border:1px solid rgba(0,0,0,.12)}
+.btn.primary:hover{background:linear-gradient(180deg,#FFDD6E,#F6C021 52%,#D9A800);
+  box-shadow:0 1px 0 rgba(255,255,255,.4) inset, 0 8px 24px rgba(246,192,33,.3); transform:translateY(-1px)}
+.btn.ghost{background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.11)}
+.btn.ghost:hover{background:rgba(246,192,33,.1); border-color:rgba(246,192,33,.55)}
+
+/* ---- 顶栏：更精致的玻璃 + 当前项发光 ---- */
+.topbar{background:rgba(9,15,25,.78)}
+.nav a.on{box-shadow:0 4px 14px rgba(246,192,33,.32), inset 0 1px 0 rgba(255,255,255,.35)}
+.brand-mark{box-shadow:0 4px 12px rgba(246,192,33,.3), inset 0 1px 0 rgba(255,255,255,.4)}
+
+/* ---- 表格：行悬停微金 + 表头提升 ---- */
+.tbl tbody tr:hover,.tbl tr:hover{background:rgba(246,192,33,.045)}
+.tbl thead th{background:linear-gradient(180deg, rgba(255,255,255,.025), transparent)}
+
+/* ---- 搜索框聚焦发光 ---- */
+.search-box:focus-within{box-shadow:0 0 0 3px rgba(246,192,33,.14), 0 6px 20px rgba(0,0,0,.3)}
+
+/* ---- 首页生态：轮播卡 + today 条 + entry 卡 ---- */
+.today-strip{border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(246,192,33,.16);
+  background:linear-gradient(180deg, rgba(14,25,41,.9), rgba(10,17,28,.94))}
+.today-match{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.008));
+  border-color:rgba(255,255,255,.08)}
+.entry{background:linear-gradient(180deg,#122035,#0E1929); border-color:rgba(255,255,255,.065)}
+.entry:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(0,0,0,.34)}
+.entry .ic{background:linear-gradient(160deg, rgba(246,192,33,.16), rgba(77,159,232,.12))}
+
+/* ---- 滚动条 ---- */
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(246,192,33,.35);background-clip:content-box}
