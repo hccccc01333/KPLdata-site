@@ -88,6 +88,40 @@
 </header>
 
 <main class="wrap" style="margin-top:26px">
+  <!-- V4 工作台：选两队 + 假设关键位/禁用 → 即时胜率与替代方案 -->
+  <section class="block" id="benchBlock" style="margin-top:0">
+    <div class="block-head">
+      <h2><i></i>对阵假设工作台</h2>
+      <span class="block-note mono">两队 + 关键英雄假设 → 即时胜率变化 · 下方是条件浏览与落子模拟</span>
+    </div>
+    <div class="panel" style="padding:16px 18px">
+      <div class="wb-grid">
+        <label class="fld"><span>数据范围</span><select id="wbScope"></select></label>
+        <label class="fld"><span>A 方战队</span><select id="wbA"></select></label>
+        <label class="fld"><span>B 方战队</span><select id="wbB"></select></label>
+        <label class="fld"><span>英雄定义</span><span class="wb-note mono" id="wbHint">从队伍历史使用率取边际</span></label>
+      </div>
+      <div class="wb-grid wb-grid-2">
+        <label class="fld"><span>A 关键英雄①</span><select id="wbA1"><option value="">— 不假设 —</option></select></label>
+        <label class="fld"><span>A 关键英雄②</span><select id="wbA2"><option value="">— 不假设 —</option></select></label>
+        <label class="fld"><span>B 关键英雄①</span><select id="wbB1"><option value="">— 不假设 —</option></select></label>
+        <label class="fld"><span>B 关键英雄②</span><select id="wbB2"><option value="">— 不假设 —</option></select></label>
+      </div>
+      <div class="wb-grid wb-grid-2">
+        <label class="fld"><span>A 禁用（对 B 的招牌）</span><select id="wbBanA"><option value="">— 不禁用 —</option></select></label>
+        <label class="fld"><span>B 禁用（对 A 的招牌）</span><select id="wbBanB"><option value="">— 不禁用 —</option></select></label>
+      </div>
+      <div class="wb-result" id="wbResult"></div>
+      <div class="wb-cols">
+        <div><div class="wb-cap">A 方替代方案 <em class="mono">按边际排序 · 样本≥5 局</em></div><div id="wbAltA"></div></div>
+        <div><div class="wb-cap">B 方替代方案 <em class="mono">按边际排序 · 样本≥5 局</em></div><div id="wbAltB"></div></div>
+      </div>
+      <div class="block-note mono" style="margin-top:10px" id="wbFoot"></div>
+    </div>
+  </section>
+
+  <div class="block-head"><h2><i></i>BP 条件分析</h2>
+    <span class="block-note mono">八维交叉：战队 × 对手 × 年份 × 赛事 × 赛段 × 局序 × 阵营 × 赛果</span></div>
   <div class="filterbar" style="flex-direction:column;align-items:stretch;gap:12px">
     <div class="bp-dims">
       <label class="fld"><span>视角战队</span><select id="selTeam"></select></label>
@@ -533,6 +567,183 @@
 
   renderHeroView();
   refresh();
+
+  /* ================= V4：对阵假设工作台 ================= */
+  (function bench() {
+    var TD = window.KPL_TEAM_DATA || {};
+    var S = window.KPL_SEASONS || { scopes: {} };
+    var SCOPES = [
+      ["all", "全部赛事"],
+      ["2026", "2026 年"], ["2025", "2025 年"], ["2024", "2024 年"], ["2023", "2023 年"]
+    ];
+    var SHRINK = 25;          // 先验收缩：英雄样本越少越贴近球队总体胜率
+    var PICK_W = 0.9, BAN_W = 1.1;
+
+    var logit = function (p) { p = Math.min(Math.max(p, 1e-4), 1 - 1e-4); return Math.log(p / (1 - p)); };
+    var sig = function (x) { return 1 / (1 + Math.exp(-x)); };
+    var pct1 = function (v) { return (v * 100).toFixed(1) + "%"; };
+
+    function teamsOf(scope) {
+      var d = S.scopes[scope] || S.scopes.all || {};
+      return (d.teams || []).filter(function (t) { return t.games >= 10; })
+        .sort(function (a, b) { return b.games - a.games; });
+    }
+    function teamRow(scope, name) {
+      var d = S.scopes[scope] || S.scopes.all || {};
+      return (d.teams || []).filter(function (t) { return t.team === name; })[0] || null;
+    }
+    function heroLeague(scope) {
+      var d = S.scopes[scope] || S.scopes.all || {};
+      var map = {};
+      (d.heroes || []).forEach(function (h) { map[h.name] = h; });
+      return map;
+    }
+    var LEAGUE_CACHE = {};
+    function leagueHeroes(scope) {
+      if (!LEAGUE_CACHE[scope]) LEAGUE_CACHE[scope] = heroLeague(scope);
+      return LEAGUE_CACHE[scope];
+    }
+
+    /* 某队某英雄的收缩后胜率与"相对球队基准"的 log-odds 边际 */
+    function heroEdge(team, hero, teamRowObj, scope) {
+      var pool = (TD[team] || {}).h || [];
+      var hit = pool.filter(function (r) { return r[0] === hero; })[0];
+      var lg = leagueHeroes(scope)[hero];
+      var prior = lg && lg.wr ? lg.wr : (teamRowObj ? teamRowObj.wr : 0.5);
+      var n = hit ? hit[1] : 0, w = hit ? hit[2] : 0;
+      var p = (w + SHRINK * prior) / (n + SHRINK);
+      var base = teamRowObj ? Math.min(Math.max(teamRowObj.wr, 0.2), 0.8) : 0.5;
+      var edge = logit(p) - logit(base);
+      var usage = teamRowObj && teamRowObj.games ? Math.min(1, n / Math.max(1, teamRowObj.games) * 3) : 0;
+      return { hero: hero, n: n, w: w, p: p, edge: edge, usage: usage };
+    }
+
+    function fillSelect(el, items, keep) {
+      var cur = keep ? el.value : "";
+      el.innerHTML = items.map(function (it) {
+        return '<option value="' + K.esc(it[0] || it) + '">' + K.esc(it[1] || it) + "</option>";
+      }).join("");
+      if (cur) el.value = cur;
+    }
+
+    var $id = function (x) { return document.getElementById(x); };
+
+    function refreshHeroSelects() {
+      var A = $id("wbA").value, B = $id("wbB").value;
+      var poolA = (((TD[A] || {}).h) || []).map(function (r) { return r[0]; });
+      var poolB = (((TD[B] || {}).h) || []).map(function (r) { return r[0]; });
+      var optA = [["", "— 不假设 —"]].concat(poolA.slice(0, 40).map(function (h) { return [h, h]; }));
+      var optB = [["", "— 不假设 —"]].concat(poolB.slice(0, 40).map(function (h) { return [h, h]; }));
+      ["wbA1", "wbA2"].forEach(function (id2) { fillSelect($id(id2), optA, true); });
+      ["wbB1", "wbB2"].forEach(function (id2) { fillSelect($id(id2), optB, true); });
+      fillSelect($id("wbBanA"), optB, true);   // A 禁 B 的英雄
+      fillSelect($id("wbBanB"), optA, true);   // B 禁 A 的英雄
+    }
+
+    function compute() {
+      var scope = $id("wbScope").value;
+      var A = $id("wbA").value, B = $id("wbB").value;
+      if (A === B) { $id("wbResult").innerHTML = '<div class="empty-tip">A/B 不能是同一支战队</div>'; return; }
+      var ra = teamRow(scope, A) || teamRow("all", A);
+      var rb = teamRow(scope, B) || teamRow("all", B);
+      if (!ra || !rb) { $id("wbResult").innerHTML = '<div class="empty-tip">该范围内缺少战队样本</div>'; return; }
+
+      var baseLogit = logit(ra.wr) - logit(rb.wr);
+      var p0 = sig(baseLogit);
+      var rows = [];
+      var dLogit = 0;
+      function addPick(team, hero, rowSelf, sign, kind) {
+        if (!hero) return;
+        var e = heroEdge(team, hero, rowSelf, scope);
+        var contrib = sign * e.edge * (kind === "ban" ? BAN_W * Math.max(0.35, e.usage) : PICK_W);
+        dLogit += contrib;
+        rows.push({
+          team: team, hero: hero, n: e.n, wr: e.p, edge: e.edge, contrib: contrib, kind: kind
+        });
+      }
+      addPick(A, $id("wbA1").value, ra, +1, "pick");
+      addPick(A, $id("wbA2").value, ra, +1, "pick");
+      addPick(B, $id("wbB1").value, rb, -1, "pick");
+      addPick(B, $id("wbB2").value, rb, -1, "pick");
+      addPick(B, $id("wbBanA").value, rb, -1, "ban");
+      addPick(A, $id("wbBanB").value, ra, +1, "ban");
+
+      var p1 = sig(baseLogit + dLogit);
+      var dpp = (p1 - p0) * 100;
+
+      var bar = function (p) {
+        return '<div class="wb-bar"><i style="width:' + (p * 100).toFixed(1) + '%"></i>' +
+          '<span class="wb-mid"></span></div>';
+      };
+      var detail = rows.length ? '<table class="tbl wb-tbl"><thead><tr><th>方</th><th>英雄</th><th>类型</th>' +
+        '<th class="num">队伍历史</th><th class="num">收缩胜率</th><th class="num">对胜率影响</th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          var sign = r.contrib >= 0 ? "+" : "";
+          var pp = (sig(baseLogit + r.contrib) - p0) * 100;  // 单条边际的近似影响
+          return "<tr><td>" + K.esc(r.team) + "</td><td>" + K.esc(r.hero) + "</td>" +
+            "<td>" + (r.kind === "ban" ? "禁用对手" : "选用") + "</td>" +
+            '<td class="num mono">' + r.n + " 局</td>" +
+            '<td class="num mono">' + pct1(r.wr) + "</td>" +
+            '<td class="num mono" style="color:' + (pp >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
+            sign + pp.toFixed(1) + " pp</td></tr>";
+        }).join("") + "</tbody></table>"
+        : '<div class="empty-tip">还没有假设。选几个关键英雄，看看胜率会怎么走。</div>';
+
+      $id("wbResult").innerHTML =
+        '<div class="wb-head">' +
+        '<div class="wb-side"><div class="wb-t">' + K.esc(A) + '</div><div class="wb-sub mono">' +
+        ra.games + " 局 · 胜率 " + pct1(ra.wr) + "</div>" + bar(p1) + "</div>" +
+        '<div class="wb-mid-col"><div class="wb-p0 mono">赛前基准 ' + pct1(p0) + "</div>" +
+        '<div class="wb-p1">' + pct1(p1) + "</div>" +
+        '<div class="wb-d mono" style="color:' + (dpp >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
+        (dpp >= 0 ? "+" : "") + dpp.toFixed(1) + " pp</div></div>" +
+        '<div class="wb-side r"><div class="wb-t">' + K.esc(B) + '</div><div class="wb-sub mono">' +
+        rb.games + " 局 · 胜率 " + pct1(rb.wr) + "</div>" +
+        '<div class="wb-bar r"><i style="width:' + ((1 - p1) * 100).toFixed(1) + '%"></i></div></div>' +
+        "</div>" + detail;
+
+      // 替代方案
+      ["A", "B"].forEach(function (side) {
+        var team = side === "A" ? A : B;
+        var row = side === "A" ? ra : rb;
+        var pool = ((TD[team] || {}).h || []).map(function (r) { return heroEdge(team, r[0], row, scope); })
+          .filter(function (e) { return e.n >= 5; })
+          .sort(function (x, y) { return y.edge - x.edge; }).slice(0, 6);
+        var html = pool.length ? '<div class="usage">' + pool.map(function (e) {
+          var pp = (sig(baseLogit + e.edge * PICK_W * (side === "A" ? 1 : -1)) - p0) * 100;
+          return '<a href="hero.html?id=' + encodeURIComponent(e.hero) + '">' +
+            '<span class="nm">' + K.esc(e.hero) + "</span>" +
+            '<span class="n">' + e.n + " 局</span>" +
+            '<span class="wr">' + pct1(e.p) + "</span>" +
+            '<span class="mono" style="font-size:11.5px;color:' + (pp >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
+            (pp >= 0 ? "+" : "") + pp.toFixed(1) + "pp</span></a>";
+        }).join("") + "</div>"
+          : '<div class="empty-tip">该队在所选范围内样本不足</div>';
+        $id("wbAlt" + side).innerHTML = html;
+      });
+
+      $id("wbFoot").textContent = "口径：先验收缩 k=" + SHRINK + "，选用权重 ×" + PICK_W + "、禁用权重 ×" + BAN_W +
+        "，log-odds 相加后转概率。边际来自该队历史使用该英雄的胜率，未考虑版本、阵容联动与对手反制，不等于因果结论。";
+    }
+
+    function boot() {
+      fillSelect($id("wbScope"), SCOPES);
+      var ts = teamsOf("all").map(function (t) { return [t.team, t.team]; });
+      if (!ts.length) { $id("wbResult").innerHTML = '<div class="empty-tip">缺少战队数据</div>'; return; }
+      fillSelect($id("wbA"), ts);
+      fillSelect($id("wbB"), ts);
+      if (ts.length > 1) $id("wbB").value = ts[1][0];
+      refreshHeroSelects();
+      compute();
+      ["wbScope", "wbA", "wbB"].forEach(function (id2) {
+        $id(id2).addEventListener("change", function () { refreshHeroSelects(); compute(); });
+      });
+      ["wbA1", "wbA2", "wbB1", "wbB2", "wbBanA", "wbBanB"].forEach(function (id2) {
+        $id(id2).addEventListener("change", compute);
+      });
+    }
+    boot();
+  })();
 })();
 </script>
 </body>
