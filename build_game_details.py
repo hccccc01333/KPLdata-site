@@ -165,6 +165,15 @@ def main() -> None:
     print(f"\nindex.js: {idx_path.stat().st_size/1024:.0f} KB | equip_icons.js: {eq_path.stat().st_size/1024:.0f} KB")
     print(f"matches: {len(index)} | games: {n_games} | equips: {len(equip_icons)}")
 
+    # 搜索索引跟着局索引一起刷新：新增比赛后站内搜索要能立刻搜到并深链过去
+    search_script = SITE / "build_search_index.py"
+    if search_script.exists():
+        import subprocess
+        r = subprocess.run([sys.executable, str(search_script)], cwd=str(SITE),
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        tail = (r.stdout or "").strip().splitlines()[-1:] or [""]
+        print(f"search index: {tail[0]}")
+
 
 if __name__ == "__main__":
     main()
