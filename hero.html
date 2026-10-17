@@ -95,7 +95,7 @@
       '<div class="hd-grid" style="margin-top:18px">' +
       '<div class="panel" style="grid-column:1/-1"><div class="panel-title">逐年表现 <em class="mono">出场数 / 胜率 / 禁用率</em></div>' +
       yearTrendHTML(hero.by, hero.games) + "</div>" +
-      extra +
+      (games ? extra : "") +
       '<div class="panel" style="grid-column:1/-1"><div class="panel-title">数据边界说明</div>' +
       '<div class="block-note">这个英雄暂时没有逐局明细（最近出场、同位置对位、三人组合需要分钟级 / BP 明细）。' +
       "上面是从全部赛事聚合出来的可核对数据；本赛季高频英雄既有聚合也有逐局明细。" +
