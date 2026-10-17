@@ -1,0 +1,8 @@
+# Cloudflare Workers 静态资产配置（纯静态站，无构建）
+name = "kpldata-site"
+compatibility_date = "2026-10-17"
+
+[assets]
+directory = "."
+# 站点自带 404.html，交给静态资产路由处理
+not_found_handling = "404-page"
