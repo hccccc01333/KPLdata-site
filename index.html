@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KPL 数据中心 · 2026 赛事数据 · 赛程 / 战队 / 选手 / 英雄</title>
+<meta name="description" content="KPL 赛事数据产品：赛程比分、战队与选手数据、英雄梯度、比赛复盘与胜负模拟。数据来自腾讯 KPL 公开赛事接口。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css?v=32">
+<link rel="stylesheet" href="assets/pages.css?v=32">
+</head>
+<body data-page="index.html">
+<header id="siteHeader"></header>
+
+<section class="carousel">
+  <canvas id="dome"></canvas>
+  <div class="slides" id="slides"></div>
+  <button class="car-nav prev" id="carPrev" aria-label="上一张">‹</button>
+  <button class="car-nav next" id="carNext" aria-label="下一张">›</button>
+  <div class="car-dots" id="carDots"></div>
+</section>
+<div class="today-strip"><div class="wrap today-in" id="todayStrip"></div></div>
+
+<main class="wrap">
+
+  <section class="block">
+    <div class="block-head">
+      <h2><i></i>最新战报</h2>
+      <a class="more" href="schedule.html">全部赛程 →</a>
+    </div>
+    <div class="games-grid" style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">
+      <div class="panel" style="padding:10px 18px">
+        <div class="result-list" id="recentList"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">即将开赛</div>
+        <div class="upcoming-list" id="upcomingList"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="scopebar reveal" id="scopeBar" style="margin-top:26px"></div>
+
+  <section class="block" style="margin-top:22px">
+    <div class="block-head">
+      <h2><i></i>战队排行榜</h2>
+      <a class="more" href="teams.html">完整榜单 →</a>
+    </div>
+    <div class="panel table-panel">
+      <table class="tbl">
+        <thead><tr><th class="num">#</th><th>战队</th><th>大场战绩</th><th class="num">单局胜率</th><th class="num">已打局数</th><th class="num">场均金差</th><th>档位</th></tr></thead>
+        <tbody id="stTop"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2><i></i>热门英雄</h2>
+      <a class="more" href="heroes.html">英雄梯度 →</a>
+    </div>
+    <div class="hero-grid" id="heroTop"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2><i></i>选手榜</h2>
+      <a class="more" href="players.html">完整榜单 →</a>
+    </div>
+    <div class="player-grid" id="plTop"></div>
+  </section>
+
+  <section class="block">
+    <div class="block-head"><h2><i></i>工具与数据</h2></div>
+    <div class="entry-grid">
+      <a class="entry" href="simulator.html">
+        <span class="ic" id="icSim"></span>
+        <div><h3>胜负模拟器</h3><p>选择两支战队与赛制，即时推算单局概率、大场胜率与局分分布</p></div>
+        <span class="go" id="icGo1"></span></a>
+      <a class="entry" href="heroes.html">
+        <span class="ic" id="icHero"></span>
+        <div><h3>英雄梯度与对位</h3><p>出场 / 胜率 / 禁用率榜单，同位置历史对位表（含样本熔断）</p></div>
+        <span class="go" id="icGo2"></span></a>
+      <a class="entry" href="combos.html">
+        <span class="ic" id="icCombo"></span>
+        <div><h3>英雄组合</h3><p>双人/三人组合的协同加成——哪些英雄配在一起真的能赢</p></div>
+        <span class="go" id="icGo4"></span></a>
+      <a class="entry" href="h2h.html">
+        <span class="ic" id="icH2h"></span>
+        <div><h3>交手记录</h3><p>任意两支战队的历史交锋全记录与逐年走势</p></div>
+        <span class="go" id="icGo5"></span></a>
+      <a class="entry" href="about.html">
+        <span class="ic" id="icData"></span>
+        <div><h3>数据说明</h3><p>数据来源、统计口径、更新方式与免责说明</p></div>
+        <span class="go" id="icGo3"></span></a>
+    </div>
+  </section>
+
+</main>
+
+<footer id="siteFooter" class="footer"></footer>
+
+<script src="assets/data.js?v=32"></script>
+<script src="assets/details.js?v=32"></script>
+<script src="assets/seasons.js?v=32"></script>
+<script src="assets/schedule_all.js?v=32"></script>
+<script src="assets/common.js?v=32"></script>
+<script>
+(function () {
+  "use strict";
+  var D = KPL.data, DT = KPL.details, K = KPL, $ = function (s) { return document.querySelector(s); };
+  K.init();
+
+  var season = D.season;
+
+  /* ---------- 今日赛场 ---------- */
+  (function () {
+    var ups = D.upcoming || [];
+    if (!ups.length) { $("#todayStrip").innerHTML = '<span class="today-label">' + K.icon("clock", 15) + "本赛季赛程已全部结束</span>"; return; }
+    var next = ups[0];
+    var target = new Date(next.date + "T" + (next.time || "17:00") + ":00");
+    var html = '<span class="today-label"><i></i>' + K.esc(K.dateCN(next.date)) + " · " + K.esc(K.weekdayCN(next.date)) +
+      " · 下一场</span>";
+    var LIVE_ROWS = (window.KPL_SCHEDULE_ALL || []).filter(function (r) { return r.st === 1; });
+    html += ups.slice(0, 2).map(function (u, i) {
+      var t = new Date(u.date + "T" + (u.time || "17:00") + ":00");
+      var liveRow = LIVE_ROWS.filter(function (r) { return r.team1 === u.team1 && r.team2 === u.team2; })[0];
+      var inner;
+      if (liveRow) {
+        inner = '<a class="cd" href="match.html?id=' + K.esc(liveRow.matchId) +
+          '" style="text-decoration:none">' + K.liveBadge() +
+          ' <span class="mono" style="color:var(--gold);font-weight:800">' + liveRow.score1 + " : " + liveRow.score2 + "</span></a>";
+      } else if (K.isLive({ done: false, date: u.date, time: u.time })) {
+        inner = K.liveBadge();
+      } else {
+        inner = (i === 0 ? '<span class="cd" id="cd0">—</span>' : '<span class="cd">待开赛</span>');
+      }
+      var status = '<span class="tstat">' + inner + "</span>";
+      return '<div class="today-match" data-mid="' + K.esc(u.matchId || "") + '">' +
+        '<span class="t">' + K.esc(u.time) + "</span>" +
+        (u.icon1 ? '<img src="' + K.esc(u.icon1) + '" alt="">' : "") +
+        '<span class="tm">' + K.esc(u.team1) + " vs " + K.esc(u.team2) + "</span>" +
+        (u.icon2 ? '<img src="' + K.esc(u.icon2) + '" alt="">' : "") +
+        status + "</div>";
+    }).join("");
+    html += '<a class="btn sm ghost" style="margin-left:auto" href="schedule.html">全部赛程</a>';
+    $("#todayStrip").innerHTML = html;
+    var cd = document.getElementById("cd0");
+    if (cd) K.countdown(target.getTime(), cd);
+  })();
+
+  /* ---------- 实时比分与状态覆盖（live.js，每 60 秒） ---------- */
+  function applyTodayLive() {
+    var sc = document.createElement("script");
+    sc.src = "assets/live.js?ts=" + Date.now();
+    sc.onload = function () {
+      sc.remove();
+      var L = window.KPL_LIVE || {};
+      (L.today || []).forEach(function (t) {
+        var slot = document.querySelector('.today-match[data-mid="' + t.matchId + '"] .tstat');
+        if (slot && (t.st === 1 || t.st === 2)) {
+          slot.innerHTML = '<a href="match.html?id=' + encodeURIComponent(t.matchId) + '" style="text-decoration:none" class="cd">' +
+            (t.st === 1 ? K.liveBadge() : '<span class="chip done">已结束</span>') +
+            ' <span class="mono" style="color:var(--gold);font-weight:800">' + t.score1 + " : " + t.score2 + "</span></a>";
+        }
+        /* 最新战报列表的比分覆盖 */
+        var rr = document.querySelector('#recentList [data-mid="' + t.matchId + '"] .score');
+        if (rr && (t.st === 1 || t.st === 2)) {
+          rr.innerHTML = '<span class="' + (t.score1 > t.score2 ? "w" : "") + '">' + t.score1 +
+            '</span> : <span class="' + (t.score2 > t.score1 ? "w" : "") + '">' + t.score2 + "</span>";
+        }
+        var row = document.querySelector('.up-row[data-mid="' + t.matchId + '"]');
+        if (row) {
+          var chip = row.querySelector(".chip");
+          if (chip) {
+            if (t.st === 1) {
+              chip.outerHTML = '<a class="chip live" href="match.html?id=' + encodeURIComponent(t.matchId) +
+                '" style="text-decoration:none"><i></i>进行中 ' + t.score1 + " : " + t.score2 + "</a>";
+            } else if (t.st === 2) {
+              chip.outerHTML = '<a class="chip done" href="match.html?id=' + encodeURIComponent(t.matchId) +
+                '" style="text-decoration:none">已结束 ' + t.score1 + " : " + t.score2 + "</a>";
+            }
+          }
+        }
+      });
+    };
+    sc.onerror = function () { sc.remove(); };
+    document.head.appendChild(sc);
+  }
+  applyTodayLive();
+  setInterval(applyTodayLive, 30000);
+
+  /* ---------- 轮播（产品文案） ---------- */
+  var slides = [
+    {
+      kicker: season + " · 进行中",
+      h: 'KPL 赛事数据，<span class="hl">一站查完。</span>',
+      p: "赛程比分、战队与选手数据、英雄梯度、逐局复盘与胜负模拟——打开就能用。",
+      cta: [["schedule.html", "查看今日赛程", "primary"], ["simulator.html", "试试模拟器", "ghost"]],
+      mini: (function () {
+        var T = (window.KPL_SEASONS && KPL_SEASONS.scopes.all.totals) || { matches: 2874, battles: 11100 };
+        return [["大场", K.fmtInt(T.matches)], ["对局", K.fmtInt(T.battles)], ["选手", "600+ 人"], ["英雄", "130+ 个"]];
+      })()
+    },
+    {
+      kicker: "逐局复盘 · 分钟级",
+      h: '每一局，<span class="hl">都能看到胜负是怎么失去的。</span>',
+      p: "最近 14 场大场支持逐局复盘：胜率曲线、阶段切片、资源转折与 BP 阵容一屏看完。",
+      cta: [["match.html?id=2026073103", "看一场翻盘局", "primary"], ["schedule.html", "选择比赛", "ghost"]],
+      mini: [["可复盘详情", "14 场"], ["曲线粒度", "分钟级"], ["事件标记", "一血 / 资源 / 推塔"]]
+    },
+    {
+      kicker: "榜单与梯度 · 实时滚动",
+      h: '战队、选手、英雄，<span class="hl">每周都在变。</span>',
+      p: "战队战力榜、英雄强度梯度、选手数据榜——每个榜单都能按赛季切换查看。",
+      cta: [["teams.html", "战队排行榜", "primary"], ["heroes.html", "英雄梯度", "ghost"]],
+      mini: [["覆盖", "2019–2026"], ["联赛", "33 个"], ["英雄图鉴", "130+ 个"]]
+    }
+  ];
+  $("#slides").innerHTML = slides.map(function (s, i) {
+    return '<div class="slide' + (i === 0 ? " on" : "") + '" data-i="' + i + '"><div class="wrap">' +
+      '<div class="slide-kicker mono">' + K.esc(s.kicker) + "</div><h1>" + s.h + "</h1><p>" + K.esc(s.p) + "</p>" +
+      '<div class="slide-mini">' + s.mini.map(function (m) {
+        return "<span>" + K.esc(m[0]) + "<b>" + K.esc(m[1]) + "</b></span>";
+      }).join("") + "</div>" +
+      '<div class="slide-cta">' + s.cta.map(function (c) {
+        return '<a class="btn ' + c[2] + '" href="' + c[0] + '">' + K.esc(c[1]) + "</a>";
+      }).join("") + "</div></div></div>";
+  }).join("");
+  $("#carDots").innerHTML = slides.map(function (_, i) {
+    return '<button data-i="' + i + '"' + (i === 0 ? ' class="on"' : "") + ' aria-label="第 ' + (i + 1) + ' 张"></button>';
+  }).join("");
+  var cur = 0, timer = null;
+  function go(i) {
+    cur = (i + slides.length) % slides.length;
+    document.querySelectorAll(".slide").forEach(function (s) { s.classList.toggle("on", +s.getAttribute("data-i") === cur); });
+    document.querySelectorAll(".car-dots button").forEach(function (b) { b.classList.toggle("on", +b.getAttribute("data-i") === cur); });
+  }
+  function auto() { timer = setInterval(function () { go(cur + 1); }, 7000); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+  $("#carPrev").addEventListener("click", function () { stop(); go(cur - 1); auto(); });
+  $("#carNext").addEventListener("click", function () { stop(); go(cur + 1); auto(); });
+  $("#carDots").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return; stop(); go(+b.getAttribute("data-i")); auto();
+  });
+  document.querySelector(".carousel").addEventListener("mouseenter", stop);
+  document.querySelector(".carousel").addEventListener("mouseleave", auto);
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) auto();
+
+  /* ---------- 图标点缀 ---------- */
+  $("#icSim").innerHTML = K.icon("sliders", 22);
+  $("#icHero").innerHTML = K.icon("crown", 22);
+  $("#icData").innerHTML = K.icon("chart", 22);
+  $("#icCombo").innerHTML = K.icon("layers", 22);
+  $("#icH2h").innerHTML = K.icon("shield", 22);
+  $("#icGo4").innerHTML = K.icon("arrow", 16);
+  $("#icGo5").innerHTML = K.icon("arrow", 16);
+  ["icGo1", "icGo2", "icGo3"].forEach(function (id) { $("#" + id).innerHTML = K.icon("arrow", 18); });
+
+  /* ---------- 最新战报 ---------- */
+  $("#recentList").innerHTML = (D.recent || []).slice(0, 8).map(K.resultRow).join("");
+  applyTodayLive();
+  var groups = [];
+  (D.upcoming || []).slice(0, 5).forEach(function (u) {
+    var last = groups[groups.length - 1];
+    if (last && last.date === u.date) last.items.push(u);
+    else groups.push({ date: u.date, items: [u] });
+  });
+  $("#upcomingList").innerHTML = groups.map(function (g) {
+    return '<div class="day"><div class="day-h">' + K.esc(K.dateCN(g.date)) +
+      "<span>" + K.esc(K.weekdayCN(g.date)) + "</span></div>" +
+      g.items.map(function (u) {
+        return '<div class="up-row" data-mid="' + K.esc(u.matchId || "") + '"><div class="up-time">' + K.esc(u.time) + "</div>" +
+          K.side(u.team1, u.icon1, false) +
+          '<div style="text-align:center;color:var(--muted);font-size:11px">VS</div>' +
+          K.side(u.team2, u.icon2, true) + '<div class="chip next">未开始</div></div>';
+      }).join("") + "</div>";
+  }).join("");
+
+  /* ---------- 排行榜（按数据范围） ---------- */
+  function renderBoards(scopeId) {
+    var d = K.scopeOf(scopeId);
+    /* 战队榜前 8（按单局胜率，样本 >= 30 局） */
+    var teams = (d.teams || []).filter(function (t) { return t.games >= 30; })
+      .slice().sort(function (a, b) { return b.wr - a.wr; }).slice(0, 8);
+    $("#stTop").innerHTML = teams.map(function (t, i) {
+      var tier = K.tierOf(t.wr);
+      return "<tr>" +
+        '<td class="num"><span class="rank' + (i < 3 ? " r" + (i + 1) : "") + '">' + (i + 1) + "</span></td>" +
+        '<td><span class="team-cell">' + (t.icon ? '<img src="' + K.esc(t.icon) + '" alt="" loading="lazy">' : "") +
+        K.esc(t.team) + "</span></td>" +
+        '<td class="num">' + t.mWin + "-" + t.mLoss + "</td>" +
+        '<td class="num">' + K.pct(t.wr) + "</td>" +
+        '<td class="num">' + t.games + "</td>" +
+        '<td class="num" style="color:' + (t.goldDiff >= 0 ? "var(--blue)" : "var(--muted)") + '">' + K.signed(t.goldDiff) + "</td>" +
+        '<td><span class="tier ' + tier + '">' + tier + "</span></td></tr>";
+    }).join("");
+    /* 热门英雄 top 12（按出场局数） */
+    $("#heroTop").innerHTML = (d.heroes || []).slice(0, 12).map(K.heroCard).join("");
+    /* 选手榜前 8（按 KDA，样本 >= 30 局） */
+    var players = (d.players || []).filter(function (p) { return p.games >= 30; })
+      .slice().sort(function (a, b) { return b.kda - a.kda; }).slice(0, 8);
+    $("#plTop").innerHTML = players.map(function (p, i) {
+      var ava = p.icon ? '<img class="p-ava" src="' + K.esc(p.icon) + '" alt="" loading="lazy">'
+        : '<span class="p-ava ph">' + K.esc(String(p.name).slice(0, 1)) + "</span>";
+      return '<a class="player reveal" href="player.html?id=' + encodeURIComponent(p.name) + '" style="transition-delay:' + Math.min(i * 22, 200) + 'ms">' + ava +
+        '<div class="p-main"><div class="p-top"><span class="p-name"><span class="nm">' + K.esc(p.name) + "</span>" +
+        (p.pos ? "<em>" + K.esc(p.pos) + "</em>" : "") + "</span>" +
+        '<span class="p-kda">' + p.kda.toFixed(1) + "<small>KDA</small></span></div>" +
+        '<div class="p-team">' + (p.teamIcon ? '<img src="' + K.esc(p.teamIcon) + '" alt="">' : "") +
+        "<b>" + K.esc(p.team) + "</b><span>· " + p.games + " 局 · 胜率 " + K.pct(p.wr, 0) + " · MVP " + p.mvp + "</span></div></div></a>";
+    }).join("");
+    K.refresh();
+  }
+  renderBoards(K.scopeBar("#scopeBar", renderBoards));
+
+  K.refresh();
+})();
+</script>
+<script type="module" src="assets/hero3d.js?v=32"></script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>对比工具 · KPL 数据中心</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css?v=32">
+<link rel="stylesheet" href="assets/pages.css?v=32">
+<style>
+.cmp-grid{display:grid;grid-template-columns:560px minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:1100px){.cmp-grid{grid-template-columns:1fr}}
+.cmp-radar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.cmp-radar svg{width:100%;height:auto;display:block}
+.cmp-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;justify-content:center}
+.cmp-legend span{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700}
+.cmp-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.cmp-table{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
+.cmp-table table{width:100%;border-collapse:collapse}
+.cmp-table th,.cmp-table td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;font-size:13.5px}
+.cmp-table th:first-child,.cmp-table td:first-child{text-align:left;color:var(--muted);font-size:12.5px}
+.cmp-table thead th{font-size:12px;color:var(--muted);font-weight:600}
+.cmp-table td b{font-family:var(--mono);font-weight:800}
+.cmp-head{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.cmp-head img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:1px solid var(--line2)}
+.cmp-tip{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.7}
+.pickers{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.pickers .fld{min-width:158px}
+</style>
+</head>
+<body data-page="compare.html">
+<header id="siteHeader"></header>
+
+<header class="page-hero">
+  <div class="wrap">
+    <div class="ph-kicker mono">COMPARE · 对比工具</div>
+    <h1>对比工具</h1>
+    <p>把 2–4 个对象放在一起对比：英雄、选手或战队，还可看多年份趋势。雷达图显示<b>在当前数据范围内的相对水平</b>
+      （越靠外越强），右侧表格给出原始数字。只看两队的历史交锋？用
+      <a href="h2h.html" style="color:var(--gold);font-weight:700">「交手记录」</a>。</p>
+  </div>
+</header>
+
+<main class="wrap" style="margin-top:26px">
+  <div class="scopebar" id="scopeBar"></div>
+
+  <div class="filterbar">
+    <div class="seg" id="modeTabs">
+      <button data-mode="hero" class="on">英雄对比</button>
+      <button data-mode="player">选手对比</button>
+      <button data-mode="team">战队对比</button>
+      <button data-mode="trend-team">战队趋势</button>
+      <button data-mode="trend-hero">英雄趋势</button>
+    </div>
+    <label class="fld" id="metricWrap" style="display:none"><span>趋势指标</span>
+      <select id="trendMetric">
+        <option value="wr" selected>胜率</option>
+        <option value="ban">禁用率</option>
+      </select>
+    </label>
+    <div class="pickers" id="pickers"></div>
+  </div>
+
+  <div class="cmp-grid">
+    <div class="cmp-radar">
+      <div id="radar"></div>
+      <div class="cmp-legend" id="legend"></div>
+    </div>
+    <div class="cmp-table">
+      <table id="cmpTable"></table>
+      <div class="cmp-tip" id="cmpTip"></div>
+    </div>
+  </div>
+</main>
+
+<footer id="siteFooter" class="footer"></footer>
+
+<script src="assets/data.js?v=32"></script>
+<script src="assets/seasons.js?v=32"></script>
+<script src="assets/common.js?v=32"></script>
+<script>
+(function () {
+  "use strict";
+  var D = KPL.data, K = KPL, $ = function (s) { return document.querySelector(s); };
+  K.init();
+
+  var COLORS = ["#F6C021", "#4D9FE8", "#E5484D", "#2BB3A3"];
+  var curScope = "all", mode = "hero", MAX = 4;
+
+  /* 每种模式：数据源、聚合维度、取值函数、显示格式 */
+  var MODES = {
+    hero: {
+      list: function (d) {
+        return (d.heroes || []).slice().sort(function (a, b) { return b.games - a.games; }).slice(0, 90);
+      },
+      name: function (x) { return x.name; },
+      icon: function (x) { return x.icon; },
+      target: "hero.html?id=",
+      dims: [
+        { label: "胜率", get: function (x, d) { return x.wr * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "选用率", get: function (x, d) { return x.games / Math.max(1, d.totals.battles) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "禁用率", get: function (x, d) { return x.bans / Math.max(1, d.totals.battles) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "承伤", get: function (x) { return x.bh; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "KDA", get: function (x) { return x.kda; }, fmt: function (v) { return v.toFixed(2); } }
+      ]
+    },
+    player: {
+      list: function (d) {
+        return (d.players || []).filter(function (p) { return p.games >= 8; }).slice(0, 90);
+      },
+      name: function (x) { return x.name; },
+      icon: function (x) { return x.icon; },
+      target: "players.html?q=",
+      dims: [
+        { label: "KDA", get: function (x) { return x.kda; }, fmt: function (v) { return v.toFixed(2); } },
+        { label: "胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "MVP 率", get: function (x) { return x.mvp / Math.max(1, x.games) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "参团率", get: function (x) { return x.part; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return String(Math.round(v)); } }
+      ]
+    },
+    team: {
+      list: function (d) {
+        return (d.teams || []).filter(function (t) { return t.matches >= 10; })
+          .slice().sort(function (a, b) { return b.wr - a.wr; });
+      },
+      name: function (x) { return x.team; },
+      icon: function (x) { return x.icon; },
+      target: "teams.html",
+      dims: [
+        { label: "单局胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "大场胜率", get: function (x) { return x.mWin / Math.max(1, x.matches) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
+        { label: "场均金差", get: function (x) { return x.goldDiff; }, fmt: function (v) { return (v > 0 ? "+" : "") + Math.round(v); } },
+        { label: "场均击杀差", get: function (x) { return x.killDiff; }, fmt: function (v) { return (v > 0 ? "+" : "") + v.toFixed(1); } },
+        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return String(Math.round(v)); } }
+      ]
+    }
+  };
+
+  var picked = [null, null, null, null];
+
+  var TREND = {
+    "trend-team": {
+      list: function (d) {
+        return (d.teams || []).filter(function (t) { return t.by && t.by.length >= 3; })
+          .slice().sort(function (a, b) { return b.wr - a.wr; });
+      },
+      name: function (x) { return x.team; },
+      icon: function (x) { return x.icon; }
+    },
+    "trend-hero": {
+      list: function (d) {
+        return (d.heroes || []).filter(function (h) { return h.by && h.by.length >= 3; });
+      },
+      name: function (x) { return x.name; },
+      icon: function (x) { return x.icon; }
+    }
+  };
+
+  function currentList() {
+    var C = TREND[mode] || MODES[mode];
+    return C.list(K.scopeOf(curScope));
+  }
+  function curName(x) { return (TREND[mode] || MODES[mode]).name(x); }
+  function curIcon(x) { return (TREND[mode] || MODES[mode]).icon(x); }
+
+  function populatePickers(keep) {
+    var list = currentList();
+    var defaults = list.slice(0, 3).map(function (x) { return curName(x); });
+    $("#pickers").innerHTML = [0, 1, 2, 3].map(function (i) {
+      var opts = '<option value="">— 不参与 —</option>' + list.map(function (x) {
+        return '<option>' + K.esc(curName(x)) + "</option>";
+      }).join("");
+      return '<label class="fld"><span>对象 ' + (i + 1) + '</span><select id="sel' + i + '">' + opts + "</select></label>";
+    }).join("");
+    [0, 1, 2, 3].forEach(function (i) {
+      var sel = $("#sel" + i);
+      var want = picked[i] || (i < 3 ? defaults[i] || "" : "");
+      if ([].slice.call(sel.options).some(function (o) { return o.value === want; })) sel.value = want;
+      sel.addEventListener("change", function () {
+        picked = [0, 1, 2, 3].map(function (j) { return $("#sel" + j).value; });
+        render();
+      });
+    });
+    picked = [0, 1, 2, 3].map(function (j) { return $("#sel" + j).value; });
+  }
+
+  function trendMetricIdx() {
+    var sel = document.getElementById("trendMetric");
+    return (sel && sel.value === "ban") ? 3 : 2;
+  }
+
+  function renderTrend(chosen) {
+    if (chosen.length < 1) {
+      $("#radar").innerHTML = '<div class="empty-tip" style="padding:80px 20px">请至少选择 1 个对象</div>';
+      $("#legend").innerHTML = "";
+      $("#cmpTable").innerHTML = "";
+      $("#cmpTip").textContent = "";
+      return;
+    }
+    var years = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
+    var n = years.length;
+    var W = 640, H = 470, PL = 46, PR = 16, PT = 26, PB = 40;
+    var mi = trendMetricIdx();
+    var vals = [];
+    chosen.forEach(function (o) { (o.by || []).forEach(function (b) { if (b[mi] != null) vals.push(b[mi] * 100); }); });
+    var lo = Math.max(0, Math.min.apply(null, vals.length ? vals : [40]) - 6);
+    var hi = Math.min(100, Math.max.apply(null, vals.length ? vals : [60]) + 6);
+    if (hi - lo < 20) { var mid = (hi + lo) / 2; lo = Math.max(0, mid - 12); hi = Math.min(100, mid + 12); }
+    var X = function (y) { return PL + (y - 2019) / (n - 1) * (W - PL - PR); };
+    var Y = function (p) { return PT + (1 - (p - lo) / (hi - lo)) * (H - PT - PB); };
+    var svg = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="赛季趋势对比">';
+    [lo, (lo + hi) / 2, hi].forEach(function (g) {
+      svg += '<line x1="' + PL + '" y1="' + Y(g).toFixed(1) + '" x2="' + (W - PR) + '" y2="' + Y(g).toFixed(1) +
+        '" stroke="#1D2E47" stroke-dasharray="' + (Math.abs(g - (lo + hi) / 2) < 0.01 ? "0" : "4 6") + '"/>' +
+        '<text x="' + (PL - 8) + '" y="' + (Y(g) + 4).toFixed(1) + '" text-anchor="end" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' + Math.round(g) + "%</text>";
+    });
+    years.forEach(function (y) {
+      svg += '<text x="' + X(y).toFixed(1) + '" y="' + (H - 14) + '" text-anchor="middle" font-size="11" fill="#9FB3CE" font-family="Inter,monospace">' + y + "</text>";
+    });
+    chosen.forEach(function (o, ci) {
+      var color = COLORS[ci % COLORS.length];
+      var by = {};
+      (o.by || []).forEach(function (b) { by[b[0]] = b[mi]; });
+      var pts = [], dots = "";
+      years.forEach(function (y) {
+        if (by[y] != null) {
+          var x = X(y).toFixed(1), yy = Y(by[y] * 100).toFixed(1);
+          pts.push(x + "," + yy);
+          dots += '<circle cx="' + x + '" cy="' + yy + '" r="3.4" fill="' + color + '"></circle>' +
+            '<text x="' + x + '" y="' + (parseFloat(yy) - 9).toFixed(1) + '" text-anchor="middle" font-size="10" fill="' + color + '" font-family="Inter,monospace">' + Math.round(by[y] * 100) + "%</text>";
+        }
+      });
+      svg += '<polyline points="' + pts.join(" ") + '" fill="none" stroke="' + color + '" stroke-width="2.2" stroke-linejoin="round"/>' + dots;
+    });
+    svg += "</svg>";
+    $("#radar").innerHTML = svg;
+    $("#legend").innerHTML = chosen.map(function (o, ci) {
+      var ic = curIcon(o);
+      return "<span><i style='background:" + COLORS[ci % COLORS.length] + "'></i>" +
+        (ic ? '<img src="' + K.esc(ic) + '" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover">' : "") +
+        K.esc(curName(o)) + "</span>";
+    }).join("");
+    var head = "<thead><tr><th>年份</th>" + chosen.map(function (o) {
+      var ic = curIcon(o);
+      return '<th><span class="cmp-head">' + (ic ? '<img src="' + K.esc(ic) + '" alt="">' : "") + K.esc(curName(o)) + "</span></th>";
+    }).join("") + "</tr></thead>";
+    var body = "<tbody>" + years.filter(function (y) {
+      return chosen.some(function (o) { return (o.by || []).some(function (b) { return b[0] === y; }); });
+    }).map(function (y) {
+      return "<tr><td>" + y + "</td>" + chosen.map(function (o) {
+        var row = (o.by || []).filter(function (b) { return b[0] === y; })[0];
+        return row && row[mi] != null ? "<td><b>" + Math.round(row[mi] * 100) + '%</b> <small style="color:var(--muted)">(' + row[1] + " 局)</small></td>"
+                   : '<td><span style="color:var(--muted)">—</span></td>';
+      }).join("") + "</tr>";
+    }).join("") + "</tbody>";
+    $("#cmpTable").innerHTML = head + body;
+    $("#cmpTip").textContent = "折线为该对象逐年的" + (mi === 3 ? "禁用率" : "胜率") +
+      "变化（括号内为当年局数）；空白年份表示当年出场不足 5 局。" + (mi === 3 && mode === "trend-team" ? "（战队无禁用率数据）" : "");
+  }
+
+  function render() {
+    var d = K.scopeOf(curScope);
+    var list = currentList();
+    var chosen = [];
+    var seen = {};
+    picked.forEach(function (name) {
+      if (!name || seen[name]) return;
+      var obj = list.filter(function (x) { return curName(x) === name; })[0];
+      if (obj) { chosen.push(obj); seen[name] = 1; }
+    });
+    if (TREND[mode]) { renderTrend(chosen); return; }
+    var M = MODES[mode];
+
+    if (chosen.length < 2) {
+      $("#radar").innerHTML = '<div class="empty-tip" style="padding:80px 20px">请至少选择 2 个对象</div>';
+      $("#legend").innerHTML = "";
+      $("#cmpTable").innerHTML = "";
+      $("#cmpTip").textContent = "";
+      return;
+    }
+
+    /* 分位归一化：每维取范围内全部对象的值，算被选对象所处的百分位 */
+    var series = chosen.map(function (obj, ci) {
+      return { name: M.name(obj), obj: obj, color: COLORS[ci] };
+    });
+    var dims = M.dims.map(function (dim) {
+      var all = list.map(function (x) { return dim.get(x, d); });
+      var sorted = all.slice().sort(function (a, b) { return a - b; });
+      return {
+        label: dim.label,
+        fmt: dim.fmt,
+        values: series.map(function (se) {
+          var v = dim.get(se.obj, d);
+          var below = 0;
+          for (var i = 0; i < sorted.length; i++) { if (sorted[i] < v) below++; else break; }
+          var rank = sorted.length > 1 ? below / (sorted.length - 1) * 100 : 50;
+          return { raw: v, score: Math.max(4, Math.min(100, rank)) };
+        })
+      };
+    });
+
+    /* 雷达图 */
+    var W = 560, H = 472, CX = 280, CY = 246, R = 168, n = dims.length;
+    function pt(i, r) {
+      var a = -Math.PI / 2 + i * 2 * Math.PI / n;
+      return [CX + Math.cos(a) * r, CY + Math.sin(a) * r];
+    }
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="对比雷达图">';
+    for (var ring = 1; ring <= 4; ring++) {
+      var rr = R * ring / 4;
+      var ringPts = dims.map(function (_, i) { return pt(i, rr).map(function (v) { return v.toFixed(1); }).join(","); }).join(" ");
+      s += '<polygon points="' + ringPts + '" fill="' + (ring === 4 ? "rgba(77,159,232,.03)" : "none") +
+        '" stroke="#1D2E47" stroke-width="1"/>';
+    }
+    dims.forEach(function (dim, i) {
+      var p = pt(i, R);
+      s += '<line x1="' + CX + '" y1="' + CY + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) + '" stroke="#1D2E47"/>';
+      var lp = pt(i, R + 36);
+      var anchor = lp[0] < CX - 12 ? "end" : lp[0] > CX + 12 ? "start" : "middle";
+      s += '<text x="' + lp[0].toFixed(1) + '" y="' + (lp[1] + 4).toFixed(1) + '" text-anchor="' + anchor +
+        '" font-size="12.5" fill="#9FB3CE" font-family="Inter,PingFang SC,sans-serif">' + K.esc(dim.label) + "</text>";
+    });
+    series.forEach(function (se, ci) {
+      var pts = dims.map(function (dim, i) {
+        return pt(i, R * dim.values[ci].score / 100).map(function (v) { return v.toFixed(1); }).join(",");
+      }).join(" ");
+      s += '<polygon points="' + pts + '" fill="' + se.color + '" fill-opacity=".12" stroke="' + se.color +
+        '" stroke-width="2" stroke-linejoin="round"/>';
+      dims.forEach(function (dim, i) {
+        var p = pt(i, R * dim.values[ci].score / 100);
+        s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill="' + se.color + '"/>';
+      });
+    });
+    s += "</svg>";
+    $("#radar").innerHTML = s;
+
+    $("#legend").innerHTML = series.map(function (se) {
+      var ic = M.icon(se.obj);
+      return "<span><i style=\"background:" + se.color + '"></i>' +
+        (ic ? '<img src="' + K.esc(ic) + '" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover">' : "") +
+        K.esc(se.name) + "</span>";
+    }).join("");
+
+    /* 对照表 */
+    var head = "<thead><tr><th>指标</th>" + series.map(function (se) {
+      var ic = M.icon(se.obj);
+      return '<th><span class="cmp-head">' + (ic ? '<img src="' + K.esc(ic) + '" alt="">' : "") +
+        K.esc(se.name) + "</span></th>";
+    }).join("") + "</tr></thead>";
+    var body = "<tbody>" + dims.map(function (dim) {
+      var best = Math.max.apply(null, dim.values.map(function (v) { return v.raw; }));
+      return "<tr><td>" + K.esc(dim.label) + "</td>" + dim.values.map(function (v) {
+        return "<td><b" + (v.raw === best ? ' style="color:var(--gold)"' : "") + ">" + dim.fmt(v.raw) + "</b></td>";
+      }).join("") + "</tr>";
+    }).join("") + "</tbody>";
+    $("#cmpTable").innerHTML = head + body;
+    $("#cmpTip").textContent = "雷达图上的位置 = 该指标在「" + K.scopeName(curScope) +
+      "」范围内的相对水平（外圈 = 更强）；表格中每行最高值以金色标出。";
+  }
+
+  $("#modeTabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("on", x === b); });
+    mode = b.getAttribute("data-mode");
+    $("#metricWrap").style.display = (mode === "trend-hero") ? "" : "none";
+    picked = [null, null, null, null];
+    populatePickers();
+    render();
+  });
+
+  document.getElementById("trendMetric").addEventListener("change", render);
+  curScope = K.scopeBar("#scopeBar", function (id) {
+    curScope = id;
+    picked = [null, null, null, null];
+    populatePickers();
+    render();
+  });
+  populatePickers();
+  render();
+})();
+</script>
+</body>
+</html>

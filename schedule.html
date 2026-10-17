@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>赛程中心 · KPL 数据中心</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css?v=32">
+<link rel="stylesheet" href="assets/pages.css?v=32">
+</head>
+<body data-page="schedule.html">
+<header id="siteHeader"></header>
+
+<header class="page-hero">
+  <div class="wrap">
+    <div class="ph-kicker mono">SCHEDULE · 赛程中心</div>
+    <h1>赛程与回放</h1>
+    <p>2019–2026 全部 {N} 场比赛：比分、赛段、回放视频与数据复盘入口。可切换年份 / 赛事，
+      或按赛段、战队、状态筛选。</p>
+    <div class="ph-meta mono">
+      <span>大场 <b id="mTotal">—</b></span><i>/</i>
+      <span>已结束 <b id="mDone">—</b></span><i>/</i>
+      <span>有视频 <b id="mVid">—</b></span><i>/</i>
+      <span>可复盘 <b id="mDetail">—</b></span><i>/</i>
+      <span>实时同步 <b id="liveAt">—</b></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" style="margin-top:26px">
+  <div class="scopebar" id="scopeBar"></div>
+  <div class="filterbar">
+    <label class="fld"><span>赛段</span>
+      <select id="fStage"><option value="">全部赛段</option></select>
+    </label>
+    <label class="fld"><span>状态</span>
+      <select id="fStatus">
+        <option value="">全部状态</option>
+        <option>已结束</option>
+        <option>未开始</option>
+      </select>
+    </label>
+    <label class="fld grow"><span>搜索战队</span>
+      <input class="search" id="fTeam" placeholder="输入战队名，如 重庆狼队">
+    </label>
+    <span class="block-note mono" id="countNote"></span>
+  </div>
+  <div id="list"></div>
+  <div style="text-align:center;margin:18px 0 8px">
+    <button class="btn ghost" id="moreBtn" style="display:none">显示更多（已显示 <span id="shownN">0</span> / <span id="totalN">0</span>）</button>
+  </div>
+</main>
+
+<footer id="siteFooter" class="footer"></footer>
+
+<script src="assets/data.js?v=32"></script>
+<script src="assets/seasons.js?v=32"></script>
+<script src="assets/schedule_all.js?v=32"></script>
+<script src="assets/common.js?v=32"></script>
+<script>
+(function () {
+  "use strict";
+  var D = KPL.data, K = KPL, $ = function (s) { return document.querySelector(s); };
+  K.init();
+
+  var ALL = window.KPL_SCHEDULE_ALL || [];
+  var PAGE = 90, shown = PAGE;
+  document.querySelector(".page-hero p").innerHTML =
+    document.querySelector(".page-hero p").innerHTML.replace("{N}", K.fmtInt(ALL.length));
+  $("#mTotal").textContent = K.fmtInt(ALL.length);
+  $("#mDone").textContent = K.fmtInt(ALL.filter(function (r) { return r.done; }).length);
+  $("#mVid").textContent = K.fmtInt(ALL.filter(function (r) { return r.video; }).length);
+  $("#mDetail").textContent = K.fmtInt(ALL.filter(function (r) { return r.hasDetail; }).length);
+
+  var curScope = "all";
+
+  function inScope(r) {
+    if (curScope === "all") return true;
+    if (/^\d{4}$/.test(curScope)) return String(r.year) === curScope;
+    return r.leagueId === curScope;
+  }
+
+  function filtered() {
+    var st = $("#fStatus").value, stage = $("#fStage").value, q = $("#fTeam").value.trim();
+    return ALL.filter(function (r) {
+      if (!inScope(r)) return false;
+      if (st && (r.done ? "已结束" : "未开始") !== st) return false;
+      if (stage && r.stage !== stage) return false;
+      if (q && r.team1.indexOf(q) < 0 && r.team2.indexOf(q) < 0) return false;
+      return true;
+    }).reverse();
+  }
+
+  function fillStages() {
+    var cur = $("#fStage").value;
+    var stages = {};
+    ALL.forEach(function (r) { if (inScope(r) && r.stage) stages[r.stage] = 1; });
+    var keys = Object.keys(stages).slice(0, 40);
+    $("#fStage").innerHTML = '<option value="">全部赛段</option>' +
+      keys.map(function (s2) { return "<option" + (s2 === cur ? " selected" : "") + ">" + K.esc(s2) + "</option>"; }).join("");
+  }
+
+  function rowHTML(r) {
+    var live = r.st === 1 || (!r.done && K.isLive(r));
+    var score;
+    if (live && (r.score1 > 0 || r.score2 > 0)) {
+      score = '<div class="score">' +
+        '<span class="' + (r.score1 > r.score2 ? "w" : "") + '">' + r.score1 + "</span> : " +
+        '<span class="' + (r.score2 > r.score1 ? "w" : "") + '">' + r.score2 + "</span></div>";
+    } else if (!r.done) {
+      score = '<div class="score" style="color:#8A94A6;font-size:12.5px">VS</div>';
+    } else {
+      score = '<div class="score">' +
+        '<span class="' + (r.score1 > r.score2 ? "w" : "") + '">' + r.score1 + "</span> : " +
+        '<span class="' + (r.score2 > r.score1 ? "w" : "") + '">' + r.score2 + "</span></div>";
+    }
+    var chip = live ? K.liveBadge()
+      : (r.done ? '<span class="chip done">已结束</span>' : '<span class="chip next">未开始</span>');
+    var hasData = r.hasDetail || r.st === 1;
+    var acts = '<div class="acts">' +
+      (r.video ? '<a class="go" href="' + K.esc(r.video) + '" target="_blank" rel="noopener">回放↗</a>' : "") +
+      (hasData ? '<a class="go" href="match.html?id=' + K.esc(r.matchId) + '">' + (live ? "实时 →" : (r.hasDetail ? "复盘 →" : "详情 →")) + "</a>" : "") +
+      (!r.video && !hasData ? '<span class="go off">—</span>' : "") +
+      "</div>";
+    return '<div class="mrow" data-mid="' + K.esc(r.matchId) + '">' +
+      '<div class="mt">' + K.esc(r.time || "—") + "</div>" +
+      K.side(r.team1, r.icon1, false) + score + K.side(r.team2, r.icon2, true) +
+      "<div>" + chip + "</div>" + acts + "</div>";
+  }
+
+  function render() {
+    var rows = filtered();
+    if (shown > rows.length) shown = Math.max(PAGE, rows.length);
+    var view = rows.slice(0, shown);
+    $("#countNote").textContent = "共 " + rows.length + " 场（" + K.scopeName(curScope) + "）";
+    if (!rows.length) {
+      $("#list").innerHTML = '<div class="empty-tip">没有符合条件的场次</div>';
+      $("#moreBtn").style.display = "none";
+      return;
+    }
+    var html = "", lastDate = "";
+    view.forEach(function (r) {
+      if (r.date !== lastDate) {
+        if (lastDate) html += "</div>";
+        html += '<div class="day-block"><div class="dh"><b>' + K.esc(K.dateCN(r.date)) + "</b><span>" +
+          K.esc(K.weekdayCN(r.date)) + (r.stage ? " · " + K.esc(r.stage) : "") +
+          " · " + K.esc(r.leagueName) + "</span></div>";
+        lastDate = r.date;
+      }
+      html += rowHTML(r);
+    });
+    html += "</div>";
+    $("#list").innerHTML = html;
+    $("#shownN").textContent = shown;
+    $("#totalN").textContent = rows.length;
+    $("#moreBtn").style.display = shown < rows.length ? "" : "none";
+  }
+
+
+  /* ---------- 实时比分覆盖（live.today，防重建滞后） ---------- */
+  function loadLiveScript(cb) {
+    var sc = document.createElement("script");
+    sc.src = "assets/live.js?ts=" + Date.now();
+    sc.onload = function () { cb(window.KPL_LIVE); sc.remove(); };
+    sc.onerror = function () { cb(null); sc.remove(); };
+    document.head.appendChild(sc);
+  }
+  function liveRowOf(L, matchId) {
+    if (!L) return null;
+    return (L.today || []).filter(function (x) { return x.matchId === matchId; })[0] ||
+           (L.matches || []).filter(function (x) { return x.matchId === matchId; })[0] || null;
+  }
+
+  /* 实时比分覆盖（每 60 秒） */
+  function applyToday() {
+    loadLiveScript(function (L) {
+      if (!L || !L.today) return;
+      var at = document.getElementById("liveAt");
+      if (at) at.textContent = String(L.updatedAt || "").slice(11, 19);
+      L.today.forEach(function (t) {
+        var row = document.querySelector('.mrow[data-mid="' + t.matchId + '"]');
+        if (!row) return;
+        var scEl = row.querySelector(".score");
+        if (scEl && (t.score1 > 0 || t.score2 > 0 || t.st === 2)) {
+          scEl.innerHTML = '<span class="' + (t.score1 > t.score2 ? "w" : "") + '">' + t.score1 + "</span> : " +
+            '<span class="' + (t.score2 > t.score1 ? "w" : "") + '">' + t.score2 + "</span>";
+        }
+        var chipWrap = row.children[4];
+        if (chipWrap) {
+          if (t.st === 1) {
+            chipWrap.innerHTML = K.liveBadge();
+            var actsL = row.querySelector(".acts");
+            if (actsL && !actsL.querySelector('a[href^="match.html"]')) {
+              actsL.innerHTML = '<a class="go" href="match.html?id=' + encodeURIComponent(t.matchId) + '">实时 →</a>';
+            }
+          }
+          else if (t.st === 2) {
+            chipWrap.innerHTML = '<span class="chip done">已结束</span>';
+            var link = row.querySelector('.acts a[href^="match.html"]');
+            if (link) link.textContent = "复盘 →";
+          } else {
+            chipWrap.innerHTML = '<span class="chip next">未开始</span>';
+          }
+        }
+      });
+    });
+  }
+  setInterval(applyToday, 30000);
+
+  curScope = K.scopeBar("#scopeBar", function (id) { curScope = id; shown = PAGE; fillStages(); render(); });
+  ["fStatus", "fStage"].forEach(function (id) {
+    $("#" + id).addEventListener("change", function () { shown = PAGE; render(); });
+  });
+  $("#fTeam").addEventListener("input", function () { shown = PAGE; render(); });
+  $("#moreBtn").addEventListener("click", function () { shown += PAGE; render(); });
+  fillStages();
+  render();
+  applyToday();
+})();
+</script>
+</body>
+</html>

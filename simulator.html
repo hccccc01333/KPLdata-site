@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>大场模拟 · KPL 数据中心</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css?v=32">
+<link rel="stylesheet" href="assets/pages.css?v=32">
+</head>
+<body data-page="simulator.html">
+<header id="siteHeader"></header>
+
+<header class="page-hero">
+  <div class="wrap">
+    <div class="ph-kicker mono">SIMULATOR · 大场模拟</div>
+    <h1>大场胜率模拟器</h1>
+    <p>选择数据范围、两支战队与赛制，基于两队该范围战绩推算单局获胜概率，
+      再按 BO 系列赛解析给出<b>大场胜率与各局分概率</b>。纯赛前信息，不含任何未开赛对局数据。</p>
+  </div>
+</header>
+
+<main class="wrap" style="margin-top:26px">
+  <div class="scopebar" id="scopeBar"></div>
+  <div class="sim-grid">
+    <div class="panel sim-controls">
+      <label class="fld"><span>战队 A</span><select id="simA"></select></label>
+      <label class="fld"><span>战队 B</span><select id="simB"></select></label>
+      <label class="fld"><span>赛制</span><select id="simBo">
+        <option value="3">BO3</option><option value="5" selected>BO5</option><option value="7">BO7</option>
+      </select></label>
+      <div class="panel-foot mono" style="margin-top:4px">数据范围：两队已打完的比赛</div>
+    </div>
+    <div class="panel sim-out">
+      <div class="sim-kpis" id="simKpis"></div>
+      <div class="sim-dist" id="simDist"></div>
+      <div class="panel-foot mono">假设每局相互独立 · 结果仅供参考，非官方预测</div>
+    </div>
+  </div>
+
+  <div class="block-head sub-head"><h2><i></i>方法与口径</h2></div>
+  <div class="model-grid">
+    <div class="panel">
+      <ul class="rules">
+        <li><b>单局胜率。</b>把两队赛季胜率换算成单局获胜概率；比赛少的队做平滑处理，避免极端值；不使用任何未开赛数据。</li>
+        <li><b>系列赛推算。</b>按「先赢到半数加一局获胜」逐局展开精确计算，结果可复现。</li>
+        <li><b>比分预测。</b>列出全部可能比分的出现概率（如 3-1、3-2）。</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <ul class="rules">
+        <li><b>适用范围。</b>只看赛前数据（赛季胜率），不含局内进程；假设每局相互独立，不模拟手感起伏与临场调整。</li>
+        <li><b>样本提示。</b>等效样本 = 两队赛季单局数之和，样本偏低时结果仅供参考。</li>
+        <li><b>使用建议。</b>结果是基于历史战绩的推算、非官方预测；两队实力差距明显时参考价值更高。</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<footer id="siteFooter" class="footer"></footer>
+
+<script src="assets/data.js?v=32"></script>
+<script src="assets/details.js?v=32"></script>
+<script src="assets/seasons.js?v=32"></script>
+<script src="assets/common.js?v=32"></script>
+<script>
+(function () {
+  "use strict";
+  var D = KPL.data, K = KPL, $ = function (s) { return document.querySelector(s); };
+  K.init();
+  var selA = $("#simA"), selB = $("#simB"), selBo = $("#simBo");
+  var byName = {};
+
+  function fillScope(id) {
+    var d = K.scopeOf(id);
+    var st = (d.teams || []).filter(function (t) { return t.games >= 10; })
+      .slice().sort(function (a, b) { return b.games - a.games; });
+    if (st.length < 2) { st = (d.teams || []).slice(0, 30); }
+    byName = {};
+    st.forEach(function (t) { byName[t.team] = t; });
+    var keepA = selA.value, keepB = selB.value;
+    selA.innerHTML = st.map(function (t) { return "<option>" + K.esc(t.team) + "</option>"; }).join("");
+    selB.innerHTML = selA.innerHTML;
+    if (byName[keepA]) selA.value = keepA;
+    if (byName[keepB]) selB.value = keepB;
+    else if (selB.options.length > 1 && selB.value === selA.value) selB.selectedIndex = 1;
+    run();
+  }
+  var logit = function (p) { p = Math.min(Math.max(p, 1e-4), 1 - 1e-4); return Math.log(p / (1 - p)); };
+  var sig = function (x) { return 1 / (1 + Math.exp(-x)); };
+  var comb = function (n, k) { var r = 1; for (var i = 0; i < k; i++) r = r * (n - i) / (i + 1); return Math.round(r * 1e6) / 1e6; };
+  function series(p, bo) {
+    var m = (bo + 1) / 2, s = 0;
+    for (var k = 0; k < m; k++) s += comb(m - 1 + k, k) * Math.pow(p, m) * Math.pow(1 - p, k);
+    return s;
+  }
+  function run() {
+    var a = byName[selA.value], b = byName[selB.value], bo = parseInt(selBo.value, 10);
+    if (!a || !b) return;
+    if (a.team === b.team) {
+      $("#simKpis").innerHTML = '<div class="sim-kpi"><div class="k">提示</div><div class="v" style="font-size:15px;color:#C0392B">战队 A 与 B 不能相同</div></div>';
+      $("#simDist").innerHTML = "";
+      return;
+    }
+    var wrA = (a.wins + 2) / (a.games + 4), wrB = (b.wins + 2) / (b.games + 4);
+    var p = sig(logit(wrA) - logit(wrB));
+    var ps = series(p, bo);
+    var m = (bo + 1) / 2, rows = [];
+    for (var k = 0; k < m; k++) {
+      rows.push([m + "-" + k, comb(m - 1 + k, k) * Math.pow(p, m) * Math.pow(1 - p, k)]);
+      rows.push([k + "-" + m, comb(m - 1 + k, k) * Math.pow(1 - p, m) * Math.pow(p, k)]);
+    }
+    rows.sort(function (x, y) { return y[1] - x[1]; });
+    var mx = rows[0][1];
+    $("#simKpis").innerHTML =
+      '<div class="sim-kpi"><div class="k">' + K.esc(a.team) + ' 单局 p</div><div class="v">' + K.pct(p) +
+      '</div><div class="s">按赛季战绩换算 · 已平滑</div></div>' +
+      '<div class="sim-kpi hl"><div class="k">' + K.esc(a.team) + ' 大场胜率</div><div class="v">' + K.pct(ps) +
+      '</div><div class="s">BO' + bo + ' · 逐局精确推算</div></div>' +
+      '<div class="sim-kpi"><div class="k">等效样本</div><div class="v">' + (a.games + b.games) +
+      '</div><div class="s">' + a.games + " + " + b.games + " 局</div></div>";
+    $("#simDist").innerHTML = rows.map(function (r) {
+      var win = r[0].split("-")[0] === String(m);
+      return '<div class="sd-row ' + (win ? "win" : "lose") + '"><span class="lab">' + r[0] + '</span>' +
+        '<span class="bar"><i style="width:' + (r[1] / mx * 100).toFixed(1) + '%"></i></span>' +
+        '<span class="pct">' + K.pct(r[1]) + "</span></div>";
+    }).join("");
+  }
+  selA.addEventListener("change", run);
+  selB.addEventListener("change", run);
+  selBo.addEventListener("change", run);
+  fillScope(K.scopeBar("#scopeBar", fillScope));
+  K.refresh();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+# 构建临时文件
+*.js.tmp
+*.tmp
+__pycache__/
+*.pyc
+# 系统文件
+Thumbs.db
+.DS_Store

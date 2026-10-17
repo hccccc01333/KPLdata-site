@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>选手详情 · KPL 数据中心</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css?v=32">
+<link rel="stylesheet" href="assets/pages.css?v=32">
+</head>
+<body data-page="players.html">
+<header id="siteHeader"></header>
+<div id="wrapHero"></div>
+<main class="wrap" id="main" style="margin-top:24px"></main>
+<footer id="siteFooter" class="footer"></footer>
+
+<script src="assets/data.js?v=32"></script>
+<script src="assets/seasons.js?v=32"></script>
+<script src="assets/players_detail.js?v=32"></script>
+<script src="assets/common.js?v=32"></script>
+<script>
+(function () {
+  "use strict";
+  var D = KPL.data, K = KPL, $ = function (s) { return document.querySelector(s); };
+  K.init();
+  var NAME = new URLSearchParams(location.search).get("id") || "";
+  var P = (window.KPL_PLAYERS || {})[NAME];
+
+  var heroIcon = {};
+  ((K.scopeOf("all") || {}).heroes || []).forEach(function (h) { heroIcon[h.name] = h.icon; });
+
+  if (!P) {
+    $("#wrapHero").innerHTML = '<header class="page-hero"><div class="wrap">' +
+      '<div class="ph-kicker mono">PLAYER · 选手</div><h1>未找到该选手</h1>' +
+      "<p>选手详情覆盖出场 15 局以上的选手；可在选手榜搜索。</p>" +
+      '<div class="slide-cta" style="margin-top:18px"><a class="btn primary" href="players.html">返回选手榜</a></div></div></header>';
+    return;
+  }
+
+  /* ---------- 头部 ---------- */
+  $("#wrapHero").innerHTML = '<header class="page-hero"><div class="wrap"><div class="hd-top">' +
+    (P.icon ? '<img class="hd-ava" src="' + K.esc(P.icon) + '" alt="">'
+            : '<span class="hd-ava ph">' + K.esc(NAME.slice(0, 1)) + "</span>") +
+    '<div><div class="hd-name">' + K.esc(NAME) +
+    (P.pos ? ' <span class="tier B" style="vertical-align:middle">' + K.esc(P.pos) + "</span>" : "") + "</div>" +
+    '<div class="hd-sub">' + (P.teamIcon ? '<img src="' + K.esc(P.teamIcon) + '" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:5px">' : "") +
+    K.esc(P.team) + " · 全部赛事 " + K.fmtInt(P.games) + " 局 · 赢下 " + K.fmtInt(P.wins) + " 局</div></div>" +
+    "</div></div></header>";
+
+  /* ---------- KPI 四格 ---------- */
+  var kpi = '<div class="hd-stats">' +
+    '<div class="hd-cell hl"><div class="k">胜率</div><div class="v">' + K.pct(P.wr) + '</div><div class="s">' + P.wins + " 胜 / " + P.games + " 局</div></div>" +
+    '<div class="hd-cell"><div class="k">KDA</div><div class="v">' + P.kda.toFixed(2) + '</div><div class="s">击杀 + 助攻 ÷ 死亡</div></div>' +
+    '<div class="hd-cell"><div class="k">MVP</div><div class="v">' + P.mvp + '</div><div class="s">共 ' + P.games + " 局中当选</div></div>" +
+    '<div class="hd-cell"><div class="k">场均数据</div><div class="v">' + K.fmtInt(P.gold) + '</div><div class="s">经济 · 参团 ' + Math.round(P.part) + "%</div></div>" +
+    "</div>";
+
+  /* ---------- 赛季趋势（胜率折线） ---------- */
+  var years = P.years || [];
+  var trendHTML = "";
+  if (years.length >= 2) {
+    var W = 1040, H = 210, PL = 46, PR = 20, PT = 22, PB = 34;
+    var n = years.length;
+    var X = function (i) { return PL + (n === 1 ? 0 : i * (W - PL - PR) / (n - 1)); };
+    var Y = function (p) { return PT + (1 - p) * (H - PT - PB); };
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-label="赛季胜率趋势">';
+    [0.3, 0.5, 0.7].forEach(function (g) {
+      s += '<line x1="' + PL + '" y1="' + Y(g).toFixed(1) + '" x2="' + (W - PR) + '" y2="' + Y(g).toFixed(1) + '" stroke="#1D2E47" stroke-dasharray="' + (g === 0.5 ? "0" : "4 6") + '"/>' +
+        '<text x="' + (PL - 8) + '" y="' + (Y(g) + 4).toFixed(1) + '" text-anchor="end" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' + (g * 100) + "%</text>";
+    });
+    var pts = years.map(function (y, i) { return X(i).toFixed(1) + "," + Y(y[2]).toFixed(1); }).join(" ");
+    s += '<polyline points="' + pts + '" fill="none" stroke="#F6C021" stroke-width="2.4" stroke-linejoin="round"/>';
+    years.forEach(function (y, i) {
+      s += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(y[2]).toFixed(1) + '" r="4" fill="#F6C021"/>' +
+        '<text x="' + X(i).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="11.5" fill="#9FB3CE" font-family="Inter,monospace">' + y[0] + "</text>" +
+        '<text x="' + X(i).toFixed(1) + '" y="' + (Y(y[2]) - 10).toFixed(1) + '" text-anchor="middle" font-size="11" fill="#EAF1FA" font-family="Inter,monospace">' + Math.round(y[2] * 100) + "%</text>";
+    });
+    s += "</svg>";
+    trendHTML = '<div class="panel"><div class="panel-title">赛季胜率趋势 <em class="mono">逐年胜率 · 全赛事</em></div>' +
+      '<div class="pl-trend">' + s + "</div></div>";
+  }
+
+  /* ---------- 常用英雄 ---------- */
+  var heroesHTML = (P.heroes || []).map(function (h) {
+    var ic = heroIcon[h[0]];
+    return '<a class="pl-hero" href="hero.html?id=' + encodeURIComponent(h[0]) + '">' +
+      (ic ? '<img src="' + K.esc(ic) + '" alt="" loading="lazy">' : "") +
+      '<span class="nm">' + K.esc(h[0]) + "</span>" +
+      '<span class="g mono">' + h[1] + " 局</span>" +
+      '<span class="kda mono">KDA ' + (h[3] != null ? h[3].toFixed(2) : "—") + "</span>" +
+      '<span class="wr mono">' + K.pct(h[2]) + "</span></a>";
+  }).join("");
+  var poolN = P.poolN || (P.heroes || []).length;
+
+  /* ---------- 最近比赛 ---------- */
+  var recentHTML = (P.recent || []).map(function (r) {
+    return '<a class="pl-recent" href="game.html?id=' + encodeURIComponent(r[2]) + '">' +
+      '<span class="d mono">' + K.esc(String(r[0]).slice(5)) + "</span>" +
+      '<span class="vs">' + K.esc(r[3]) + " vs " + K.esc(r[4]) + "</span>" +
+      '<span class="hero">' + (heroIcon[r[5]] ? '<img src="' + K.esc(heroIcon[r[5]]) + '" alt="">' : "") + K.esc(r[5]) + "</span>" +
+      '<span class="res ' + (r[6] ? "w" : "l") + '">' + (r[6] ? "胜" : "负") + "</span>" +
+      '<span class="kda mono">' + r[7] + "/" + r[8] + "/" + r[9] + "</span></a>";
+  }).join("");
+
+  $("#main").innerHTML = kpi + trendHTML +
+    '<div class="pl-grid">' +
+    '<div class="panel"><div class="panel-title">英雄池 <em class="mono">共 ' + poolN + " 个英雄 · 按使用局数展示前 " + (P.heroes || []).length + "</em></div>" +
+    '<div class="pl-heroes">' + (heroesHTML || '<div class="empty-tip">暂无数据</div>') + "</div></div>" +
+    '<div class="panel"><div class="panel-title">最近比赛 <em class="mono">点击进入对局详情</em></div>' +
+    '<div class="pl-recents">' + (recentHTML || '<div class="empty-tip">暂无数据</div>') + "</div></div>" +
+    "</div>";
+  K.refresh();
+})();
+</script>
+</body>
+</html>

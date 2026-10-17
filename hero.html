@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>英雄详情 · KPL 数据中心</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css?v=32">
+<link rel="stylesheet" href="assets/pages.css?v=32">
+</head>
+<body data-page="heroes.html">
+<header id="siteHeader"></header>
+<div id="heroHead"></div>
+<main class="wrap" id="main" style="margin-top:26px"></main>
+<footer id="siteFooter" class="footer"></footer>
+
+<script src="assets/data.js?v=32"></script>
+<script src="assets/details.js?v=32"></script>
+<script src="assets/equips.js?v=32"></script>
+<script src="assets/seasons.js?v=32"></script>
+<script src="assets/common.js?v=32"></script>
+<script>
+(function () {
+  "use strict";
+  var DT = KPL.details, K = KPL, $ = function (s) { return document.querySelector(s); };
+  K.init();
+  var id = new URLSearchParams(location.search).get("id");
+  var H = null;
+  (DT.heroes || []).forEach(function (h) { if (h.name === id) H = h; });
+
+  if (!H) {
+    $("#heroHead").innerHTML = '<header class="page-hero"><div class="wrap">' +
+      '<div class="ph-kicker mono">HERO · 英雄</div><h1>未找到该英雄</h1>' +
+      "<p>英雄详情覆盖出场 Top " + (DT.heroes || []).length + " 的英雄；请在英雄页搜索。</p>" +
+      '<div class="slide-cta" style="margin-top:18px"><a class="btn primary" href="heroes.html">返回英雄梯度</a></div></div></header>';
+    return;
+  }
+
+  var wrTxt = K.pct(H.wr), wins = Math.round(H.games * H.wr);
+  $("#heroHead").innerHTML = '<header class="page-hero"><div class="wrap"><div class="hd-top">' +
+    (H.icon ? '<img class="hd-ava" src="' + K.esc(H.icon) + '" alt="">' : "") +
+    '<div><div class="hd-name">' + K.esc(H.name) +
+    ' <span class="tier ' + H.tier + '" style="vertical-align:middle">' + H.tier + "</span></div>" +
+    '<div class="hd-sub">本赛季 ' + H.games + " 次出场 · 赢下 " + wins + " 局</div></div></div></div></header>";
+
+  var statCells =
+    '<div class="hd-stats">' +
+    '<div class="hd-cell hl"><div class="k">胜率</div><div class="v">' + wrTxt + '</div><div class="s">' + wins + " 胜 / " + H.games + " 局</div></div>" +
+    '<div class="hd-cell"><div class="k">出场次数</div><div class="v" data-count="' + H.games + '" data-dec="0">0</div><div class="s">选用率 ' + K.pct(H.pickRate) + "</div></div>" +
+    '<div class="hd-cell"><div class="k">禁用率</div><div class="v">' + K.pct(H.banRate) + '</div><div class="s">被禁用比例</div></div>' +
+    '<div class="hd-cell"><div class="k">强度档位</div><div class="v">' + H.tier + '</div><div class="s">按胜率分档 S/A/B/C</div></div>' +
+    "</div>";
+
+  function usageRows(list, kind) {
+    if (!list.length) return '<div class="empty-tip">暂无数据</div>';
+    return '<div class="usage">' + list.map(function (r) {
+      var ic = r.teamIcon || "";
+      var name = kind === "player" ? r.player : r.team;
+      var em = kind === "player" ? r.team : "";
+      var href = kind === "player" ? "player.html?id=" + encodeURIComponent(r.player) : "teams.html";
+      return '<a href="' + href + '">' + (ic ? '<img src="' + K.esc(ic) + '" alt="">' : "") +
+        '<span class="nm">' + K.esc(name) + (em ? ' <span class="em">' + K.esc(em) + "</span>" : "") + "</span>" +
+        '<span class="n">' + r.games + " 场</span>" +
+        '<span class="wr">' + K.pct(r.wr) + "</span></a>";
+    }).join("") + "</div>";
+  }
+
+  var recentHTML = (H.recent || []).length ? (H.recent || []).map(function (r) {
+    var href = r.matchId && DT.matches.some(function (m) { return m.matchId === r.matchId; })
+      ? "match.html?id=" + r.matchId : "schedule.html";
+    return '<a class="recent-row" href="' + href + '" style="color:inherit">' +
+      '<span class="d">' + K.esc(String(r.date).slice(5)) + "</span>" +
+      '<span class="vs">' + K.esc(r.team) + " vs " + K.esc(r.opp) + "</span>" +
+      '<span class="pl">' + K.esc(r.player) + "</span>" +
+      '<span class="res ' + (r.won ? "w" : "l") + '">' + (r.won ? "胜" : "负") + "</span></a>";
+  }).join("") : '<div class="empty-tip">暂无近期记录</div>';
+
+  var triosHTML = (H.trios || []).length ? (H.trios || []).map(function (t) {
+    return '<div class="combo"><span class="c">' + K.esc(t.combo) + '</span>' +
+      '<span class="n">' + t.n + ' 局</span><span class="wr">' + K.pct(t.wr) + "</span></div>";
+  }).join("") : '<div class="empty-tip">暂无稳定三人组合</div>';
+
+  var muHTML = (H.matchups || []).length ? (H.matchups || []).map(function (m) {
+    return '<div class="combo"><span class="c"><span class="team-cell" style="gap:7px">' +
+      (m.vsIcon ? '<img src="' + K.esc(m.vsIcon) + '" alt="" style="width:22px;height:22px;border-radius:50%">' : "") +
+      "对位 " + K.esc(m.vs) + (m.pos ? ' <span class="em" style="color:var(--muted);font-size:11px">' + K.esc(m.pos) + "</span>" : "") +
+      "</span></span>" +
+      '<span class="n">' + m.n + " 局" + (m.insufficient ? " · 样本不足" : "") + "</span>" +
+      '<span class="wr">' + K.pct(m.wr) + "</span></div>";
+  }).join("") : '<div class="empty-tip">暂无对位样本</div>';
+
+  var eq = (window.KPL_EQUIPS || {})[H.name] || null;
+  var eqHTML = "";
+  if (eq && (eq.sum || []).length) {
+    var sumItems = eq.sum.map(function (e) {
+      return '<span class="eq-chip" title="' + Math.round(e.rate * 100) + '% 的场次出了这件">' +
+        (e.icon ? '<img src="' + K.esc(e.icon) + '" alt="" loading="lazy">' : "") +
+        K.esc(e.name) + '<b class="mono">' + Math.round(e.rate * 100) + "%</b></span>";
+    }).join("");
+    var firstItems = (eq.first || []).slice(0, 3).map(function (e) {
+      return '<span class="eq-chip small">' +
+        (e.icon ? '<img src="' + K.esc(e.icon) + '" alt="" loading="lazy">' : "") +
+        K.esc(e.name) + '<b class="mono">' + Math.round(e.rate * 100) + "%</b></span>";
+    }).join("");
+    var summonItems = (eq.summon || []).map(function (e) {
+      return '<span class="eq-chip small">' +
+        (e.icon ? '<img src="' + K.esc(e.icon) + '" alt="" loading="lazy">' : "") +
+        K.esc(e.name) + '<b class="mono">' + Math.round(e.rate * 100) + "%</b></span>";
+    }).join("");
+    eqHTML = '<div class="panel" style="grid-column:1/-1"><div class="panel-title">常见出装 <em class="mono">' +
+      eq.games + ' 局统计 · 百分比为出场率</em></div>' +
+      '<div class="block-note mono" style="margin:6px 0 4px">最常出的装备</div>' +
+      '<div class="eq-row">' + sumItems + "</div>" +
+      '<div class="eq-cols">' +
+      '<div><div class="block-note mono" style="margin:10px 0 4px">首件装备</div><div class="eq-row">' + firstItems + "</div></div>" +
+      '<div><div class="block-note mono" style="margin:10px 0 4px">召唤师技能</div><div class="eq-row">' + summonItems + "</div></div>" +
+      "</div></div>";
+  }
+
+  $("#main").innerHTML = statCells +
+    '<div class="hd-grid" style="margin-top:18px">' +
+    '<div class="panel"><div class="panel-title">选手使用榜 <em class="mono">按使用场次</em></div>' + usageRows(H.players || [], "player") + "</div>" +
+    '<div class="panel"><div class="panel-title">战队使用</div>' + usageRows(H.teams || [], "team") + "</div>" +
+    '<div class="panel"><div class="panel-title">最近出场 <em class="mono">点击进入比赛</em></div>' + recentHTML + "</div>" +
+    '<div class="panel"><div class="panel-title">核心三人组合 <em class="mono">历史同队同局</em></div>' + triosHTML + "</div>" +
+    eqHTML +
+    '<div class="panel" style="grid-column:1/-1"><div class="panel-title">同位置对位 <em class="mono">历史交手记录 · 不代表英雄克制</em></div>' +
+    muHTML + "</div>" +
+    "</div>";
+
+  K.refresh();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>预测与准确率 · KPL 数据中心</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css?v=32">
+<link rel="stylesheet" href="assets/pages.css?v=32">
+<style>
+.pr-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:8px}
+@media(max-width:900px){.pr-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pr-kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.pr-kpi .k{font-size:12px;color:var(--muted)}
+.pr-kpi .v{font-family:var(--mono);font-size:28px;font-weight:800;color:var(--ink);margin-top:4px}
+.pr-kpi.hl .v{color:var(--gold)}
+.pr-kpi .s{font-size:11.5px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.pr-row{display:grid;grid-template-columns:92px 1fr 52px 158px 130px 92px 74px;gap:10px;align-items:center;
+        padding:9px 8px;border-bottom:1px solid var(--line);font-size:13px}
+.pr-row:last-child{border-bottom:none}
+.pr-row:hover{background:var(--inset)}
+.pr-row .d{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.pr-row .vs{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-row .g{font-family:var(--mono);font-weight:800;color:var(--ink2)}
+.pr-row .pred{font-family:var(--mono);font-size:12.5px;color:var(--ink2)}
+.pr-row .pred b{color:var(--gold)}
+.pr-row .res{font-weight:700}
+.pr-row .hit{font-weight:800;text-align:center;border-radius:6px;padding:2px 0;font-size:12.5px}
+.pr-row .hit.y{color:var(--teal);background:rgba(43,179,163,.12)}
+.pr-row .hit.n{color:var(--red);background:rgba(229,72,77,.12)}
+.pr-row a.go{color:var(--gold);font-weight:700;font-size:12.5px;text-align:right}
+@media(max-width:1100px){.pr-row{grid-template-columns:84px 1fr 44px 140px 110px;}.pr-row .res,.pr-row a.go{display:none}}
+.pr-phase{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:10px}
+@media(max-width:800px){.pr-phase{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pr-ph{border:1px solid var(--line);border-radius:11px;padding:12px 14px;background:var(--inset)}
+.pr-ph .k{font-size:12px;color:var(--muted)}
+.pr-ph .v{font-family:var(--mono);font-size:24px;font-weight:800;color:var(--ink);margin-top:3px}
+.pr-ph .s{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.pr-bar{height:7px;background:var(--card2);border-radius:4px;overflow:hidden;margin-top:8px}
+.pr-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--teal));border-radius:4px}
+.pr-note{font-size:12.5px;color:var(--muted);line-height:1.8;margin-top:12px}
+.pr-note b{color:var(--ink2)}
+@media(max-width:760px){
+  .pr-row{grid-template-columns:62px minmax(0,1fr) 34px 84px}
+  .pr-row .pred{display:none}
+  .pr-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pr-phase{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body data-page="predict.html">
+<header id="siteHeader"></header>
+
+<header class="page-hero">
+  <div class="wrap">
+    <div class="ph-kicker mono">PREDICT · 预测与准确率</div>
+    <h1>预测与准确率</h1>
+    <p>模型说得准不准，我们把它公开。下面同时展示<b>每一局直播预测的成败</b>（可逐局核对）与
+      <b>历史回测</b>（用最新比赛当考卷的分阶段准确率）。</p>
+    <div class="ph-meta mono">
+      <span>归档预测 <b id="prN">—</b> 局</span><i>/</i>
+      <span>模型训练于 <b id="prTrained">—</b></span><i>/</i>
+      <span>数据更新 <b id="prAt">—</b></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" style="margin-top:22px">
+  <div class="pr-kpis">
+    <div class="pr-kpi hl"><div class="k">直播预测命中率（已归档 4 局起）</div><div class="v" id="kRate">—</div><div class="s" id="kRateS">—</div></div>
+    <div class="pr-kpi"><div class="k">回测总体准确率（近 8 局 holdout）</div><div class="v" id="kAcc">—</div><div class="s" id="kAccS">—</div></div>
+    <div class="pr-kpi"><div class="k">早期/中期准确率</div><div class="v" id="kEarly">—</div><div class="s" id="kEarlyS">—</div></div>
+    <div class="pr-kpi"><div class="k">最低谷：后期准确率</div><div class="v" id="kLate">—</div><div class="s">双方经济咬死时最难判 · 诚实展示</div></div>
+  </div>
+
+  <section class="block" style="margin-top:26px">
+    <div class="block-head">
+      <h2><i></i>直播预测档案</h2>
+      <span class="block-note mono">每一局的"终局前最后一次预测" vs 实际结果 · 点击可回看完整预测曲线</span>
+    </div>
+    <div class="panel table-panel">
+      <div class="pr-row" style="font-weight:600;color:var(--muted);font-size:12px;border-bottom:1px solid var(--line2)">
+        <span>日期</span><span>对阵</span><span>局</span><span>终局前预测</span><span>实际胜方</span><span>结果</span><span></span>
+      </div>
+      <div id="prRows"></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <h2><i></i>模型回测（历史考卷）</h2>
+      <span class="block-note mono">用这一批最新的比赛做检验，分阶段算准确率</span>
+    </div>
+    <div class="panel">
+      <div class="pr-phase" id="prPhases"></div>
+      <div class="pr-note">
+        <b>怎么读：</b>准确率 = 模型在该阶段内的判断与最终结果一致的比例；越到后期（双方经济咬死、局势反复）越难，准确率下降是正常现象，
+        我们不做粉饰。 <b>验收：</b>所有阶段误差均达到设定门槛（<span id="prGate">—</span>）。
+        <b>预测口径：</b>胜率曲线与「预测」均为模型估算，非官方预测；仅供数据参考。
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="siteFooter" class="footer"></footer>
+
+<script src="assets/data.js?v=32"></script>
+<script src="assets/seasons.js?v=32"></script>
+<script src="assets/predict.js?v=32"></script>
+<script src="assets/common.js?v=32"></script>
+<script>
+(function () {
+  "use strict";
+  var D = KPL.data, K = KPL, $ = function (s) { return document.querySelector(s); };
+  K.init();
+  var P = window.KPL_PREDICT;
+
+  var teamIcon = {};
+  ((K.scopeOf("all") || {}).teams || []).forEach(function (t) { teamIcon[t.team] = t.icon; });
+
+  var acc = P.accuracy || { n: 0, hits: 0, rate: 0 };
+  $("#prN").textContent = acc.n;
+  $("#prAt").textContent = P.updatedAt;
+  $("#prTrained").textContent = (P.backtest || {}).trainedAt || "—";
+  $("#kRate").textContent = acc.n ? Math.round(acc.rate * 100) + "%" : "—";
+  $("#kRateS").textContent = "命中 " + acc.hits + " / " + acc.n + " 局（逐局可核对）";
+
+  var bt = P.backtest || {};
+  var ph = bt.phases || {};
+  if (ph.all) {
+    $("#kAcc").textContent = Math.round(ph.all.acc * 100) + "%";
+    $("#kAccS").textContent = "共 " + ph.all.n + " 个采样阶段样本";
+  }
+  if (ph.early && ph.mid) {
+    $("#kEarly").textContent = Math.round(ph.early.acc * 100) + " / " + Math.round(ph.mid.acc * 100) + "%";
+    $("#kEarlyS").textContent = "开局与中期阶段";
+  }
+  if (ph.late) {
+    $("#kLate").textContent = Math.round(ph.late.acc * 100) + "%";
+  }
+  $("#prGate").textContent = bt.gatesPassed ? "全部通过 ✓" : "部分未达标";
+
+  /* 预测档案表 */
+  var LABELS = { early: "早期（≤8′）", mid: "中期（9–15′）", late: "后期（16′+）", all: "全部阶段" };
+  $("#prPhases").innerHTML = ["early", "mid", "late", "all"].filter(function (k) { return ph[k]; }).map(function (k) {
+    var m = ph[k];
+    if (k === "all") {
+      return '<div class="pr-ph" style="border-color:rgba(246,192,33,.45)"><div class="k">' + LABELS[k] +
+        '</div><div class="v">' + Math.round(m.acc * 100) + '%</div><div class="s">Brier ' + m.brier.toFixed(3) +
+        ' · n=' + m.n + '</div><div class="pr-bar"><i style="width:' + (m.acc * 100).toFixed(0) + '%"></i></div></div>';
+    }
+    return '<div class="pr-ph"><div class="k">' + LABELS[k] + '</div><div class="v">' + Math.round(m.acc * 100) +
+      '%</div><div class="s">Brier ' + m.brier.toFixed(3) + ' · n=' + m.n +
+      '</div><div class="pr-bar"><i style="width:' + (m.acc * 100).toFixed(0) + '%"></i></div></div>';
+  }).join("");
+
+  /* 归档行 */
+  $("#prRows").innerHTML = (P.archived || []).map(function (a) {
+    var predTeam = a.prob >= 0.5 ? a.t1 : a.t2;
+    var predProb = a.prob >= 0.5 ? a.prob : 1 - a.prob;
+    var actualTeam = a.win === 1 ? a.t1 : a.t2;
+    var li = teamIcon[a.t1] ? '<img src="' + K.esc(teamIcon[a.t1]) + '" alt="" style="width:18px;height:18px;vertical-align:-4px;margin-right:5px">' : "";
+    var link = a.matchId ? '<a class="go" href="match.html?id=' + K.esc(a.matchId) + '">回看 →</a>' : "<span></span>";
+    return '<div class="pr-row">' +
+      '<span class="d">' + K.esc(a.date.slice(5)) + "</span>" +
+      '<span class="vs">' + li + K.esc(a.t1) + " vs " + K.esc(a.t2) + "</span>" +
+      '<span class="g">G' + a.seq + "</span>" +
+      '<span class="pred">' + K.esc(predTeam) + " <b>" + Math.round(predProb * 100) + "%</b>（" + a.frames + " 个预测点）</span>" +
+      '<span class="res">' + K.esc(actualTeam) + " 胜</span>" +
+      '<span class="hit ' + (a.hit ? "y" : "n") + '">' + (a.hit ? "命中 ✓" : "未命中 ✗") + "</span>" +
+      link + "</div>";
+  }).join("") || '<div class="empty-tip">暂无归档预测（比赛日自动积累）</div>';
+})();
+</script>
+</body>
+</html>
