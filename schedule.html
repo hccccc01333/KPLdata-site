@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>赛程中心 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=34">
-<link rel="stylesheet" href="assets/pages.css?v=34">
+<link rel="stylesheet" href="assets/style.css?v=35">
+<link rel="stylesheet" href="assets/pages.css?v=35">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="赛程中心 · KPL 数据中心">
@@ -51,6 +51,7 @@
     </label>
     <span class="block-note mono" id="countNote"></span>
   </div>
+  <div class="brief" id="brief"></div>
   <div id="list"></div>
   <div style="text-align:center;margin:18px 0 8px">
     <button class="btn ghost" id="moreBtn" style="display:none">显示更多（已显示 <span id="shownN">0</span> / <span id="totalN">0</span>）</button>
@@ -59,10 +60,10 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=34"></script>
-<script src="assets/seasons.js?v=34"></script>
-<script src="assets/schedule_all.js?v=34"></script>
-<script src="assets/common.js?v=34"></script>
+<script src="assets/data.js?v=35"></script>
+<script src="assets/seasons.js?v=35"></script>
+<script src="assets/schedule_all.js?v=35"></script>
+<script src="assets/common.js?v=35"></script>
 <script>
 (function () {
   "use strict";
@@ -157,6 +158,24 @@
     });
     html += "</div>";
     $("#list").innerHTML = html;
+    /* 数据简报 */
+    var fin = rows.filter(function (r) { return r.done; });
+    var today = new Date().toISOString().slice(0, 10);
+    var todayRows = rows.filter(function (r) { return r.date === today; });
+    var liveRow = rows.filter(function (r) { return r.st === 1; })[0];
+    var txt = "当前范围共 <b>" + rows.length + "</b> 场（已结束 " + fin.length + " 场）。";
+    if (liveRow) {
+      txt += "正在进行：<b>" + K.esc(liveRow.team1) + " " + liveRow.score1 + " : " + liveRow.score2 + " " + K.esc(liveRow.team2) + "</b>。";
+    } else if (todayRows.length) {
+      txt += "今天有 <b>" + todayRows.length + "</b> 场比赛。";
+    }
+    var up = rows.filter(function (r) { return !r.done; }).sort(function (a, b) { return (a.date + a.time).localeCompare(b.date + b.time); })[0];
+    if (up) {
+      txt += "下一场：<b>" + K.esc(up.date.slice(5)) + " " + K.esc(up.time) + " " + K.esc(up.team1) + " vs " + K.esc(up.team2) + "</b>。";
+    }
+    txt += "点「回放」看官方录像，「复盘」进数据详情。";
+    K.brief("#brief", txt);
+
     $("#shownN").textContent = shown;
     $("#totalN").textContent = rows.length;
     $("#moreBtn").style.display = shown < rows.length ? "" : "none";

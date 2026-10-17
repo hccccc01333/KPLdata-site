@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>预测与准确率 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=34">
-<link rel="stylesheet" href="assets/pages.css?v=34">
+<link rel="stylesheet" href="assets/style.css?v=35">
+<link rel="stylesheet" href="assets/pages.css?v=35">
 <style>
 .pr-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:8px}
 @media(max-width:900px){.pr-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -79,6 +79,8 @@
     <div class="pr-kpi"><div class="k">最低谷：后期准确率</div><div class="v" id="kLate">—</div><div class="s">双方经济咬死时最难判 · 诚实展示</div></div>
   </div>
 
+  <div class="brief" id="brief"></div>
+
   <section class="block" style="margin-top:26px">
     <div class="block-head">
       <h2><i></i>直播预测档案</h2>
@@ -110,10 +112,10 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=34"></script>
-<script src="assets/seasons.js?v=34"></script>
-<script src="assets/predict.js?v=34"></script>
-<script src="assets/common.js?v=34"></script>
+<script src="assets/data.js?v=35"></script>
+<script src="assets/seasons.js?v=35"></script>
+<script src="assets/predict.js?v=35"></script>
+<script src="assets/common.js?v=35"></script>
 <script>
 (function () {
   "use strict";
@@ -176,6 +178,19 @@
       '<span class="hit ' + (a.hit ? "y" : "n") + '">' + (a.hit ? "命中 ✓" : "未命中 ✗") + "</span>" +
       link + "</div>";
   }).join("") || '<div class="empty-tip">暂无归档预测（比赛日自动积累）</div>';
+
+  /* 数据简报 */
+  {
+    var last = (P.archived || [])[P.archived.length - 1];
+    var txt = "直播预测已归档 <b>" + acc.n + "</b> 局，命中 <b>" + acc.hits + "</b> 局（<b>" + Math.round(acc.rate * 100) +
+      "%</b>）。用最近一批比赛做检验，模型在早期/中期阶段判断约 <b>" +
+      (ph.early ? Math.round(ph.early.acc * 100) : "—") + "%</b> 准确，后期局势反复时约 <b>" +
+      (ph.late ? Math.round(ph.late.acc * 100) : "—") + "%</b>——每一条都可在上方逐局核对。";
+    if (last) {
+      txt += "最近归档：" + K.esc(last.date) + " " + K.esc(last.t1) + " vs " + K.esc(last.t2) + "（G" + last.seq + "）。";
+    }
+    K.brief("#brief", txt);
+  }
 })();
 </script>
 </body>
