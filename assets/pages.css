@@ -775,3 +775,9 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
 .pos-row .mid{font-size:11.5px;color:var(--muted);text-align:right}
 .pos-row .rk{font-size:11.5px;color:var(--gold);text-align:right}
 @media(max-width:700px){.pos-row{grid-template-columns:56px 1fr 70px}.pos-row .mid,.pos-row .rk{display:none}}
+
+/* ---------------- 对比页：视图开关 ---------------- */
+.wb-toggle{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink2);
+           padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card2);cursor:pointer}
+.wb-toggle input{accent-color:#F6C021;width:15px;height:15px}
+.cmp-table td.num{text-align:right;font-variant-numeric:tabular-nums}

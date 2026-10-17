@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>对比工具 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=45">
-<link rel="stylesheet" href="assets/pages.css?v=45">
+<link rel="stylesheet" href="assets/style.css?v=46">
+<link rel="stylesheet" href="assets/pages.css?v=46">
 <style>
 .cmp-grid{display:grid;grid-template-columns:560px minmax(0,1fr);gap:16px;align-items:start}
 @media(max-width:1100px){.cmp-grid{grid-template-columns:1fr}}
@@ -82,9 +82,9 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=45"></script>
-<script src="assets/seasons.js?v=45"></script>
-<script src="assets/common.js?v=45"></script>
+<script src="assets/data.js?v=46"></script>
+<script src="assets/seasons.js?v=46"></script>
+<script src="assets/common.js?v=46"></script>
 <script>
 (function () {
   "use strict";
@@ -367,20 +367,39 @@
     }).join("");
 
     /* 对照表 */
+    var linkOf = function (se) {
+      if (!M.target) return null;
+      var key = M.targetKey ? se.obj[M.targetKey] : M.name(se.obj);
+      return M.target + encodeURIComponent(key);
+    };
     var head = "<thead><tr><th>指标</th>" + series.map(function (se) {
       var ic = M.icon(se.obj);
-      return '<th><span class="cmp-head">' + (ic ? '<img src="' + K.esc(ic) + '" alt="">' : "") +
-        K.esc(se.name) + "</span></th>";
-    }).join("") + "</tr></thead>";
+      var href = linkOf(se);
+      var nameHTML = (ic ? '<img src="' + K.esc(ic) + '" alt="">' : "") + K.esc(se.name);
+      return '<th><span class="cmp-head">' +
+        (href ? '<a href="' + K.esc(href) + '" style="color:inherit;display:inline-flex;align-items:center;gap:6px">' + nameHTML + "</a>" : nameHTML) +
+        "</span></th>";
+    }).join("") + (series.length === 2 ? '<th class="num">差（1−2）</th>' : "") + "</tr></thead>";
     var body = "<tbody>" + dims.map(function (dim) {
-      var best = Math.max.apply(null, dim.values.map(function (v) { return v.raw; }));
-      return "<tr><td>" + K.esc(dim.label) + "</td>" + dim.values.map(function (v) {
-        return "<td><b" + (v.raw === best ? ' style="color:var(--gold)"' : "") + ">" + dim.fmt(v.raw) + "</b></td>";
-      }).join("") + "</tr>";
+      var raws = dim.values.map(function (v) { return v.raw; });
+      var best = Math.max.apply(null, raws), worst = Math.min.apply(null, raws);
+      var cells = dim.values.map(function (v) {
+        var color = v.raw === best ? "var(--gold)" : (v.raw === worst && best !== worst ? "var(--muted)" : "");
+        return "<td><b" + (color ? ' style="color:' + color + '"' : "") + ">" + dim.fmt(v.raw) + "</b></td>";
+      }).join("");
+      var diff = "";
+      if (series.length === 2) {
+        var dv = raws[0] - raws[1];
+        // 指标格式可能自带符号（如 +1289），这里先剥掉再统一加差值的正负号
+        var absTxt = String(dim.fmt(Math.abs(dv))).replace(/^[+＋\-−]/, "");
+        diff = '<td class="num mono" style="color:' + (dv >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
+          (dv >= 0 ? "+" : "−") + absTxt + "</td>";
+      }
+      return "<tr><td>" + K.esc(dim.label) + "</td>" + cells + diff + "</tr>";
     }).join("") + "</tbody>";
     $("#cmpTable").innerHTML = head + body;
     $("#cmpTip").textContent = "雷达图上的位置 = 该指标在「" + K.scopeName(curScope) +
-      "」范围内的相对水平（外圈 = 更强）；表格中每行最高值以金色标出。";
+      "」范围内的相对水平（外圈 = 更强）；表格每行最高值金色、最低值灰色；选 2 个对象时多一列差值，表头可点进详情页。";
   }
 
   $("#modeTabs").addEventListener("click", function (e) {
@@ -433,8 +452,10 @@
     populatePickers();
     render();
   });
+  readUrl();
   populatePickers();
   render();
+  syncMode();
 })();
 </script>
 </body>
