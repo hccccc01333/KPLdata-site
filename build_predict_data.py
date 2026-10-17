@@ -41,6 +41,8 @@ def read_pred_csv(bid: str):
     n = 0
     win_camp = 0
     last_gd = None
+    t1 = t2 = ""
+    first_at = ""
     frames: list[tuple[float, float]] = []
     try:
         with path.open("r", encoding="utf-8-sig", newline="") as fh:
@@ -59,6 +61,11 @@ def read_pred_csv(bid: str):
                     m = None
                 if m is not None:
                     frames.append((m, p))
+                if not first_at:
+                    first_at = str(row.get("collected_at") or "")
+                if not t1:
+                    t1 = str(row.get("camp1_team") or "")
+                    t2 = str(row.get("camp2_team") or "")
                 try:
                     last_gd = int(float(row.get("gold_diff") or 0))
                 except (TypeError, ValueError):
@@ -80,47 +87,57 @@ def read_pred_csv(bid: str):
         if upto:
             cps[cp] = round(upto[-1], 3)
     return {"lastProb": round(last_prob, 3), "frames": n, "winCamp": win_camp,
-            "lastGd": last_gd, "cps": cps}
+            "lastGd": last_gd, "cps": cps, "t1": t1, "t2": t2, "firstAt": first_at}
 
 
 def main() -> None:
     hist = jload(REALTIME / "site_live_history.json", {}) or {}
     backtest = jload(REALTIME / "backtest_v9_report.json", {}) or {}
 
-    archived = []
-    for bid, v in hist.items():
-        csv_info = read_pred_csv(bid)
-        win = int(v.get("win") or 0)
-        t1, t2 = str(v.get("t1") or ""), str(v.get("t2") or "")
-        # 优先用直播 CSV 的最后预测；无则用归档重放的收尾概率
-        if csv_info and csv_info["lastProb"] is not None:
-            prob = csv_info["lastProb"]
-            frames = csv_info["frames"]
-        else:
-            pts = v.get("pts") or []
-            prob = float(pts[-1][1]) if pts else None
-            frames = len(pts)
-        if prob is None or win not in (1, 2):
-            continue
-        pred_side = 1 if prob >= 0.5 else 2
-        archived.append({
-            "date": str(v.get("date") or ""),
-            "matchId": str(v.get("matchId") or ""),
-            "battleId": bid,
-            "seq": int(v.get("seq") or 0),
-            "t1": t1, "t2": t2, "win": win,
-            "prob": round(prob, 3),
-            "frames": frames,
-            "hit": 1 if pred_side == win else 0,
-            "tier": str(v.get("tier") or ""),
-        })
-    archived.sort(key=lambda x: (x["date"], x["matchId"], x["seq"]))
+    # 局号索引：battle_id -> (matchId, 第几局)，用于把预测档案接到比赛页
+    gindex: dict[str, tuple[str, int]] = {}
+    try:
+        raw_idx = (SITE / "assets" / "games" / "index.js").read_text(encoding="utf-8")
+        idx_obj = json.loads(raw_idx[raw_idx.index("=") + 1:].rstrip().rstrip(";"))
+        for mid, entry in idx_obj.items():
+            for row in entry.get("b") or []:
+                gindex[str(row[0])] = (str(mid), int(row[1] or 0))
+    except Exception:
+        gindex = {}
 
-    hits = sum(a["hit"] for a in archived)
+    # 档案来源：predictions 目录里的**全部**直播预测（历史归档只保留最近 10 局，
+    # 用它算命中率会让样本永远停在个位数 —— 这是"样本扩容"的核心改动）
+    pred_dir = REALTIME / "predictions"
+    csv_ids = sorted(p.stem for p in pred_dir.glob("*.csv")) if pred_dir.exists() else []
+    archived = []
+    rows_all: list[dict] = []
+    for bid in csv_ids:
+        info = read_pred_csv(bid)
+        if not info or info["lastProb"] is None:
+            continue
+        win = int(info.get("winCamp") or 0)
+        if win not in (1, 2):
+            continue
+        mid, seq = gindex.get(bid, ("", 0))
+        date = str(info.get("firstAt") or "")[:10]
+        prob = float(info["lastProb"])
+        rows_all.append({
+            "date": date, "matchId": mid, "battleId": bid, "seq": seq,
+            "t1": info.get("t1", ""), "t2": info.get("t2", ""), "win": win,
+            "prob": round(prob, 3), "frames": int(info.get("frames") or 0),
+            "hit": 1 if (1 if prob >= 0.5 else 2) == win else 0,
+            "cps": info.get("cps") or {},
+        })
+    rows_all.sort(key=lambda r: (r["date"], r["matchId"], r["seq"]), reverse=True)
+    archived = rows_all[:40]      # 页面表格只展示最近 40 局，避免一次塞上百行
+
+    # 命中率一律按**全量预测档案**统计（不是只展示的那 40 行）
+    hits = sum(a["hit"] for a in rows_all)
     accuracy = {
-        "n": len(archived),
+        "n": len(rows_all),
         "hits": hits,
-        "rate": round(hits / len(archived), 3) if archived else 0,
+        "rate": round(hits / len(rows_all), 3) if rows_all else 0,
+        "shown": len(archived),
         # 最后一帧口径本身几乎没有信息量（比赛基本已定），单独标注，别当能力指标
         "note": "last-frame",
     }
@@ -130,15 +147,12 @@ def main() -> None:
     for cp in CHECKPOINTS:
         n = hit = 0
         brier_sum = 0.0
-        for bid, v in hist.items():
-            info = read_pred_csv(bid)
-            win = int(v.get("win") or 0)
-            if not info or win not in (1, 2):
-                continue
-            p = (info.get("cps") or {}).get(cp)
+        for r in rows_all:
+            p = (r.get("cps") or {}).get(cp)
             if p is None:
                 continue
             n += 1
+            win = int(r["win"])
             brier_sum += (p - (1.0 if win == 1 else 0.0)) ** 2
             if (1 if p >= 0.5 else 2) == win:
                 hit += 1
@@ -147,9 +161,9 @@ def main() -> None:
             "acc": round(hit / n, 3) if n else 0,
             "brier": round(brier_sum / n, 4) if n else 0,
         })
-    last_n = len(archived)
+    last_n = len(rows_all)
     last_brier = 0.0
-    for a in archived:
+    for a in rows_all:
         last_brier += (a["prob"] - (1.0 if a["win"] == 1 else 0.0)) ** 2
     last_brier = round(last_brier / last_n, 4) if last_n else 0
 

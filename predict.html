@@ -86,7 +86,7 @@
       <tbody id="cpRows"></tbody>
     </table></div>
     <div class="block-note mono" style="margin-top:8px">
-      口径：每个时间点取"该分钟及之前最后一帧"的预测，不插值、不外推；样本量小（当前 10 局），数字只代表这批对局，不足以支撑模型结论。
+      口径：每个时间点取"该分钟及之前最后一帧"的预测，不插值、不外推。<span id="cpN">—</span>
       「最后一帧」加入对比是为了说明：把口径压在收官前，命中率会自然虚高。
     </div>
   </div>
@@ -96,7 +96,7 @@
   <section class="block" style="margin-top:26px">
     <div class="block-head">
       <h2><i></i>直播预测档案</h2>
-      <span class="block-note mono">每一局的"终局前最后一次预测" vs 实际结果 · 点击可回看完整预测曲线</span>
+      <span class="block-note mono" id="prTableNote">每一局的"终局前最后一次预测" vs 实际结果 · 点击可回看完整预测曲线</span>
     </div>
     <div class="panel table-panel">
       <div class="pr-row" style="font-weight:600;color:var(--muted);font-size:12px;border-bottom:1px solid var(--line2)">
@@ -140,6 +140,10 @@
 
   var acc = P.accuracy || { n: 0, hits: 0, rate: 0 };
   $("#prN").textContent = acc.n;
+  if (acc.shown && $("#prTableNote")) {
+    $("#prTableNote").textContent = "命中率按全部 " + acc.n + " 局统计 · 表格展示最近 " + acc.shown +
+      " 局（收尾帧）· 点击可回看完整预测曲线";
+  }
   $("#prAt").textContent = P.updatedAt;
   $("#prTrained").textContent = (P.backtest || {}).trainedAt || "—";
 
@@ -157,6 +161,9 @@
     $("#kCp12S").textContent = "样本 " + c12.n + " 局 · 越往后越接近真实结果";
   }
   $("#kLast").textContent = lastF.n ? Math.round((lastF.acc || 0) * 100) + "%" : "—";
+  if ($("#cpN")) {
+    $("#cpN").textContent = "档案共 " + ((P.accuracy || {}).n || 0) + " 局，各时间点样本因采集时长不同略有差异。";
+  }
   var cpRows = cps.slice();
   if (lastF.n) cpRows.push({ m: "最后一帧", n: lastF.n, hits: Math.round((lastF.acc || 0) * lastF.n), acc: lastF.acc || 0, brier: lastF.brier || 0, last: true });
   $("#cpRows").innerHTML = cpRows.map(function (c) {
