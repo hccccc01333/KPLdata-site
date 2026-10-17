@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>战队详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=43">
-<link rel="stylesheet" href="assets/pages.css?v=43">
+<link rel="stylesheet" href="assets/style.css?v=44">
+<link rel="stylesheet" href="assets/pages.css?v=44">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="战队详情 · KPL 数据中心">
@@ -19,13 +19,13 @@
 <main class="wrap" id="main" style="margin-top:6px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=43"></script>
-<script src="assets/details.js?v=43"></script>
-<script src="assets/schedule_all.js?v=43"></script>
-<script src="assets/seasons.js?v=43"></script>
-<script src="assets/players_detail.js?v=43"></script>
-<script src="assets/team_data.js?v=43"></script>
-<script src="assets/common.js?v=43"></script>
+<script src="assets/data.js?v=44"></script>
+<script src="assets/details.js?v=44"></script>
+<script src="assets/schedule_all.js?v=44"></script>
+<script src="assets/seasons.js?v=44"></script>
+<script src="assets/players_detail.js?v=44"></script>
+<script src="assets/team_data.js?v=44"></script>
+<script src="assets/common.js?v=44"></script>
 <script>
 (function () {
   "use strict";
@@ -61,9 +61,11 @@
   /* 近 5 场走势 */
   var last5 = SCHED.filter(function (r) { return r.done; }).slice(0, 5).reverse();
   var form = last5.map(function (r) {
+    var home = r.team1 === team.team;
+    var opp = home ? r.team2 : r.team1;
+    var my = home ? r.score1 : r.score2, th = home ? r.score2 : r.score1;
     return '<span class="form-chip ' + (isWin(r) ? "w" : "l") + '" title="' + K.esc(r.date) + " vs " +
-      K.esc(r.team1 === team.team ? r.team2 : r.team1) + " " + r.score1 + ":" + r.score2 + '">' +
-      (isWin(r) ? "胜" : "负") + "</span>";
+      K.esc(opp) + " " + my + ":" + th + '">' + (isWin(r) ? "胜" : "负") + "</span>";
   }).join("");
 
   /* 交手记录：按对手聚合 */
@@ -122,13 +124,17 @@
       "</div>";
 
     var recent = SCHED.slice(0, 12).map(function (r) {
-      var opp = r.team1 === team.team ? r.team2 : r.team1;
-      var oppIcon = r.team1 === team.team ? r.icon2 : r.icon1;
+      var home = r.team1 === team.team;
+      var opp = home ? r.team2 : r.team1;
+      var oppIcon = home ? r.icon2 : r.icon1;
+      // 比分统一按"本队 : 对手"，否则 team2 的比赛会出现"3:0 却判负"的错位观感
+      var my = home ? r.score1 : r.score2;
+      var th = home ? r.score2 : r.score1;
       var w = isWin(r), done = r.done;
       return '<a class="mrow-t" href="match.html?id=' + encodeURIComponent(r.matchId) + '" style="color:inherit">' +
         '<span class="d mono">' + K.esc(String(r.date).slice(5)) + "</span>" +
         '<span class="opp">' + (oppIcon ? '<img src="' + K.esc(oppIcon) + '" alt="">' : "") + K.esc(opp) + "</span>" +
-        '<span class="sc mono">' + (done ? r.score1 + ":" + r.score2 : "VS") + "</span>" +
+        '<span class="sc mono">' + (done ? my + ":" + th : "VS") + "</span>" +
         '<span class="res ' + (!done ? "" : w ? "w" : "l") + '">' + (!done ? "未开始" : w ? "胜" : "负") + "</span></a>";
     }).join("") || '<div class="empty-tip">暂无比</div>';
 
