@@ -49,10 +49,11 @@ def main() -> None:
             row["i"] = icon
         items.append(row)
 
-    # 战队（全部赛事聚合，83 支；详情页 V4 阶段三补 team.html，先落到战队列表锚点）
+    # 战队（全部赛事聚合，83 支 → 直达战队详情页 team.html）
     for t in allscope.get("teams") or []:
-        add("战队", t.get("team", ""), f"{t.get('matches', 0)} 场 · 单局胜率 {round(float(t.get('wr') or 0) * 100, 1)}%",
-            "teams.html", t.get("icon", ""))
+        name = str(t.get("team", ""))
+        add("战队", name, f"{t.get('matches', 0)} 场 · 单局胜率 {round(float(t.get('wr') or 0) * 100, 1)}%",
+            "team.html?id=" + name, t.get("icon", ""))
 
     # 选手：选手资料全量（含历史选手）+ 聚合榜里的（取并集）
     names = {}

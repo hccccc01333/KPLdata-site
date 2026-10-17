@@ -94,7 +94,8 @@
       return '<div class="tcard reveal" style="transition-delay:' + Math.min(i * 30, 240) + 'ms">' +
         '<div class="top"><span class="rk' + (i < 3 ? " r" + (i + 1) : "") + '">' + (i + 1) + "</span>" +
         (t.icon ? '<img class="ic" src="' + K.esc(t.icon) + '" alt="" loading="lazy">' : "") +
-        '<div><div class="nm">' + K.esc(t.team) + '</div><div class="rec">大场 ' + t.mWin + "-" + t.mLoss +
+        '<div><div class="nm"><a href="team.html?id=' + encodeURIComponent(t.team) + '" style="color:inherit">' +
+        K.esc(t.team) + "</a></div>" + '<div class="rec">大场 ' + t.mWin + "-" + t.mLoss +
         " · " + t.games + " 局</div></div>" +
         '<span class="tier ' + tier + '" style="margin-left:auto">' + tier + "</span></div>" +
         '<div class="nums">' +

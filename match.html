@@ -92,12 +92,12 @@
       (liveNow ? '<div id="liveFlag" style="margin-top:10px">' + K.liveBadge() + "</div>" : "") +
       '<div class="mh-grid" style="margin-top:14px">' +
       '<div class="mh-team">' + (sr.icon1 ? '<img src="' + K.esc(sr.icon1) + '" alt="">' : "") +
-      '<span class="n">' + K.esc(sr.team1) + "</span>" +
+      '<a class="n" href="team.html?id=' + encodeURIComponent(sr.team1) + '">' + K.esc(sr.team1) + "</a>" +
       '<span class="mono" style="color:#9FBBD0;font-size:12px">' + sr.score1 + " 局胜</span></div>" +
       '<div class="mh-score">' + sr.score1 + " : " + sr.score2 + "<small>大场比分 · BO" + sr.bo +
       (liveNow ? " · <span style='color:#FF7A7E'>正在进行</span>" : "") + "</small></div>" +
       '<div class="mh-team">' + (sr.icon2 ? '<img src="' + K.esc(sr.icon2) + '" alt="">' : "") +
-      '<span class="n">' + K.esc(sr.team2) + "</span>" +
+      '<a class="n" href="team.html?id=' + encodeURIComponent(sr.team2) + '">' + K.esc(sr.team2) + "</a>" +
       '<span class="mono" style="color:#9FBBD0;font-size:12px">' + sr.score2 + " 局胜</span></div></div>" +
       '<div class="mh-sub mono">' + K.dateCN(sr.date) + " " + K.weekdayCN(sr.date) + " · 胜方：" + K.esc(winName) + "</div>" +
       '<div class="battle-strip">' + strip + "</div>" +
@@ -337,11 +337,11 @@
     '<div class="ph-kicker mono">MATCH · ' + K.esc(LG_NAME[M.leagueId] || "2026 赛季") + ' · ' + K.esc(M.date) + "</div>" +
     '<div class="mh-grid" style="margin-top:14px">' +
     '<div class="mh-team">' + (M.icon1 ? '<img src="' + K.esc(M.icon1) + '" alt="">' : "") +
-    '<span class="n">' + K.esc(M.team1) + "</span>" +
+    '<a class="n" href="team.html?id=' + encodeURIComponent(M.team1) + '">' + K.esc(M.team1) + "</a>" +
     '<span class="mono" style="color:#9FBBD0;font-size:12px">' + M.score1 + " 局胜</span></div>" +
     '<div class="mh-score">' + M.score1 + " : " + M.score2 + "<small>大场比分" + (KEY.comeback ? " · 含翻盘局" : "") + "</small></div>" +
     '<div class="mh-team">' + (M.icon2 ? '<img src="' + K.esc(M.icon2) + '" alt="">' : "") +
-    '<span class="n">' + K.esc(M.team2) + "</span>" +
+    '<a class="n" href="team.html?id=' + encodeURIComponent(M.team2) + '">' + K.esc(M.team2) + "</a>" +
     '<span class="mono" style="color:#9FBBD0;font-size:12px">' + M.score2 + " 局胜</span></div></div>" +
     '<div class="mh-sub mono">' + K.dateCN(M.date) + " " + K.weekdayCN(M.date) +
     " · 胜方：" + K.esc(M.score1 > M.score2 ? M.team1 : M.team2) + "</div>" +

@@ -127,7 +127,9 @@
       var ic = r.teamIcon || "";
       var name = kind === "player" ? r.player : r.team;
       var em = kind === "player" ? r.team : "";
-      var href = kind === "player" ? "player.html?id=" + encodeURIComponent(r.player) : "teams.html";
+      var href = kind === "player"
+        ? "player.html?id=" + encodeURIComponent(r.player)
+        : "team.html?id=" + encodeURIComponent(r.team);
       return '<a href="' + href + '">' + (ic ? '<img src="' + K.esc(ic) + '" alt="">' : "") +
         '<span class="nm">' + K.esc(name) + (em ? ' <span class="em">' + K.esc(em) + "</span>" : "") + "</span>" +
         '<span class="n">' + r.games + " 场</span>" +

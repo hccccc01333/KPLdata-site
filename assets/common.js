@@ -119,7 +119,8 @@ window.KPL = (function () {
     // 首屏可用：用当前页已有的数据先兜底（秒出结果），完整索引按需懒加载
     var local = [];
     (D.standings || []).forEach(function (s) {
-      local.push({ k: "战队", n: s.team, i: s.icon, h: "teams.html", kw: (s.team || "").toLowerCase() });
+      local.push({ k: "战队", n: s.team, i: s.icon, h: "team.html?id=" + encodeURIComponent(s.team),
+                   kw: (s.team || "").toLowerCase() });
     });
     var plist = (window.KPL_SEASONS && KPL_SEASONS.scopes && KPL_SEASONS.scopes.all.players) || D.players || [];
     plist.forEach(function (p) {

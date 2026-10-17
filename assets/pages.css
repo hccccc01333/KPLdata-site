@@ -664,3 +664,28 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
 .rp-warn{margin:0 0 10px;padding:9px 12px;border-radius:9px;font-size:12px;line-height:1.6;
          color:#E8C97A;background:rgba(246,192,33,.08);border:1px solid rgba(246,192,33,.28)}
 .rp-lc{color:#E8C97A}
+
+/* ---------------- 战队详情（team.html） ---------------- */
+.form-chip{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;
+           font-size:11px;font-weight:800;margin-left:4px;vertical-align:middle}
+.form-chip.w{background:rgba(123,216,143,.16);color:#7BD88F;border:1px solid rgba(123,216,143,.4)}
+.form-chip.l{background:rgba(255,122,126,.14);color:#FF7A7E;border:1px solid rgba(255,122,126,.38)}
+.mrow-t{display:grid;grid-template-columns:52px 1fr 62px 46px;gap:8px;align-items:center;padding:7px 4px;
+        border-bottom:1px solid rgba(255,255,255,.05);text-decoration:none}
+.mrow-t:hover{background:rgba(255,255,255,.03)}
+.mrow-t .d{font-size:12px;color:var(--muted)}
+.mrow-t .opp{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);min-width:0;overflow:hidden}
+.mrow-t .opp img{width:18px;height:18px;border-radius:50%;object-fit:cover}
+.mrow-t .sc{font-size:12.5px;text-align:right;color:var(--ink2)}
+.mrow-t .res{font-size:11.5px;text-align:right;font-weight:700;color:var(--muted)}
+.mrow-t .res.w{color:#7BD88F}
+.mrow-t .res.l{color:#FF7A7E}
+.hero-grid.mini{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+@media(max-width:900px){.hero-grid.mini{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){.hero-grid.mini{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tmini{display:flex;flex-direction:column;gap:3px;padding:9px 10px;border-radius:9px;border:1px solid var(--line);
+       background:var(--card2);text-decoration:none;color:var(--ink);transition:border-color .15s}
+.tmini:hover{border-color:var(--gold)}
+.tmini b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tmini span{font-size:11.5px;color:var(--muted)}
+.tmini i{font-style:normal;font-size:12.5px;color:var(--gold);font-weight:700}
