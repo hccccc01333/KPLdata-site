@@ -1,0 +1,153 @@
+
+(function () {
+  "use strict";
+  var K = KPL, $ = function (s) { return document.querySelector(s); };
+  K.init();
+  var id = new URLSearchParams(location.search).get("id") || "";
+  var TD = window.KPL_TEAM_DATA || {};
+  var ALL = (K.scopeOf("all") || {}).teams || [];
+  var team = null;
+  for (var i = 0; i < ALL.length; i++) if (ALL[i].team === id) { team = ALL[i]; break; }
+  if (!team) {
+    $("#heroHead").innerHTML = '<header class="page-hero"><div class="wrap">' +
+      '<div class="ph-kicker mono">TEAM · 战队</div><h1>未找到该战队</h1>' +
+      "<p>战队名单覆盖 2019–2026 全部 " + ALL.length + " 支队伍；请从战队页或站内搜索进入。</p>" +
+      '<div class="slide-cta" style="margin-top:18px"><a class="btn primary" href="teams.html">返回战队页</a></div></div></header>';
+    return;
+  }
+
+  var SCHED = (window.KPL_SCHEDULE_ALL || []).filter(function (r) {
+    return r.team1 === team.team || r.team2 === team.team;
+  }).sort(function (a, b) { return (b.date + (b.time || "")).localeCompare(a.date + (a.time || "")); });
+
+  function wilson(w, n) {
+    if (!n) return [0, 0];
+    var z = 1.96, p = w / n, d = 1 + z * z / n;
+    var c = p + z * z / (2 * n);
+    var m = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n));
+    return [Math.max(0, (c - m) / d), Math.min(1, (c + m) / d)];
+  }
+  function won(r) { return r.score1 > r.score2 ? r.team1 : r.team2; }
+  function isWin(r) { return won(r) === team.team; }
+
+  /* 近 5 场走势 */
+  var last5 = SCHED.filter(function (r) { return r.done; }).slice(0, 5).reverse();
+  var form = last5.map(function (r) {
+    return '<span class="form-chip ' + (isWin(r) ? "w" : "l") + '" title="' + K.esc(r.date) + " vs " +
+      K.esc(r.team1 === team.team ? r.team2 : r.team1) + " " + r.score1 + ":" + r.score2 + '">' +
+      (isWin(r) ? "胜" : "负") + "</span>";
+  }).join("");
+
+  /* 交手记录：按对手聚合 */
+  var h2h = {};
+  SCHED.forEach(function (r) {
+    if (!r.done) return;
+    var opp = r.team1 === team.team ? r.team2 : r.team1;
+    var h = h2h[opp] || (h2h[opp] = { team: opp, icon: r.team1 === team.team ? r.icon2 : r.icon1, n: 0, w: 0, l: 0, last: "" });
+    h.n++; if (isWin(r)) h.w++; else h.l++;
+    if (r.date > h.last) h.last = r.date;
+  });
+  var h2hRows = Object.keys(h2h).map(function (k) { return h2h[k]; })
+    .sort(function (a, b) { return b.n - a.n; });
+
+  function yearTrend(by, totalGames) {
+    if (!by || !by.length) return '<div class="empty-tip">暂无分年数据</div>';
+    var maxG = Math.max.apply(null, by.map(function (r) { return r[1] || 1; }));
+    return '<div class="yr-trend">' + by.map(function (r) {
+      return '<div class="yr-row"><span class="y mono">' + r[0] + "</span>" +
+        '<span class="bar"><i style="width:' + Math.max(2, (r[1] || 0) / maxG * 100).toFixed(1) + '%"></i></span>' +
+        '<span class="n mono">' + r[1] + " 局</span>" +
+        '<span class="wr mono">' + K.pct(r[2], 1) + "</span></div>";
+    }).join("") + '<div class="block-note mono">共 ' + totalGames + " 局 · 按年份拆分</div></div>";
+  }
+
+  var curScope = "all";
+  function render() {
+    var d = K.scopeOf(curScope) || {};
+    var row = null;
+    (d.teams || []).forEach(function (t) { if (t.team === team.team) row = t; });
+    var matches = row ? row.matches : team.matches;
+    var mWin = row ? row.mWin : team.mWin;
+    var games = row ? row.games : team.games;
+    var wins = row ? row.wins : team.wins;
+    var wr = row ? row.wr : team.wr;
+    var gd = row ? row.goldDiff : team.goldDiff;
+    var kd = row ? row.killDiff : team.killDiff;
+    var ci = wilson(wins, games);
+
+    $("#heroHead").innerHTML = '<header class="page-hero"><div class="wrap"><div class="hd-top">' +
+      (team.icon ? '<img class="hd-ava" src="' + K.esc(team.icon) + '" alt="">' : "") +
+      '<div><div class="hd-name">' + K.esc(team.team) + "</div>" +
+      '<div class="hd-sub">' + K.scopeName(curScope) + " · 大场 " + mWin + "-" + (matches - mWin) +
+      " · 单局 " + wins + "-" + (games - wins) + " · 近况 " + (form || "—") + "</div></div></div></div></header>";
+
+    var kpis =
+      '<div class="hd-stats">' +
+      '<div class="hd-cell hl"><div class="k">单局胜率</div><div class="v">' + K.pct(wr) + '</div><div class="s">' +
+      wins + " 胜 / " + games + " 局 · 95% 区间 " + K.pct(ci[0], 0) + "–" + K.pct(ci[1], 0) + "</div></div>" +
+      '<div class="hd-cell"><div class="k">大场战绩</div><div class="v">' + mWin + "-" + (matches - mWin) +
+      '</div><div class="s">共 ' + matches + " 场</div></div>" +
+      '<div class="hd-cell"><div class="k">场均经济差</div><div class="v">' + K.signed(gd) +
+      '</div><div class="s">每局金币净差</div></div>' +
+      '<div class="hd-cell"><div class="k">场均击杀差</div><div class="v">' + K.signed(kd, 1) +
+      '</div><div class="s">每局击杀净差</div></div>' +
+      "</div>";
+
+    var recent = SCHED.slice(0, 12).map(function (r) {
+      var opp = r.team1 === team.team ? r.team2 : r.team1;
+      var oppIcon = r.team1 === team.team ? r.icon2 : r.icon1;
+      var w = isWin(r), done = r.done;
+      return '<a class="mrow-t" href="match.html?id=' + encodeURIComponent(r.matchId) + '" style="color:inherit">' +
+        '<span class="d mono">' + K.esc(String(r.date).slice(5)) + "</span>" +
+        '<span class="opp">' + (oppIcon ? '<img src="' + K.esc(oppIcon) + '" alt="">' : "") + K.esc(opp) + "</span>" +
+        '<span class="sc mono">' + (done ? r.score1 + ":" + r.score2 : "VS") + "</span>" +
+        '<span class="res ' + (!done ? "" : w ? "w" : "l") + '">' + (!done ? "未开始" : w ? "胜" : "负") + "</span></a>";
+    }).join("") || '<div class="empty-tip">暂无比</div>';
+
+    var h2hHTML = h2hRows.length ? '<table class="tbl"><thead><tr><th>对手</th><th class="num">交手</th>' +
+      '<th class="num">胜</th><th class="num">负</th><th class="num">胜率</th><th class="num">最近</th></tr></thead><tbody>' +
+      h2hRows.slice(0, 12).map(function (h) {
+        return "<tr><td><span class='team-cell'>" + (h.icon ? "<img src='" + K.esc(h.icon) + "' alt=''>" : "") +
+          "<a href='team.html?id=" + encodeURIComponent(h.team) + "' style='color:inherit'>" + K.esc(h.team) + "</a></span></td>" +
+          '<td class="num">' + h.n + '</td><td class="num">' + h.w + '</td><td class="num">' + h.l + "</td>" +
+          '<td class="num">' + K.pct(h.w / Math.max(1, h.n)) + '</td><td class="num mono">' + K.esc(String(h.last).slice(5)) + "</td></tr>";
+      }).join("") + "</tbody></table>" : '<div class="empty-tip">暂无交手记录</div>';
+
+    var roster = (TD[team.team] || {}).p || [];
+    var rosterHTML = roster.length ? '<div class="usage">' + roster.map(function (p) {
+      return '<a href="player.html?id=' + encodeURIComponent(p[0]) + '">' +
+        '<span class="nm">' + K.esc(p[0]) + (p[3] ? ' <span class="em">' + K.esc(p[3]) + "</span>" : "") + "</span>" +
+        '<span class="n">' + p[1] + " 局</span>" +
+        '<span class="wr">' + K.pct(p[2] / Math.max(1, p[1])) + "</span></a>";
+    }).join("") + "</div>" : '<div class="empty-tip">暂无阵容数据</div>';
+
+    var pool = (TD[team.team] || {}).h26 || [];
+    var poolAll = (TD[team.team] || {}).h || [];
+    var poolUse = pool.length ? pool : poolAll;
+    var poolLabel = pool.length ? "当前赛季使用场次" : "全部赛事使用场次";
+    var poolHTML = poolUse.length
+      ? '<div class="hero-grid mini">' + poolUse.slice(0, 8).map(function (h) {
+          return '<a class="tmini" href="hero.html?id=' + encodeURIComponent(h[0]) + '">' +
+            "<b>" + K.esc(h[0]) + "</b><span>" + h[1] + " 局</span><i>" + K.pct(h[2] / Math.max(1, h[1]), 0) + "</i></a>";
+        }).join("") + "</div>" + '<div class="block-note mono">' + poolLabel + "</div>"
+      : '<div class="empty-tip">暂无英雄池数据</div>';
+    var poolTitle = pool.length ? "当前赛季" : "全部赛事";
+
+    $("#main").innerHTML = kpis +
+      '<div class="hd-grid" style="margin-top:18px">' +
+      '<div class="panel" style="grid-column:1/-1"><div class="panel-title">逐年表现 <em class="mono">' +
+      "全部赛事 " + team.games + " 局 / 当前范围 " + games + ' 局</em></div>' + yearTrend(team.by, team.games) + "</div>" +
+      '<div class="panel"><div class="panel-title">近期比赛 <em class="mono">点击进比赛</em></div>' + recent + "</div>" +
+      '<div class="panel"><div class="panel-title">阵容 <em class="mono">按出场</em></div>' + rosterHTML + "</div>" +
+      '<div class="panel"><div class="panel-title">常用英雄 <em class="mono">' + poolTitle + "</em></div>" +
+      poolHTML + "</div>" +
+      '<div class="panel" style="grid-column:1/-1"><div class="panel-title">交手记录 <em class="mono">全部赛事 · 按交手场次</em></div>' +
+      h2hHTML + "</div>" +
+      "</div>" +
+      '<div class="mnav"><a href="teams.html">返回战队页</a><a href="schedule.html">赛程中心</a></div>';
+    K.refresh();
+  }
+
+  curScope = K.scopeBar("#scopeBar", function () { render(); }) || "all";
+  render();
+})();
