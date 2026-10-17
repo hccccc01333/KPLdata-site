@@ -799,3 +799,26 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
 .fav-chip:hover{border-color:var(--gold);color:var(--ink)}
 .fav-chip img{width:18px;height:18px;border-radius:50%;object-fit:cover}
 .fav-chip .k{font-size:10.5px;color:var(--muted)}
+
+/* ---------------- 精选对局（picks.html） ---------------- */
+.pick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+@media(max-width:900px){.pick-grid{grid-template-columns:1fr}}
+.pick-card{position:relative;display:flex;flex-direction:column;gap:9px;padding:14px 16px;border-radius:12px;
+           border:1px solid var(--line);background:var(--card);text-decoration:none;color:var(--ink2);
+           transition:border-color .15s,transform .15s}
+.pick-card:hover{border-color:var(--gold);transform:translateY(-1px)}
+.pk-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pk-date{font-size:12px;color:var(--muted)}
+.pk-vs{font-size:14.5px;font-weight:800;color:var(--ink)}
+.pk-g{font-size:11.5px;color:var(--gold);margin-left:auto}
+.pk-tags{display:flex;gap:7px;flex-wrap:wrap}
+.pk-tag{display:inline-flex;flex-direction:column;gap:2px;padding:5px 9px;border-radius:8px;font-size:11.5px;
+        border:1px solid var(--line2);background:var(--card2);color:var(--ink)}
+.pk-tag em{font-style:normal;font-size:10.5px;color:var(--muted)}
+.pk-tag.comeback{border-color:rgba(255,122,126,.45);color:#FF9A9D}
+.pk-tag.swing{border-color:rgba(246,192,33,.45);color:var(--gold)}
+.pk-tag.long{border-color:rgba(92,127,168,.55);color:#9FBBD0}
+.pk-tag.events{border-color:rgba(123,216,143,.4);color:#7BD88F}
+.pk-foot{font-size:11px;color:var(--muted);line-height:1.6}
+.pk-go{position:absolute;right:14px;bottom:12px;font-size:11.5px;font-weight:800;color:var(--gold);opacity:0;transition:opacity .15s}
+.pick-card:hover .pk-go{opacity:1}

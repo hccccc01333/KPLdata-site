@@ -47,19 +47,25 @@ def analyze(b: dict) -> dict | None:
     seq = [(f.get("m") or 0, p_win(f)) for f in frames if p_win(f) is not None]
     tags: list[dict] = []
 
-    # 翻盘：胜方曾 <= MIN_PROB
-    worst = min(seq, key=lambda x: x[1]) if seq else None
-    if worst and worst[1] <= MIN_PROB:
-        m = worst[0]
-        gd_at = None
-        for f in frames:
-            if (f.get("m") or 0) >= m:
-                gd = int(f.get("gd") or 0)
-                gd_at = gd if win == 1 else -gd
-                break
+    # 翻盘：胜方在【第 6 分钟之后】且【经济落后 >= 3000】时胜率仍 <= MIN_PROB
+    # 只看概率会被早期低置信采样骗到（第 2 分钟 2% 但金差只有 +225 不是翻盘）；
+    # 必须同时满足"时间够晚 + 经济真的落后"，才算可核对的翻盘局。
+    candidates = []
+    for f in frames:
+        m = float(f.get("m") or 0)
+        p = p_win(f)
+        if p is None or m < 6:
+            continue
+        gd = int(f.get("gd") or 0)
+        gd_win = gd if win == 1 else -gd
+        if gd_win > -3000:
+            continue
+        if p <= MIN_PROB:
+            candidates.append((p, m, gd_win))
+    if candidates:
+        p_w, m_w, gd_w = min(candidates, key=lambda x: x[0])
         tags.append({"k": "comeback", "label": "翻盘局",
-                     "note": f"第 {m:.0f} 分钟胜率仅 {worst[1] * 100:.0f}%"
-                             + (f"（金差 {gd_at:+d}）" if gd_at is not None else "")})
+                     "note": f"第 {m_w:.0f} 分钟胜率仅 {p_w * 100:.0f}%，经济落后 {abs(gd_w):,}"})
 
     # 拉锯
     dur = float(b.get("dur") or 0)
@@ -91,9 +97,11 @@ def analyze(b: dict) -> dict | None:
         "battleId": b.get("battleId"), "seq": int(b.get("seq") or 0),
         "dur": round(dur, 1), "win": win, "t1": b.get("t1"), "t2": b.get("t2"),
         "winner": b.get("t1") if win == 1 else b.get("t2"),
+        # 最低胜率点：只记"满足翻盘条件"的那一个（第 6 分钟后 + 经济落后 3000+），
+        # 这样卡片上的"最低胜率 X%"和翻盘标签是同一件事，不会一个标签两种口径
         "swing": round(swing_best[0], 3),
-        "minProb": round(worst[1], 3) if worst else None,
-        "minMinute": round(worst[0], 1) if worst else None,
+        "minProb": round(candidates[0][0], 3) if candidates else None,
+        "minMinute": round(candidates[0][1], 1) if candidates else None,
         "events": ev,
         "tags": tags,
         "score": round(score, 2),
@@ -109,6 +117,7 @@ def main() -> None:
         index = json.loads(raw[raw.index("=") + 1:].rstrip().rstrip(";"))
 
     rows = []
+    total_battles = 0
     for mid, meta in index.items():
         pkg_path = REPLAY / f"{mid}.json"
         if not pkg_path.exists():
@@ -118,6 +127,7 @@ def main() -> None:
         except (OSError, json.JSONDecodeError):
             continue
         for b in pkg.get("battles") or []:
+            total_battles += 1
             r = analyze(b)
             if not r:
                 continue
@@ -129,11 +139,14 @@ def main() -> None:
     payload = {
         "updatedAt": time.strftime("%Y-%m-%d %H:%M:%S"),
         "rules": [
-            {"k": "comeback", "label": "翻盘局", "rule": f"收官胜方在某一时刻胜率 ≤ {int(MIN_PROB * 100)}%"},
+            {"k": "comeback", "label": "翻盘局",
+             "rule": f"第 6 分钟之后、经济落后 ≥3,000 时，收官胜方胜率仍 ≤ {int(MIN_PROB * 100)}%"},
             {"k": "long", "label": "拉锯局", "rule": f"时长 ≥ {LONG_MIN} 分钟"},
             {"k": "swing", "label": "波动局", "rule": f"任意 3 个采样点内胜率变化 ≥ {int(SWING_PP * 100)}pp"},
             {"k": "events", "label": "资源战", "rule": f"结构性事件（推塔/暴君/主宰/风暴）≥ {EVENTS_MIN} 个"},
         ],
+        "totalBattles": total_battles,
+        "picked": min(len(rows), 48),
         "rows": rows[:48],
     }
     OUT.write_text("KPL_PICKS = " + json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + ";\n",
