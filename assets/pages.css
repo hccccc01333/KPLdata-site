@@ -1,10 +1,8 @@
 /* KPL 数据中心 · 产品站组件（v3 深色，依赖 style.css 令牌） */
 
 /* ---------------- 子页头 ---------------- */
-.page-hero{background:linear-gradient(165deg,#050B14 0%,#081726 45%,#0A2340 120%);
-           color:#fff;position:relative;overflow:hidden}
-.page-hero::before{content:"";position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(115deg,rgba(255,255,255,.025) 0 2px,transparent 2px 96px)}
+.page-hero{background:none;color:#fff;position:relative;overflow:hidden}
+.page-hero::before{display:none}
 .page-hero .wrap{position:relative;padding:40px 28px 36px}
 .ph-kicker{font-size:12.5px;letter-spacing:1.7px;color:var(--gold)}
 .page-hero h1{font-size:clamp(26px,3.2vw,36px);font-weight:900;margin:10px 0 8px;letter-spacing:.5px}

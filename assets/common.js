@@ -408,6 +408,7 @@ window.KPL = (function () {
     var xMin = Math.min.apply(null, xs), xMax = Math.max.apply(null, xs);
     var yMin = Math.min.apply(null, ys), yMax = Math.max.apply(null, ys);
     if (opts.yZero) { yMin = Math.min(0, yMin); yMax = Math.max(0, yMax); }
+    if (opts.yMin0) { yMin = Math.max(0, yMin); }
     var pad = (yMax - yMin) * 0.08 || 1;
     yMin -= pad; yMax += pad;
     if (xMax - xMin < 1) xMax = xMin + 1;
