@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>英雄 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=37">
-<link rel="stylesheet" href="assets/pages.css?v=37">
+<link rel="stylesheet" href="assets/style.css?v=38">
+<link rel="stylesheet" href="assets/pages.css?v=38">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="英雄 · KPL 数据中心">
@@ -68,10 +68,10 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=37"></script>
-<script src="assets/details.js?v=37"></script>
-<script src="assets/seasons.js?v=37"></script>
-<script src="assets/common.js?v=37"></script>
+<script src="assets/data.js?v=38"></script>
+<script src="assets/details.js?v=38"></script>
+<script src="assets/seasons.js?v=38"></script>
+<script src="assets/common.js?v=38"></script>
 <script>
 (function () {
   "use strict";
@@ -113,7 +113,7 @@
   }
 
   /* 出场率 × 胜率 散点象限 */
-  var TIER_COLOR = { S: "#F6C021", A: "#4D9FE8", B: "#9FB3CE", C: "#6F84A3" };
+  var TIER_COLOR = { S: "#FFFFFF", A: "#9DB2CC", B: "#9FB3CE", C: "#6F84A3" };
   function renderScatter(d) {
     var el = document.getElementById("scatter");
     if (!el) return;
@@ -163,8 +163,8 @@
       }
     });
     s2 += "</svg>";
-    el.innerHTML = '<div class="lc-legend"><span><i style="background:#F6C021"></i>S 档</span>' +
-      '<span><i style="background:#4D9FE8"></i>A 档</span><span><i style="background:#9FB3CE"></i>B 档</span>' +
+    el.innerHTML = '<div class="lc-legend"><span><i style="background:#FFFFFF"></i>S 档</span>' +
+      '<span><i style="background:#9DB2CC"></i>A 档</span><span><i style="background:#9FB3CE"></i>B 档</span>' +
       '<span><i style="background:#6F84A3"></i>C 档</span>' +
       '<span style="color:var(--muted)">右上角 = 又热又强（版本答案）</span></div>' + s2;
   }

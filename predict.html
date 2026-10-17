@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>预测与准确率 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=37">
-<link rel="stylesheet" href="assets/pages.css?v=37">
+<link rel="stylesheet" href="assets/style.css?v=38">
+<link rel="stylesheet" href="assets/pages.css?v=38">
 <style>
 .pr-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:8px}
 @media(max-width:900px){.pr-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -26,8 +26,8 @@
 .pr-row .pred b{color:var(--gold)}
 .pr-row .res{font-weight:700}
 .pr-row .hit{font-weight:800;text-align:center;border-radius:6px;padding:2px 0;font-size:12.5px}
-.pr-row .hit.y{color:var(--teal);background:rgba(43,179,163,.12)}
-.pr-row .hit.n{color:var(--red);background:rgba(229,72,77,.12)}
+.pr-row .hit.y{color:var(--teal);background:rgba(143,179,174,.12)}
+.pr-row .hit.n{color:var(--red);background:rgba(192,138,141,.12)}
 .pr-row a.go{color:var(--gold);font-weight:700;font-size:12.5px;text-align:right}
 @media(max-width:1100px){.pr-row{grid-template-columns:84px 1fr 44px 140px 110px;}.pr-row .res,.pr-row a.go{display:none}}
 .pr-phase{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:10px}
@@ -112,10 +112,10 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=37"></script>
-<script src="assets/seasons.js?v=37"></script>
-<script src="assets/predict.js?v=37"></script>
-<script src="assets/common.js?v=37"></script>
+<script src="assets/data.js?v=38"></script>
+<script src="assets/seasons.js?v=38"></script>
+<script src="assets/predict.js?v=38"></script>
+<script src="assets/common.js?v=38"></script>
 <script>
 (function () {
   "use strict";
@@ -153,7 +153,7 @@
   $("#prPhases").innerHTML = ["early", "mid", "late", "all"].filter(function (k) { return ph[k]; }).map(function (k) {
     var m = ph[k];
     if (k === "all") {
-      return '<div class="pr-ph" style="border-color:rgba(246,192,33,.45)"><div class="k">' + LABELS[k] +
+      return '<div class="pr-ph" style="border-color:rgba(255,255,255,.45)"><div class="k">' + LABELS[k] +
         '</div><div class="v">' + Math.round(m.acc * 100) + '%</div><div class="s">Brier ' + m.brier.toFixed(3) +
         ' · n=' + m.n + '</div><div class="pr-bar"><i style="width:' + (m.acc * 100).toFixed(0) + '%"></i></div></div>';
     }

@@ -23,7 +23,7 @@ if (canvas && wrap) {
   /* ---- 地平环（橙色，数据中心基底） ---- */
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(6.32, 6.5, 128),
-    new THREE.MeshBasicMaterial({ color: 0xff8c00, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+    new THREE.MeshBasicMaterial({ color: 0xC8C8C8, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
   );
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = -0.68;
@@ -56,7 +56,7 @@ if (canvas && wrap) {
   /* ---- 橙色核心 + 光晕 ---- */
   const core = new THREE.Mesh(
     new THREE.IcosahedronGeometry(0.46, 1),
-    new THREE.MeshBasicMaterial({ color: 0xff8c00, wireframe: true, transparent: true, opacity: 0.95 })
+    new THREE.MeshBasicMaterial({ color: 0xC8C8C8, wireframe: true, transparent: true, opacity: 0.95 })
   );
   core.position.y = 1.1;
   scene.add(core);

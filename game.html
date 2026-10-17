@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>对局详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=37">
-<link rel="stylesheet" href="assets/pages.css?v=37">
+<link rel="stylesheet" href="assets/style.css?v=38">
+<link rel="stylesheet" href="assets/pages.css?v=38">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="对局详情 · KPL 数据中心">
@@ -20,12 +20,12 @@
 <main class="wrap" id="main" style="margin-top:24px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=37"></script>
-<script src="assets/seasons.js?v=37"></script>
-<script src="assets/schedule_all.js?v=37"></script>
-<script src="assets/games/index.js?v=37"></script>
-<script src="assets/equip_icons.js?v=37"></script>
-<script src="assets/common.js?v=37"></script>
+<script src="assets/data.js?v=38"></script>
+<script src="assets/seasons.js?v=38"></script>
+<script src="assets/schedule_all.js?v=38"></script>
+<script src="assets/games/index.js?v=38"></script>
+<script src="assets/equip_icons.js?v=38"></script>
+<script src="assets/common.js?v=38"></script>
 <script>
 (function () {
   "use strict";
@@ -193,40 +193,40 @@
       var note = document.getElementById("curveNote");
       if (id === "win") {
         K.lineChart(el2, { height: 280, yFmt: function (v) { return Math.round(v * 100) + "%"; },
-          series: [{ name: K.esc(h.t1) + " 胜率（模型）", color: "#F6C021", fill: true,
+          series: [{ name: K.esc(h.t1) + " 胜率（模型）", color: "#FFFFFF", fill: true,
                      pts: pts.map(function (r) { return [r[0], r[1]]; }) }] });
         note.textContent = "模型对 " + h.t1 + " 的实时胜率推算 · 每分钟一个采样点";
       } else if (id === "eco") {
         K.lineChart(el2, { height: 280, yFmt: function (v) { return Math.round(v / 1000) + "k"; },
           series: [
-            { name: h.t1, color: "#F6C021", pts: pts.map(function (r) { return [r[0], r[2]]; }) },
-            { name: h.t2, color: "#4D9FE8", pts: pts.map(function (r) { return [r[0], r[3]]; }) }
+            { name: h.t1, color: "#FFFFFF", pts: pts.map(function (r) { return [r[0], r[2]]; }) },
+            { name: h.t2, color: "#9DB2CC", pts: pts.map(function (r) { return [r[0], r[3]]; }) }
           ] });
         note.textContent = "两队总经济随比赛发展";
       } else if (id === "gd") {
-        var ser = [{ name: "实际经济差", color: "#F6C021", fill: true,
+        var ser = [{ name: "实际经济差", color: "#FFFFFF", fill: true,
                      pts: pts.map(function (r) { return [r[0], r[2] - r[3]]; }) }];
         if ((h.gpred || []).length >= 3) {
-          ser.push({ name: "5 分钟前的预测值", color: "#9B6BF3", dash: true, pts: h.gpred });
+          ser.push({ name: "5 分钟前的预测值", color: "#A8A8BC", dash: true, pts: h.gpred });
         }
         K.lineChart(el2, { height: 280, yZero: true,
           yFmt: function (v) { return (v > 0 ? "+" : "") + Math.round(v / 1000) + "k"; }, series: ser });
         note.textContent = "紫色虚线 = 用 5 分钟前的走势外推出的此刻经济差——与实际曲线越贴合，说明节奏越稳定";
       } else if (id === "kill") {
         K.lineChart(el2, { height: 280, yFmt: Math.round, series: [
-          { name: h.t1 + " 击杀", color: "#F6C021", pts: pts.map(function (r) { return [r[0], r[4]]; }) },
-          { name: h.t2 + " 击杀", color: "#4D9FE8", pts: pts.map(function (r) { return [r[0], r[5]]; }) }
+          { name: h.t1 + " 击杀", color: "#FFFFFF", pts: pts.map(function (r) { return [r[0], r[4]]; }) },
+          { name: h.t2 + " 击杀", color: "#9DB2CC", pts: pts.map(function (r) { return [r[0], r[5]]; }) }
         ] });
         note.textContent = "两队累计击杀";
       } else if (id === "tower") {
         K.lineChart(el2, { height: 280, yFmt: Math.round, series: [
-          { name: h.t1 + " 推塔", color: "#F6C021", pts: pts.map(function (r) { return [r[0], r[6]]; }) },
-          { name: h.t2 + " 推塔", color: "#4D9FE8", pts: pts.map(function (r) { return [r[0], r[7]]; }) }
+          { name: h.t1 + " 推塔", color: "#FFFFFF", pts: pts.map(function (r) { return [r[0], r[6]]; }) },
+          { name: h.t2 + " 推塔", color: "#9DB2CC", pts: pts.map(function (r) { return [r[0], r[7]]; }) }
         ] });
         note.textContent = "两队累计推塔数";
       } else if (id === "player") {
-        var C1 = ["#F6C021", "#E8A33D", "#D98A2B", "#C47421", "#A85F1A"];
-        var C2 = ["#4D9FE8", "#3D88CC", "#2E71B0", "#225A94", "#174378"];
+        var C1 = ["#FFFFFF", "#E8A33D", "#D98A2B", "#C47421", "#A85F1A"];
+        var C2 = ["#9DB2CC", "#8AA2BE", "#2E71B0", "#225A94", "#174378"];
         var ser2 = [];
         for (var i2 = 0; i2 < 10; i2++) {
           (function (i3) {
@@ -242,8 +242,8 @@
         K.lineChart(el2, { height: 300, yFmt: function (v) { return Math.round(v / 1000) + "k"; }, series: ser2 });
         note.textContent = "10 名选手的个人经济曲线（金系 = " + h.t1 + "，蓝系 = " + h.t2 + "）";
       } else if (id === "dmg") {
-        var C1d = ["#F6C021", "#E8A33D", "#D98A2B", "#C47421", "#A85F1A"];
-        var C2d = ["#4D9FE8", "#3D88CC", "#2E71B0", "#225A94", "#174378"];
+        var C1d = ["#FFFFFF", "#E8A33D", "#D98A2B", "#C47421", "#A85F1A"];
+        var C2d = ["#9DB2CC", "#8AA2BE", "#2E71B0", "#225A94", "#174378"];
         var ser3 = [];
         for (var i4 = 0; i4 < 10; i4++) {
           (function (i5) {

@@ -207,13 +207,13 @@ window.KPL = (function () {
     var Y = function (p) { return P.t + (1 - p) * (H - P.t - P.b); };
     var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-label="胜率曲线">';
     s += '<defs><linearGradient id="gdarea" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0" stop-color="#4D9FE8" stop-opacity=".34"/>' +
-      '<stop offset="1" stop-color="#4D9FE8" stop-opacity="0"/></linearGradient></defs>';
+      '<stop offset="0" stop-color="#9DB2CC" stop-opacity=".34"/>' +
+      '<stop offset="1" stop-color="#9DB2CC" stop-opacity="0"/></linearGradient></defs>';
     var phLabels = ["早期 ≤8′", "中期 9–15′", "后期 16′+"];
     phases.forEach(function (ph, i) {
       var lo = i === 0 ? 0 : phases[i - 1].last_minute;
       s += '<rect x="' + X(lo).toFixed(1) + '" y="' + P.t + '" width="' + (X(ph.last_minute) - X(lo)).toFixed(1) +
-        '" height="' + (H - P.t - P.b) + '" fill="#4D9FE8" opacity="0.05"/>' +
+        '" height="' + (H - P.t - P.b) + '" fill="#9DB2CC" opacity="0.05"/>' +
         '<text x="' + ((X(lo) + X(ph.last_minute)) / 2).toFixed(1) + '" y="' + (P.t + 13) +
         '" text-anchor="middle" font-size="11" fill="#6F84A3" font-family="Roboto Mono,monospace">' + (phLabels[i] || "") + "</text>";
     });
@@ -231,9 +231,9 @@ window.KPL = (function () {
     var line = tl.map(function (pt, i) { return (i ? "L" : "M") + X(pt.m).toFixed(1) + "," + Y(pt.p).toFixed(1); }).join(" ");
     s += '<path d="' + line + " L" + X(tl[tl.length - 1].m).toFixed(1) + "," + (H - P.b) +
       " L" + X(tl[0].m).toFixed(1) + "," + (H - P.b) + ' Z" fill="url(#gdarea)"/>';
-    s += '<path id="wrLine" d="' + line + '" fill="none" stroke="#4D9FE8" stroke-width="2.8" ' +
+    s += '<path id="wrLine" d="' + line + '" fill="none" stroke="#9DB2CC" stroke-width="2.8" ' +
       'stroke-linejoin="round" stroke-linecap="round"/>';
-    var EV_COLOR = { first_blood: "#E5484D", tyrant: "#2BB3A3", dark_tyrant: "#2BB3A3", lord: "#F6C021", storm: "#F6C021", big_dragon: "#F6C021" };
+    var EV_COLOR = { first_blood: "#C08A8D", tyrant: "#8FB3AE", dark_tyrant: "#8FB3AE", lord: "#FFFFFF", storm: "#FFFFFF", big_dragon: "#FFFFFF" };
     var shown = 0;
     var probAt = function (mm) {
       var best = tl[0];
@@ -254,16 +254,16 @@ window.KPL = (function () {
       var fd = fcPts.map(function (pt, i) {
         return (i ? "L" : "M") + X(pt[0]).toFixed(1) + " " + Y(pt[1]).toFixed(1);
       }).join(" ");
-      s += '<path d="' + fd + '" fill="none" stroke="#F6C021" stroke-width="2" stroke-dasharray="6 5" opacity=".9"/>';
+      s += '<path d="' + fd + '" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="6 5" opacity=".9"/>';
       fc.forEach(function (pt) {
-        s += '<circle cx="' + X(pt[0]).toFixed(1) + '" cy="' + Y(pt[1]).toFixed(1) + '" r="3.2" fill="#F6C021" opacity=".9"/>' +
-          '<text x="' + X(pt[0]).toFixed(1) + '" y="' + (Y(pt[1]) - 9).toFixed(1) + '" text-anchor="middle" font-size="10.5" fill="#F6C021" font-family="Inter,monospace">' +
+        s += '<circle cx="' + X(pt[0]).toFixed(1) + '" cy="' + Y(pt[1]).toFixed(1) + '" r="3.2" fill="#FFFFFF" opacity=".9"/>' +
+          '<text x="' + X(pt[0]).toFixed(1) + '" y="' + (Y(pt[1]) - 9).toFixed(1) + '" text-anchor="middle" font-size="10.5" fill="#FFFFFF" font-family="Inter,monospace">' +
           Math.round(pt[1] * 100) + "%</text>";
       });
     }
     s += '<g id="wrCross" style="display:none"><line y1="' + P.t + '" y2="' + (H - P.b) +
-      '" stroke="#F6C021" stroke-width="1" stroke-dasharray="3 3"/>' +
-      '<circle r="4.6" fill="#0A111C" stroke="#F6C021" stroke-width="2.4"/></g></svg>';
+      '" stroke="#FFFFFF" stroke-width="1" stroke-dasharray="3 3"/>' +
+      '<circle r="4.6" fill="#0A111C" stroke="#FFFFFF" stroke-width="2.4"/></g></svg>';
     el.innerHTML = s;
 
     var svg = el.querySelector("svg");

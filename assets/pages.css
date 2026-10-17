@@ -59,7 +59,7 @@
                   border-radius:7px;padding:4px 9px;background:var(--inset);color:var(--ink2)}
 .tcard .pool img{width:17px;height:17px;border-radius:50%}
 .tcard .pool b{font-family:var(--mono);color:var(--gold)}
-.tcard .pool .stale{color:var(--orange);border-color:rgba(255,140,0,.35)}
+.tcard .pool .stale{color:var(--orange);border-color:rgba(200,200,200,.35)}
 .tcard .members{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
 .tcard .members a{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);
                   border-radius:7px;padding:4px 9px;background:var(--inset);color:var(--ink2)}
@@ -78,7 +78,7 @@
 .battle-strip{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px;justify-content:center}
 .battle-chip{font-family:var(--mono);font-size:12.5px;border:1px solid var(--line2);border-radius:8px;
              padding:6px 13px;color:var(--ink2);background:var(--card)}
-.battle-chip.win{border-color:rgba(246,192,33,.55);color:var(--gold);background:rgba(246,192,33,.08)}
+.battle-chip.win{border-color:rgba(255,255,255,.55);color:var(--gold);background:rgba(255,255,255,.08)}
 .battle-chip .tag{font-size:10.5px;color:var(--muted);margin-left:7px}
 .bp-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
 @media(max-width:760px){.bp-grid{grid-template-columns:1fr}}
@@ -191,7 +191,7 @@
 .g-prow{display:grid;grid-template-columns:112px minmax(0,1fr) 64px 78px 60px 60px;gap:9px;align-items:center;
         padding:9px 6px 7px;border-bottom:1px solid var(--line)}
 .g-prow:last-child{border-bottom:none}
-.g-prow.mvp{background:linear-gradient(90deg,rgba(246,192,33,.07),transparent)}
+.g-prow.mvp{background:linear-gradient(90deg,rgba(255,255,255,.07),transparent)}
 .g-hero{display:flex;align-items:center;gap:8px;min-width:0}
 .g-hero img{width:34px;height:34px;border-radius:50%;object-fit:cover;border:1px solid var(--line2);flex:none}
 .g-hero span{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -208,7 +208,7 @@
 .g-kit{grid-column:1/-1;display:flex;gap:4px;justify-content:flex-start;flex-wrap:wrap;
        padding:4px 0 2px 4px}
 .g-eq img{width:24px;height:24px;border-radius:5px;border:1px solid var(--line2);object-fit:cover}
-.g-eq.sa img{border-color:rgba(246,192,33,.5)}
+.g-eq.sa img{border-color:rgba(255,255,255,.5)}
 .bp-pick em{font-style:normal;font-size:10px;color:var(--muted);margin-right:5px}
 
 /* ---------------- 选手详情（player.html） ---------------- */
@@ -235,15 +235,15 @@
 .pl-recent .hero{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2)}
 .pl-recent .hero img{width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid var(--line2)}
 .pl-recent .res{font-size:12px;font-weight:800;text-align:center;border-radius:5px;padding:2px 0}
-.pl-recent .res.w{color:var(--teal);background:rgba(43,179,163,.12)}
-.pl-recent .res.l{color:var(--red);background:rgba(229,72,77,.12)}
+.pl-recent .res.w{color:var(--teal);background:rgba(143,179,174,.12)}
+.pl-recent .res.l{color:var(--red);background:rgba(192,138,141,.12)}
 .pl-recent .kda{font-size:12.5px;text-align:right;color:var(--ink2)}
 
 .pl-hero .kda{font-size:12px;color:var(--ink2);text-align:right}
 
 /* ---------------- 实时区（live.js） ---------------- */
 .live-zone{margin-top:16px}
-.live-card{background:var(--card);border:1px solid rgba(229,72,77,.45);border-radius:14px;padding:16px 20px}
+.live-card{background:var(--card);border:1px solid rgba(192,138,141,.45);border-radius:14px;padding:16px 20px}
 .live-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .live-head .t{font-size:15px;font-weight:800}
 .live-head .upd{margin-left:auto;font-size:11.5px;color:var(--muted);font-family:var(--mono)}
@@ -349,9 +349,9 @@
 /* ---- 全站氛围：顶部光斑 + 细网格 ---- */
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
   background:
-    radial-gradient(900px 420px at 22% -6%, rgba(246,192,33,.075), transparent 62%),
-    radial-gradient(760px 380px at 78% -10%, rgba(77,159,232,.085), transparent 64%),
-    radial-gradient(600px 500px at 50% 108%, rgba(43,179,163,.05), transparent 60%);}
+    radial-gradient(900px 420px at 22% -6%, rgba(255,255,255,.075), transparent 62%),
+    radial-gradient(760px 380px at 78% -10%, rgba(157,178,204,.085), transparent 64%),
+    radial-gradient(600px 500px at 50% 108%, rgba(143,179,174,.05), transparent 60%);}
 body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
   background-image:linear-gradient(rgba(255,255,255,.016) 1px, transparent 1px),
                    linear-gradient(90deg, rgba(255,255,255,.016) 1px, transparent 1px);
@@ -362,7 +362,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opa
 /* ---- 页面头区：底部渐变细线 ---- */
 .page-hero{position:relative}
 .page-hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
-  background:linear-gradient(90deg, transparent, rgba(246,192,33,.5) 18%, rgba(77,159,232,.45) 55%, transparent 92%);}
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.5) 18%, rgba(157,178,204,.45) 55%, transparent 92%);}
 .ph-kicker{position:relative;padding-left:16px}
 .ph-kicker::before{content:"";position:absolute;left:0;top:50%;width:10px;height:2px;border-radius:2px;
   background:linear-gradient(90deg,var(--gold),transparent);transform:translateY(-50%)}
@@ -379,39 +379,39 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opa
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 10px 26px rgba(0,0,0,.32)}
 
 /* ---- 按钮质感 ---- */
-.btn.primary{background:linear-gradient(180deg,#FFD34E,var(--gold) 52%,#E0A800);
-  box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 6px 18px rgba(246,192,33,.22);
+.btn.primary{background:linear-gradient(180deg,#FFFFFF,var(--gold) 52%,#D8D8D8);
+  box-shadow:0 1px 0 rgba(255,255,255,.35) inset, 0 6px 18px rgba(255,255,255,.22);
   border:1px solid rgba(0,0,0,.12)}
-.btn.primary:hover{background:linear-gradient(180deg,#FFDD6E,#F6C021 52%,#D9A800);
-  box-shadow:0 1px 0 rgba(255,255,255,.4) inset, 0 8px 24px rgba(246,192,33,.3); transform:translateY(-1px)}
+.btn.primary:hover{background:linear-gradient(180deg,#FFDD6E,#FFFFFF 52%,#D8D8D8);
+  box-shadow:0 1px 0 rgba(255,255,255,.4) inset, 0 8px 24px rgba(255,255,255,.3); transform:translateY(-1px)}
 .btn.ghost{background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.11)}
-.btn.ghost:hover{background:rgba(246,192,33,.1); border-color:rgba(246,192,33,.55)}
+.btn.ghost:hover{background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.55)}
 
 /* ---- 顶栏：更精致的玻璃 + 当前项发光 ---- */
 .topbar{background:rgba(9,15,25,.78)}
-.nav a.on{box-shadow:0 4px 14px rgba(246,192,33,.32), inset 0 1px 0 rgba(255,255,255,.35)}
-.brand-mark{box-shadow:0 4px 12px rgba(246,192,33,.3), inset 0 1px 0 rgba(255,255,255,.4)}
+.nav a.on{box-shadow:0 4px 14px rgba(255,255,255,.32), inset 0 1px 0 rgba(255,255,255,.35)}
+.brand-mark{box-shadow:0 4px 12px rgba(255,255,255,.3), inset 0 1px 0 rgba(255,255,255,.4)}
 
 /* ---- 表格：行悬停微金 + 表头提升 ---- */
-.tbl tbody tr:hover,.tbl tr:hover{background:rgba(246,192,33,.045)}
+.tbl tbody tr:hover,.tbl tr:hover{background:rgba(255,255,255,.045)}
 .tbl thead th{background:linear-gradient(180deg, rgba(255,255,255,.025), transparent)}
 
 /* ---- 搜索框聚焦发光 ---- */
-.search-box:focus-within{box-shadow:0 0 0 3px rgba(246,192,33,.14), 0 6px 20px rgba(0,0,0,.3)}
+.search-box:focus-within{box-shadow:0 0 0 3px rgba(255,255,255,.14), 0 6px 20px rgba(0,0,0,.3)}
 
 /* ---- 首页生态：轮播卡 + today 条 + entry 卡 ---- */
-.today-strip{border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(246,192,33,.16);
+.today-strip{border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.16);
   background:linear-gradient(180deg, rgba(14,25,41,.9), rgba(10,17,28,.94))}
 .today-match{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.008));
   border-color:rgba(255,255,255,.08)}
 .entry{background:linear-gradient(180deg,#122035,#0E1929); border-color:rgba(255,255,255,.065)}
 .entry:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(0,0,0,.34)}
-.entry .ic{background:linear-gradient(160deg, rgba(246,192,33,.16), rgba(77,159,232,.12))}
+.entry .ic{background:linear-gradient(160deg, rgba(255,255,255,.16), rgba(157,178,204,.12))}
 
 /* ---- 滚动条 ---- */
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:5px;border:2px solid transparent;background-clip:content-box}
-::-webkit-scrollbar-thumb:hover{background:rgba(246,192,33,.35);background-clip:content-box}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.35);background-clip:content-box}
 
 /* ================ v5 专业配色重构（标杆：gol.gg / lolesports + Vercel WIG） ================ */
 /* 核心变化：死黑 → 蓝灰 slate；满屏金色 → 单一青蓝结构色；边框 → 底色分层 */
@@ -428,7 +428,7 @@ html{color-scheme:dark}
 .block-head h2 i{background:linear-gradient(180deg,var(--accent),var(--accent-d));border-radius:3px}
 .ph-kicker{color:var(--accent)}
 .ph-kicker::before{background:linear-gradient(90deg,var(--accent),transparent)}
-.page-hero::after{background:linear-gradient(90deg, transparent, rgba(62,193,234,.42) 20%, rgba(246,192,33,.3) 62%, transparent 92%)}
+.page-hero::after{background:linear-gradient(90deg, transparent, rgba(255,255,255,.42) 20%, rgba(255,255,255,.3) 62%, transparent 92%)}
 .scope-lab{color:var(--accent)}
 .usage .wr,.pl-hero .wr{color:var(--accent)}
 .hv-row .c,.pred-row .p{color:var(--accent)}
@@ -439,9 +439,9 @@ html{color-scheme:dark}
 
 /* 氛围光：青蓝为主 */
 body::before{background:
-  radial-gradient(920px 420px at 24% -6%, rgba(62,193,234,.10), transparent 62%),
-  radial-gradient(720px 380px at 78% -10%, rgba(77,159,232,.09), transparent 64%),
-  radial-gradient(560px 480px at 50% 106%, rgba(43,179,163,.05), transparent 62%)}
+  radial-gradient(920px 420px at 24% -6%, rgba(255,255,255,.10), transparent 62%),
+  radial-gradient(720px 380px at 78% -10%, rgba(157,178,204,.09), transparent 64%),
+  radial-gradient(560px 480px at 50% 106%, rgba(143,179,174,.05), transparent 62%)}
 
 /* 卡片：底色分层取代边框（更"透气"） */
 .panel,.tcard,.hcard,.combo-card,.player,.bp2-panel,.cmp-radar,.cmp-table,.pr-kpi,.live-card,.h2h-panel,.champ,.today-match,.entry{
@@ -452,9 +452,9 @@ body::before{background:
 .panel:hover,.cmp-radar:hover{border-color:rgba(255,255,255,.09)}
 
 /* 表格与列表：悬停色随主题（青蓝微光） */
-.tbl tbody tr:hover,.tbl tr:hover{background:rgba(62,193,234,.05)}
-.pl-hero:hover,.recent-row:hover,.mrow:hover{background:rgba(62,193,234,.045)}
-.hist-row:hover,.pr-row:hover,.h2h-row2:hover,.bp2-chip:hover{background:rgba(62,193,234,.05)}
+.tbl tbody tr:hover,.tbl tr:hover{background:rgba(255,255,255,.05)}
+.pl-hero:hover,.recent-row:hover,.mrow:hover{background:rgba(255,255,255,.045)}
+.hist-row:hover,.pr-row:hover,.h2h-row2:hover,.bp2-chip:hover{background:rgba(255,255,255,.05)}
 
 /* 顶栏 & 导航：品牌金保留，结构变青蓝 */
 .topbar{border-bottom:1px solid rgba(255,255,255,.05)}
@@ -466,21 +466,21 @@ body::before{background:
 
 /* focus 可见性（Vercel WIG：键盘用户必须看到焦点） */
 a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{
-  outline:2px solid rgba(62,193,234,.75);outline-offset:2px;border-radius:6px}
+  outline:2px solid rgba(255,255,255,.75);outline-offset:2px;border-radius:6px}
 
 /* 减少死区与细节 */
-::selection{background:rgba(62,193,234,.32)}
-::-webkit-scrollbar-thumb:hover{background:rgba(62,193,234,.4);background-clip:content-box}
-.btn.ghost:hover{background:rgba(62,193,234,.1);border-color:rgba(62,193,234,.55);color:var(--accent)}
-.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(62,193,234,.13), 0 6px 20px rgba(0,0,0,.3)}
-.tier.S{background:#F6C021}
+::selection{background:rgba(255,255,255,.32)}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.4);background-clip:content-box}
+.btn.ghost:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.55);color:var(--accent)}
+.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,255,255,.13), 0 6px 20px rgba(0,0,0,.3)}
+.tier.S{background:#FFFFFF}
 .tier.A{background:#3EC1EA}
 .tier.B{background:#8FA3B8}
 .tier.C{background:#5E7089}
 
 /* ---- 数据简报（一句话结论，跟随筛选） ---- */
 .brief{display:flex;gap:11px;align-items:flex-start;margin-bottom:16px;padding:12px 18px;
-  background:linear-gradient(90deg, rgba(62,193,234,.08), rgba(62,193,234,.015) 52%, transparent);
+  background:linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,.015) 52%, transparent);
   border-left:3px solid var(--accent);border-radius:0 11px 11px 0;font-size:13.5px;color:var(--ink2);line-height:1.75}
 .brief b{color:var(--ink);font-weight:800}
 .brief .ico{color:var(--accent);font-family:var(--mono);font-weight:800;font-size:12px;padding-top:2px;flex:none}
@@ -503,7 +503,7 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,[t
   --muted:rgba(255,255,255,.6);    /* 60% 三级 */
   --faint:rgba(255,255,255,.42);   /* 42% 注脚 */
   /* 数据语义色保留（阵营/胜负必须可辨），UI 层只用黑白灰 */
-  --gold:#E9C755; --blue:#79A8DF; --red:#DE7073; --teal:#68BBAF;
+  --gold:#FFFFFF; --blue:#9DB2CC; --red:#C08A8D; --teal:#8FB3AE;
   --accent:rgba(255,255,255,.92); --accent-d:rgba(255,255,255,.66);
 }
 html{color-scheme:dark}
@@ -565,7 +565,7 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
 .search-box{background:none !important;border:1px solid var(--line) !important;border-radius:6px !important}
 .chip{border-radius:4px !important}
 .tier{border-radius:4px !important}
-.tier.S{background:#E9C755 !important}.tier.A{background:#79A8DF !important}.tier.B{background:rgba(255,255,255,.4) !important}.tier.C{background:rgba(255,255,255,.22) !important}
+.tier.S{background:#FFFFFF !important}.tier.A{background:#9DB2CC !important}.tier.B{background:rgba(255,255,255,.4) !important}.tier.C{background:rgba(255,255,255,.22) !important}
 
 /* —— 版式：留白架构（间距节奏加大） —— */
 .block{margin-top:60px !important}
@@ -575,3 +575,18 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
 /* —— 动效：只留透明度与 16px 位移（规范） —— */
 .reveal{transition:opacity .42s ease-out, transform .42s ease-out !important}
 @media(prefers-reduced-motion:reduce){.reveal{transition:none !important}}
+
+/* v7：档位徽章 → 灰阶四级（规范：最多三色内） */
+.tier.S{background:#FFFFFF !important;color:#0A0A0C !important}
+.tier.A{background:#C2C2C2 !important;color:#0A0A0C !important}
+.tier.B{background:#8A8A8A !important;color:#0A0A0C !important}
+.tier.C{background:#5A5A5A !important;color:#E8E8E8 !important}
+/* 战报胜负：白为胜、灰为负（用字重和透明度表达，不用彩色） */
+.result-row .score span.w{color:#FFFFFF !important}
+.h2h-row2 .score .w{color:#FFFFFF !important}
+.pl-recent .res.w{color:#FFFFFF !important;background:rgba(255,255,255,.08) !important}
+.pl-recent .res.l{color:rgba(255,255,255,.5) !important;background:rgba(255,255,255,.04) !important}
+.pr-row .hit.y{color:#FFFFFF !important;background:rgba(255,255,255,.1) !important}
+.pr-row .hit.n{color:rgba(255,255,255,.5) !important;background:rgba(255,255,255,.04) !important}
+.hist-row .ok{color:#FFFFFF !important}
+.hist-row .no{color:rgba(255,255,255,.5) !important}
