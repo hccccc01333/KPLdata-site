@@ -1,0 +1,9 @@
+# 静态资产不需要发布的文件（wrangler 部署时排除）
+.git
+.wrangler
+.pytest_cache
+*.py
+*.pyc
+*.bat
+*.md
+__pycache__
