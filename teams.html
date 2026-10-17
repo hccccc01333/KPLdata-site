@@ -41,6 +41,7 @@
     <div class="champ-strip" id="champStrip"></div>
   </section>
   <div class="scopebar" id="scopeBar"></div>
+  <div class="brief" id="brief"></div>
   <div class="filterbar">
     <label class="fld"><span>最少场次</span>
       <select id="fMin">
@@ -108,6 +109,16 @@
                  : '<div class="block-note mono" style="margin-top:8px">该范围暂无选手明细</div>') +
         "</details></div>";
     }).join("");
+    /* 数据简报 */
+    if (teams.length) {
+      var top = teams[0];
+      var gTop = teams.slice().sort(function (a, b) { return b.goldDiff - a.goldDiff; })[0];
+      K.brief("#brief", "当前范围共 <b>" + teams.length + "</b> 支战队、<b>" + K.fmtInt(teams.reduce(function (a, t) { return a + t.games; }, 0)) +
+        "</b> 局比赛。" + K.scopeName(curScope) + "胜率最高的是 <b>" + K.esc(top.team) + "</b>（<b>" + K.pct(top.wr, 1) + "</b>，" + top.games +
+        " 局）；场均经济差最强的是 <b>" + K.esc(gTop.team) + "</b>（<b>" + K.signed(gTop.goldDiff) + "</b>）。展开任意战队卡片可看阵容名单。");
+    } else {
+      K.brief("#brief", "当前条件下没有战队数据，试试放宽筛选。");
+    }
     K.refresh();
   }
 

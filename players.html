@@ -33,6 +33,7 @@
 
 <main class="wrap" style="margin-top:26px">
   <div class="scopebar" id="scopeBar"></div>
+  <div class="brief" id="brief"></div>
   <div class="filterbar">
     <label class="fld"><span>搜索</span>
       <input class="search" id="pSearch" type="search" placeholder="选手名 / 战队，如：一诺" autocomplete="off">
@@ -123,6 +124,17 @@
     $("#playerGrid").innerHTML = rows.length
       ? rows.map(playerCard).join("")
       : '<div class="empty-tip">没有符合条件的选手（可清空搜索或放宽条件）</div>';
+    /* 数据简报 */
+    if (rows.length) {
+      var bK = rows.slice().sort(function (a, b) { return b.kda - a.kda; })[0];
+      var bM = rows.slice().sort(function (a, b) { return b.mvp - a.mvp; })[0];
+      var bD = rows.slice().sort(function (a, b) { return b.dmg - a.dmg; })[0];
+      K.brief("#brief", "当前筛选有 <b>" + rows.length + "</b> 名选手。KDA 领跑：<b>" + K.esc(bK.name) + "</b>（<b>" + bK.kda.toFixed(2) +
+        "</b>，" + bK.games + " 局）；MVP 最多：<b>" + K.esc(bM.name) + "</b>（<b>" + bM.mvp + "</b> 次）；输出占比最高：<b>" +
+        K.esc(bD.name) + "</b>（<b>" + bD.dmg.toFixed(1) + "%</b>）。");
+    } else {
+      K.brief("#brief", "当前条件下没有选手数据，清空搜索或放宽局数试试。");
+    }
     K.refresh();
   }
 

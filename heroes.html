@@ -33,6 +33,7 @@
 
 <main class="wrap" style="margin-top:26px">
   <div class="scopebar" id="scopeBar"></div>
+  <div class="brief" id="brief"></div>
   <div class="filterbar">
     <label class="fld grow"><span>搜索英雄</span>
       <input class="search" id="fQ" placeholder="输入英雄名，如 戈娅">
@@ -98,6 +99,16 @@
     $("#heroGrid").innerHTML = rows.length ? rows.map(heroCardFrom).join("")
       : '<div class="empty-tip">没有符合条件的英雄</div>';
     renderScatter(d);
+    /* 数据简报 */
+    var main = (d.heroes || []).filter(function (h) { return h.games >= 30; });
+    if (main.length) {
+      var bW = main.slice().sort(function (a, b) { return b.wr - a.wr; })[0];
+      var bB = (d.heroes || []).slice().sort(function (a, b) { return b.bans - a.bans; })[0];
+      var bG = (d.heroes || []).slice().sort(function (a, b) { return b.games - a.games; })[0];
+      K.brief("#brief", K.scopeName(curScope) + "：超过 30 局的英雄里，胜率最高的是 <b>" + K.esc(bW.name) + "</b>（<b>" + K.pct(bW.wr, 1) +
+        "</b>，" + bW.games + " 局）；最常被禁的是 <b>" + K.esc(bB.name) + "</b>（<b>" + bB.bans + "</b> 次）；出场最多的是 <b>" +
+        K.esc(bG.name) + "</b>（<b>" + bG.games + "</b> 局）。点开任意英雄看选手使用榜与常见出装。");
+    }
     K.refresh();
   }
 

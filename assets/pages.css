@@ -477,3 +477,10 @@ a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,[t
 .tier.A{background:#3EC1EA}
 .tier.B{background:#8FA3B8}
 .tier.C{background:#5E7089}
+
+/* ---- 数据简报（一句话结论，跟随筛选） ---- */
+.brief{display:flex;gap:11px;align-items:flex-start;margin-bottom:16px;padding:12px 18px;
+  background:linear-gradient(90deg, rgba(62,193,234,.08), rgba(62,193,234,.015) 52%, transparent);
+  border-left:3px solid var(--accent);border-radius:0 11px 11px 0;font-size:13.5px;color:var(--ink2);line-height:1.75}
+.brief b{color:var(--ink);font-weight:800}
+.brief .ico{color:var(--accent);font-family:var(--mono);font-weight:800;font-size:12px;padding-top:2px;flex:none}

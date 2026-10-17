@@ -388,6 +388,13 @@ window.KPL = (function () {
   }
 
 
+  /* ---------- 数据简报（动态一句话结论） ---------- */
+  function brief(mount, html) {
+    var el = typeof mount === "string" ? document.querySelector(mount) : mount;
+    if (!el) return;
+    el.innerHTML = '<span class="ico">●</span><p>' + html + "</p>";
+  }
+
   /* ---------- 多系列折线图（指标曲线） ---------- */
   function lineChart(el, opts) {
     if (!el) return;
@@ -571,6 +578,7 @@ window.KPL = (function () {
     heroCard: heroCard, playerCard: playerCard, wrChart: wrChart,
     countdown: countdown, scopeBar: scopeBar, scopeOf: scopeOf, scopeName: scopeName,
     isLive: isLive, liveBadge: liveBadge, exportCSV: exportCSV, lineChart: lineChart,
+    brief: brief,
     init: init, refresh: scan
   };
 })();
