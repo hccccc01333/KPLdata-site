@@ -286,18 +286,19 @@ window.KPL = (function () {
       "<span>" + esc(team) + "</span>" +
       (!r && ic ? '<img src="' + esc(ic) + '" alt="" loading="lazy">' : "") + "</div>";
   }
-  function resultRow(r) {
+  function resultRow(r, opts) {
     var ok = r.score1 >= 0 && r.score2 >= 0;
     var s1 = ok ? '<span class="' + (r.score1 >= r.score2 ? "w" : "") + '">' + r.score1 + "</span>" : "–";
     var s2 = ok ? '<span class="' + (r.score2 > r.score1 ? "w" : "") + '">' + r.score2 + "</span>" : "–";
-    var go = DT.matches.some(function (m) { return m.matchId === r.matchId; })
-      ? '<a class="go" href="match.html?id=' + esc(r.matchId) + '">复盘</a>'
-      : '<span class="go off">—</span>';
+    var go = '<a class="go" href="match.html?id=' + esc(r.matchId) + '">' +
+      (coverageMask(r.matchId) & 8 ? "复盘" : "详情") + "</a>";
+    // opts.badges：列表里顺带显示数据完整度（首页最新结果用）
+    var cov = (opts && opts.badges) ? '<span class="row-cov">' + coverageBadges(coverageMask(r.matchId)) + "</span>" : "";
     return '<div class="row" data-mid="' + esc(String(r.matchId || "")) + '">' +
       '<div class="rt-date"><b>' + esc(dateCN(r.date)) + "</b>" + esc(weekdayCN(r.date)) + "</div>" +
       side(r.team1, r.icon1, false) +
       '<div class="score">' + s1 + " : " + s2 + "</div>" +
-      side(r.team2, r.icon2, true) + go + "</div>";
+      side(r.team2, r.icon2, true) + cov + go + "</div>";
   }
   function muBody(rows) {
     return rows.length ? rows.map(function (r) {
