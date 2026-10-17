@@ -412,3 +412,68 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opa
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:5px;border:2px solid transparent;background-clip:content-box}
 ::-webkit-scrollbar-thumb:hover{background:rgba(246,192,33,.35);background-clip:content-box}
+
+/* ================ v5 专业配色重构（标杆：gol.gg / lolesports + Vercel WIG） ================ */
+/* 核心变化：死黑 → 蓝灰 slate；满屏金色 → 单一青蓝结构色；边框 → 底色分层 */
+:root{
+  --bg:#0E1621; --bg2:#121C29;
+  --card:#17222F; --card2:#1E2B3B; --inset:#121A26;
+  --line:rgba(255,255,255,.058); --line2:rgba(255,255,255,.115);
+  --ink:#F1F5FA; --ink2:#A7B6C9; --muted:#697A90;
+  --accent:#3EC1EA; --accent-d:#1B90C0;
+}
+html{color-scheme:dark}
+
+/* 结构元素：金色 → 青蓝（金色只留给：主按钮 / 冠军 / 最高值 / 品牌锚点） */
+.block-head h2 i{background:linear-gradient(180deg,var(--accent),var(--accent-d));border-radius:3px}
+.ph-kicker{color:var(--accent)}
+.ph-kicker::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.page-hero::after{background:linear-gradient(90deg, transparent, rgba(62,193,234,.42) 20%, rgba(246,192,33,.3) 62%, transparent 92%)}
+.scope-lab{color:var(--accent)}
+.usage .wr,.pl-hero .wr{color:var(--accent)}
+.hv-row .c,.pred-row .p{color:var(--accent)}
+.combo-nums .syn.pos{color:var(--accent)}
+.pr-row .pred b{color:var(--accent)}
+.seg button.on{background:var(--accent);color:#06222E}
+.seg{border-color:rgba(255,255,255,.12)}
+
+/* 氛围光：青蓝为主 */
+body::before{background:
+  radial-gradient(920px 420px at 24% -6%, rgba(62,193,234,.10), transparent 62%),
+  radial-gradient(720px 380px at 78% -10%, rgba(77,159,232,.09), transparent 64%),
+  radial-gradient(560px 480px at 50% 106%, rgba(43,179,163,.05), transparent 62%)}
+
+/* 卡片：底色分层取代边框（更"透气"） */
+.panel,.tcard,.hcard,.combo-card,.player,.bp2-panel,.cmp-radar,.cmp-table,.pr-kpi,.live-card,.h2h-panel,.champ,.today-match,.entry{
+  background:linear-gradient(180deg,#1A2534,#17222F 55%,#141E2A);
+  border-color:rgba(255,255,255,.055);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035), 0 1px 2px rgba(0,0,0,.22);
+}
+.panel:hover,.cmp-radar:hover{border-color:rgba(255,255,255,.09)}
+
+/* 表格与列表：悬停色随主题（青蓝微光） */
+.tbl tbody tr:hover,.tbl tr:hover{background:rgba(62,193,234,.05)}
+.pl-hero:hover,.recent-row:hover,.mrow:hover{background:rgba(62,193,234,.045)}
+.hist-row:hover,.pr-row:hover,.h2h-row2:hover,.bp2-chip:hover{background:rgba(62,193,234,.05)}
+
+/* 顶栏 & 导航：品牌金保留，结构变青蓝 */
+.topbar{border-bottom:1px solid rgba(255,255,255,.05)}
+.more{color:var(--accent)}
+.today-label{color:var(--accent)}
+.mrow .mt{color:var(--accent)}
+.foot-right a{color:var(--accent)}
+.block-note{color:var(--muted)}
+
+/* focus 可见性（Vercel WIG：键盘用户必须看到焦点） */
+a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid rgba(62,193,234,.75);outline-offset:2px;border-radius:6px}
+
+/* 减少死区与细节 */
+::selection{background:rgba(62,193,234,.32)}
+::-webkit-scrollbar-thumb:hover{background:rgba(62,193,234,.4);background-clip:content-box}
+.btn.ghost:hover{background:rgba(62,193,234,.1);border-color:rgba(62,193,234,.55);color:var(--accent)}
+.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(62,193,234,.13), 0 6px 20px rgba(0,0,0,.3)}
+.tier.S{background:#F6C021}
+.tier.A{background:#3EC1EA}
+.tier.B{background:#8FA3B8}
+.tier.C{background:#5E7089}
