@@ -285,15 +285,47 @@ def main() -> None:
         }
         (OUT_DIR / f"{match_id}.json").write_text(
             json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-        index[match_id] = {"lg": lg, "date": date, "t1": out["t1"], "t2": out["t2"],
-                           "b": [b["battleId"] for b in payload_battles]}
+        index[match_id] = {
+            "lg": lg, "date": date, "t1": out["t1"], "t2": out["t2"],
+            "b": [b["battleId"] for b in payload_battles],
+            # 是否有模型胜率（徽标"模型估算"）：帧里出现过非空概率即算有
+            "p": [1 if any(fr.get("p") is not None for fr in b["frames"]) else 0 for b in payload_battles],
+        }
 
     INDEX_PATH.write_text("KPL_REPLAY_INDEX = " + json.dumps(index, ensure_ascii=False, separators=(",", ":")) + ";\n",
                           encoding="utf-8")
     MANIFEST_PATH.write_text(json.dumps(manifest, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+
+    # ---- 数据完整度徽标索引（按大场聚合，供首页/赛程/比赛页在点进去之前就能判断） ----
+    # bit0 比分 · bit1 完整BP · bit2 选手明细 · bit3 分钟级曲线 · bit4 模型估算
+    coverage = {}
+    try:
+        gindex = jload_js(GAMES_INDEX)
+    except Exception:
+        gindex = {}
+    for mid, entry in gindex.items():
+        mask = 0
+        for row in entry.get("b") or []:
+            flags = int(row[5] or 0) if len(row) > 5 else 0
+            if flags & 1:
+                mask |= 2
+            if flags & 2:
+                mask |= 4
+        if entry.get("b"):
+            mask |= 1
+        rp = index.get(str(mid))
+        if rp:
+            mask |= 8
+            if any(rp.get("p") or []):
+                mask |= 16
+        coverage[str(mid)] = mask
+    (SITE / "assets" / "coverage.js").write_text(
+        "KPL_COVERAGE = " + json.dumps(coverage, ensure_ascii=False, separators=(",", ":")) + ";\n",
+        encoding="utf-8")
+
     total_kb = sum(p.stat().st_size for p in OUT_DIR.glob("*.json")) / 1024
     print(f"replay: {len(index)} 场 / {built_battles} 局 · 本次重建 {rebuilt} 局 · "
-          f"{total_kb:.0f} KB · {time.time() - t0:.1f}s")
+          f"{total_kb:.0f} KB · coverage {len(coverage)} 场 · {time.time() - t0:.1f}s")
 
 
 if __name__ == "__main__":

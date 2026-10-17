@@ -225,6 +225,60 @@ window.KPL = (function () {
     });
   }
 
+  /* ---------- 数据完整度徽标（V4：点进去之前就知道能看到什么） ---------- */
+  // mask: bit0 比分 · bit1 完整BP · bit2 选手明细 · bit3 分钟级曲线 · bit4 模型估算
+  var COV_ITEMS = [
+    ["比分", 1, "官方比分与用时"],
+    ["BP", 2, "完整 BP（双方 10 个选人）"],
+    ["选手", 4, "逐局选手数据（KDA / 经济 / 出装）"],
+    ["分钟级", 8, "逐分钟经济 / 资源 / 击杀序列"],
+    ["模型", 16, "模型胜率曲线（估算，非官方）"]
+  ];
+
+  function coverageMask(matchId) {
+    var cov = window.KPL_COVERAGE || {};
+    return typeof cov[matchId] === "number" ? cov[matchId] : 0;
+  }
+
+  function battleCoverageMask(matchId, battleId) {
+    var mask = 0;
+    var g = (window.KPL_GAME_INDEX || {})[matchId];
+    if (g) {
+      for (var i = 0; i < (g.b || []).length; i++) {
+        var row = g.b[i];
+        if (row[0] === battleId) {
+          var flags = Number(row[5] || 0);
+          mask |= 1;
+          if (flags & 1) mask |= 2;
+          if (flags & 2) mask |= 4;
+          break;
+        }
+      }
+    }
+    var rp = (window.KPL_REPLAY_INDEX || {})[matchId];
+    if (rp) {
+      var idx = (rp.b || []).indexOf(battleId);
+      if (idx >= 0) {
+        mask |= 8;
+        if ((rp.p || [])[idx]) mask |= 16;
+      }
+    }
+    return mask;
+  }
+
+  /* 渲染徽标：on 为高亮，缺失项灰显并标明"无" */
+  function coverageBadges(mask, opts) {
+    opts = opts || {};
+    var onlyMissing = !!opts.onlyMissing;
+    var items = COV_ITEMS.filter(function (it) { return !onlyMissing || !(mask & it[1]); });
+    if (!items.length) return "";
+    return '<span class="cov">' + items.map(function (it) {
+      var on = !!(mask & it[1]);
+      return '<span class="cov-i ' + (on ? "on" : "off") + '" title="' +
+        esc(it[0]) + "：" + (on ? esc(it[2]) : "本局无此数据") + '">' + esc(it[0]) + "</span>";
+    }).join("") + "</span>";
+  }
+
   /* ---------- 共用渲染 ---------- */
   function side(team, ic, r) {
     return '<div class="side' + (r ? " r" : "") + '">' +
@@ -668,6 +722,7 @@ window.KPL = (function () {
     heroCard: heroCard, playerCard: playerCard, wrChart: wrChart,
     countdown: countdown, scopeBar: scopeBar, scopeOf: scopeOf, scopeName: scopeName,
     isLive: isLive, liveBadge: liveBadge, exportCSV: exportCSV, lineChart: lineChart,
+    coverageMask: coverageMask, battleCoverageMask: battleCoverageMask, coverageBadges: coverageBadges,
     brief: brief,
     init: init, refresh: scan
   };

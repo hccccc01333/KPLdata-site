@@ -23,6 +23,7 @@
 <script src="assets/data.js?v=44"></script>
 <script src="assets/seasons.js?v=44"></script>
 <script src="assets/replay/index.js?v=44"></script>
+<script src="assets/coverage.js?v=44"></script>
 <script src="assets/replay.js?v=44"></script>
 <script src="assets/schedule_all.js?v=44"></script>
 <script src="assets/games/index.js?v=44"></script>
@@ -85,6 +86,8 @@
                : "<em>胜方：" + K.esc(winName) + "</em>") + "</div>" +
       '<div class="g-team r ' + (g.win === 2 ? "win" : "") + '">' + (g.i2 ? '<img src="' + K.esc(g.i2) + '" alt="">' : "") +
       "<span>" + K.esc(g.t2) + "</span><b class='mono'>" + g.k2 + "</b><i>击杀</i></div></div>" +
+      '<div style="margin-top:14px">' + K.coverageBadges(K.battleCoverageMask(MID, BID)) +
+      '<div class="cov-note">本局可看的内容：亮色=有数据，虚线=官方未提供</div></div>' +
       '<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">' +
       '<a class="btn ghost sm" href="match.html?id=' + K.esc(MID) + '">← 整场详情</a>' +
       (g.video ? '<a class="btn primary sm" href="' + K.esc(g.video) + '" target="_blank" rel="noopener">看本局回放 ↗</a>'

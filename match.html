@@ -26,6 +26,7 @@
 <script src="assets/games/index.js?v=44"></script>
 <script src="assets/seasons.js?v=44"></script>
 <script src="assets/replay/index.js?v=44"></script>
+<script src="assets/coverage.js?v=44"></script>
 <script src="assets/replay.js?v=44"></script>
 <script src="assets/common.js?v=44"></script>
 <script>
@@ -83,7 +84,7 @@
         '<td class="num">G' + b[1] + "</td>" +
         '<td><span class="team-cell">' + (isLiveB ? '<span style="color:var(--muted)">对局中…</span>' : K.esc(battleWinName(b))) + "</span></td>" +
         '<td class="num">' + (b[2] || "—") + "′</td>" +
-        "<td>" + (isLiveB ? K.liveBadge() : "<span class='chip done'>已结束</span>") + "</td>" +
+        "<td>" + (isLiveB ? K.liveBadge() : K.coverageBadges(K.battleCoverageMask(sr.matchId, b[0]))) + "</td>" +
         '<td class="num"><a class="go" href="game.html?id=' + encodeURIComponent(b[0]) + '" style="color:var(--gold);font-weight:700">' + (isLiveB ? "实时数据 →" : "对局详情 →") + "</a></td></tr>";
     }).join("");
     $("#wrapHero").innerHTML = '<header class="page-hero"><div class="wrap">' +
@@ -111,7 +112,7 @@
       '<div class="live-zone" id="histZone" style="display:none"></div>' +
       '<div class="block-head"><h2><i></i>本大场对局</h2>' +
       '<span class="block-note mono">每局都有选手数据、BP 与出装</span></div>' +
-      '<div class="panel table-panel"><table class="tbl"><thead><tr><th class="num">局</th><th>胜方</th><th class="num">时长</th><th>状态</th><th class="num">数据</th></tr></thead><tbody id="battleRows">' +
+      '<div class="panel table-panel"><table class="tbl"><thead><tr><th class="num">局</th><th>胜方</th><th class="num">时长</th><th>数据完整度</th><th class="num">明细</th></tr></thead><tbody id="battleRows">' +
       rows + "</tbody></table></div>" +
       '<div class="mnav"><a href="schedule.html">返回赛程中心</a>' +
       '<span class="block-note mono">' + (liveNow
@@ -390,7 +391,7 @@
     return "<tr><td class='num'>G" + b.gameNo + "</td>" +
       "<td><span class='team-cell'>" + K.esc(b.winner) + "</span></td>" +
       "<td class='num'>" + b.duration.toFixed(0) + "′</td>" +
-      "<td>" + (b.hasTl ? '<span class="chip done">可复盘</span>' : '<span class="chip">基础数据</span>') + "</td>" +
+      "<td>" + K.coverageBadges(K.battleCoverageMask(M.matchId, bidOfSeq(b.gameNo))) + "</td>" +
       "<td class='num'>" + (bid ? '<a class="go" href="game.html?id=' + encodeURIComponent(bid) + '" style="color:var(--gold);font-weight:700">对局详情 →</a>' : "—") + "</td></tr>";
   }).join("");
 
