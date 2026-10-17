@@ -2,7 +2,7 @@
 """生成局级数据：每局详情分片（按联赛拆分，页面按需加载）+ 全局索引 + 装备图标表。
 
 输出：
-  assets/games/index.js        KPL_GAME_INDEX = {matchId: {lg, b: [[battleId, seq, durMin, winCamp], ...]}}
+  assets/games/index.js        KPL_GAME_INDEX = {matchId: {lg, b: [[battleId, seq, durMin, winCamp, winTeam], ...]}}
   assets/games/<league_id>.json  {battleId: 局详情}
   assets/equip_icons.js        KPL_EQUIP_ICONS = {装备名: icon}
 
@@ -96,6 +96,20 @@ def slim_battle(det: dict, match: dict) -> dict | None:
     }
 
 
+def winner_team_of(det: dict) -> str:
+    """本局胜方队名。
+
+    win_camp 是【本局阵营】序号（1=camp1 / 2=camp2），与大场 camp1/camp2 的先后无关，
+    必须用本局 camp 队名落地，不能拿大场 team1/team2 去套（会有约一半的局反了）。
+    """
+    wc = det.get("win_camp")
+    if wc == 1:
+        return str((det.get("camp1") or {}).get("team_name") or "")
+    if wc == 2:
+        return str((det.get("camp2") or {}).get("team_name") or "")
+    return ""
+
+
 def main() -> None:
     GAMES.mkdir(parents=True, exist_ok=True)
     index: dict[str, dict] = {}
@@ -125,7 +139,9 @@ def main() -> None:
                 if not bid:
                     continue
                 league_games[bid] = slim
-                rows.append([bid, slim["seq"], slim["dur"], slim["win"]])
+                # [battleId, seq, 时长, win_camp, 胜方队名] —— 第 4 项是本局阵营序号，
+                # 只有配合第 5 项队名才能安全映射到"哪支队伍赢了"
+                rows.append([bid, slim["seq"], slim["dur"], slim["win"], winner_team_of(det)])
                 # 收集装备图标
                 for p in det.get("battle_player_list") or []:
                     if not isinstance(p, dict):

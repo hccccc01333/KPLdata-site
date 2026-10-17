@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>比赛详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=40">
-<link rel="stylesheet" href="assets/pages.css?v=40">
+<link rel="stylesheet" href="assets/style.css?v=41">
+<link rel="stylesheet" href="assets/pages.css?v=41">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="比赛详情 · KPL 数据中心">
@@ -20,12 +20,12 @@
 <main class="wrap" id="main" style="margin-top:26px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=40"></script>
-<script src="assets/details.js?v=40"></script>
-<script src="assets/schedule_all.js?v=40"></script>
-<script src="assets/games/index.js?v=40"></script>
-<script src="assets/seasons.js?v=40"></script>
-<script src="assets/common.js?v=40"></script>
+<script src="assets/data.js?v=41"></script>
+<script src="assets/details.js?v=41"></script>
+<script src="assets/schedule_all.js?v=41"></script>
+<script src="assets/games/index.js?v=41"></script>
+<script src="assets/seasons.js?v=41"></script>
+<script src="assets/common.js?v=41"></script>
 <script>
 (function () {
   "use strict";
@@ -64,17 +64,22 @@
     var battles = (gi && gi.b) || [];
     var liveNow = sr.st === 1 || K.isLive({ done: false, date: sr.date, time: sr.time });
     var winName = sr.score1 > sr.score2 ? sr.team1 : sr.team2;
+    // b[3] 是【本局阵营】序号（1=camp1 / 2=camp2），跟大场 team1/team2 的顺序无关；
+    // 优先用索引里的胜方队名 b[4]，没有时才退回大场顺序。
+    function battleWinName(b) {
+      return b[4] || (b[3] === 1 ? sr.team1 : sr.team2);
+    }
     var strip = battles.map(function (b) {
       var isLiveB = b[3] === 0 && (b[1] === battles[battles.length - 1][1]);
       return '<a class="battle-chip' + (isLiveB ? " win" : "") + '" href="game.html?id=' + encodeURIComponent(b[0]) + '" style="text-decoration:none">G' + b[1] +
-        (isLiveB ? " · 进行中" : " · " + K.esc(b[3] === 1 ? sr.team1 : sr.team2)) +
+        (isLiveB ? " · 进行中" : " · " + K.esc(battleWinName(b))) +
         '<span class="tag">' + b[2] + "′ · 详情</span></a>";
     }).join("");
     var rows = battles.map(function (b) {
       var isLiveB = b[3] === 0 && (b[1] === battles[battles.length - 1][1]);
       return "<tr>" +
         '<td class="num">G' + b[1] + "</td>" +
-        '<td><span class="team-cell">' + (isLiveB ? '<span style="color:var(--muted)">对局中…</span>' : K.esc(b[3] === 1 ? sr.team1 : sr.team2)) + "</span></td>" +
+        '<td><span class="team-cell">' + (isLiveB ? '<span style="color:var(--muted)">对局中…</span>' : K.esc(battleWinName(b))) + "</span></td>" +
         '<td class="num">' + (b[2] || "—") + "′</td>" +
         "<td>" + (isLiveB ? K.liveBadge() : "<span class='chip done'>已结束</span>") + "</td>" +
         '<td class="num"><a class="go" href="game.html?id=' + encodeURIComponent(b[0]) + '" style="color:var(--gold);font-weight:700">' + (isLiveB ? "实时数据 →" : "对局详情 →") + "</a></td></tr>";
