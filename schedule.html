@@ -129,7 +129,9 @@
       (hasData ? '<a class="go" href="match.html?id=' + K.esc(r.matchId) + '">' + (live ? "实时 →" : (r.hasDetail ? "复盘 →" : "详情 →")) + "</a>" : "") +
       (!r.video && !hasData ? '<span class="go off">—</span>' : "") +
       "</div>";
-    return '<div class="mrow" data-mid="' + K.esc(r.matchId) + '">' +
+    // 整行可点：手机端不依赖右侧小按钮也能进详情
+    return '<div class="mrow" data-mid="' + K.esc(r.matchId) + '"' +
+      (hasData ? ' data-href="match.html?id=' + K.esc(r.matchId) + '" style="cursor:pointer"' : "") + ">" +
       '<div class="mt">' + K.esc(r.time || "—") + "</div>" +
       K.side(r.team1, r.icon1, false) + score + K.side(r.team2, r.icon2, true) +
       "<div>" + chip + "</div>" + acts + "</div>";
@@ -181,6 +183,13 @@
     $("#moreBtn").style.display = shown < rows.length ? "" : "none";
   }
 
+
+  /* 整行可点（移动端友好）：点行内链接时让链接自己走 */
+  document.getElementById("list").addEventListener("click", function (e) {
+    if (e.target.closest("a")) return;
+    var row = e.target.closest(".mrow[data-href]");
+    if (row) location.href = row.getAttribute("data-href");
+  });
 
   /* ---------- 实时比分覆盖（live.today，防重建滞后） ---------- */
   function loadLiveScript(cb) {

@@ -32,7 +32,14 @@
 .mrow .go{font-size:13px;font-weight:800;color:var(--gold);text-align:right}
 .mrow .go:hover{text-decoration:underline}
 .mrow .go.off{color:var(--muted);font-weight:400}
-@media(max-width:880px){.mrow{grid-template-columns:58px 1fr 76px 1fr 64px;}.mrow .go{display:none}}
+/* 手机上原本直接把 .go 隐藏 → 赛程列表没有进详情的入口；改成动作行换行显示 */
+@media(max-width:880px){
+  .mrow{grid-template-columns:52px 1fr 66px 1fr 58px;gap:8px;padding:10px 12px}
+  .mrow .acts{grid-column:1/-1;justify-content:flex-end;margin-top:4px;gap:8px}
+  .mrow .go{display:inline-flex;align-items:center;font-size:12.5px;padding:5px 10px;
+            border:1px solid var(--line2);border-radius:7px}
+  .mrow .go:hover{text-decoration:none;border-color:var(--gold)}
+}
 
 /* ---------------- 战队卡 ---------------- */
 .team-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}

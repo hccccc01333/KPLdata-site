@@ -41,6 +41,8 @@ window.KPL = (function () {
     grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
     clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    close: '<path d="M6 6l12 12M18 6L6 18"/>',
     github: '<path d="M12 2a10 10 0 00-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 015 0c1.9-1.29 2.74-1.02 2.74-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.75c0 .26.18.58.69.48A10 10 0 0012 2z" fill="currentColor" stroke="none"/>'
   };
   function icon(name, size) {
@@ -74,7 +76,9 @@ window.KPL = (function () {
       '<div class="search-wrap"><div class="search-box">' + icon("search", 16) +
       '<input id="siteSearch" placeholder="搜索战队 / 选手 / 英雄" autocomplete="off" spellcheck="false"></div>' +
       '<div class="search-pop" id="searchPop"></div></div>' +
-      '<nav class="nav">' + links + "</nav>" +
+      '<nav class="nav" id="siteNav">' + links + "</nav>" +
+      '<button class="nav-toggle" id="navToggle" type="button" aria-label="打开导航" ' +
+      'aria-expanded="false" aria-controls="siteNav">' + icon("menu", 19) + "</button>" +
       '<a class="gh-ico" href="https://github.com/hccccc01333/KPLdata" target="_blank" rel="noopener" ' +
       'title="开源仓库" aria-label="GitHub 仓库">' + icon("github", 19) + "</a></div>";
   }
@@ -134,6 +138,32 @@ window.KPL = (function () {
         var first = pop.querySelector("a[href]");
         if (first) location.href = first.getAttribute("href");
       }
+    });
+  }
+
+  /* ---------- 移动端导航抽屉 ---------- */
+  function initNav() {
+    var btn = document.getElementById("navToggle");
+    var nav = document.getElementById("siteNav");
+    if (!btn || !nav) return;
+    var openIcon = icon("menu", 19), closeIcon = icon("close", 19);
+    function setOpen(open) {
+      nav.classList.toggle("open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.setAttribute("aria-label", open ? "关闭导航" : "打开导航");
+      btn.innerHTML = open ? closeIcon : openIcon;
+    }
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      setOpen(!nav.classList.contains("open"));
+    });
+    nav.addEventListener("click", function (e) { if (e.target.closest("a")) setOpen(false); });
+    document.addEventListener("click", function (e) {
+      if (!nav.contains(e.target) && !btn.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
+    window.addEventListener("resize", function () {
+      if (window.innerWidth > 720) setOpen(false);
     });
   }
 
@@ -365,6 +395,7 @@ window.KPL = (function () {
     if (h) h.innerHTML = topbar(page);
     if (f) f.innerHTML = footer();
     initSearch();
+    initNav();
     scan();
     autoRefresh();
   }

@@ -148,7 +148,8 @@
     });
   }
 
-  function render() {
+  /* 当前视图（范围 + 搜索 + 位置筛选 + 排序）——表格和导出共用同一份，避免"看到的和导出的不一致" */
+  function currentView() {
     var d = K.scopeOf(curScope);
     var q = $("#qSearch").value.trim().toLowerCase();
     var rows = dataOf().filter(function (r) {
@@ -166,6 +167,12 @@
       if (typeof va === "string") return sortDir * String(va).localeCompare(String(vb), "zh");
       return sortDir * ((va || 0) - (vb || 0));
     });
+    return { d: d, rows: rows, col: col };
+  }
+
+  function render() {
+    var view = currentView();
+    var d = view.d, rows = view.rows;
     $("#qNote").textContent = rows.length + " 行 · " + K.scopeName(curScope);
     renderHead();
     /* 各列最佳值（用于金色高亮，仅数值列） */
@@ -222,16 +229,28 @@
   $("#qSearch").addEventListener("input", render);
   $("#qPos").addEventListener("change", render);
   $("#qExport").addEventListener("click", function () {
-    var d = K.scopeOf(curScope);
-    var rows2 = dataOf();
-    var rows = [COLS[mode].map(function (c) { return c.label; }).concat(["数据范围"])];
-    rows2.forEach(function (r) {
-      rows.push(COLS[mode].map(function (c) {
+    // 导出 = 当前视图（同一范围/搜索/位置筛选/排序），并带上排名与筛选条件说明
+    var view = currentView();
+    var d = view.d, rows2 = view.rows, col = view.col;
+    var conds = [];
+    var q = $("#qSearch").value.trim();
+    if (q) conds.push("搜索=" + q);
+    if (mode === "player" && $("#qPos").value) conds.push("位置=" + $("#qPos").value);
+    var scopeTxt = K.scopeName(curScope);
+    var head = ["排名"].concat(COLS[mode].map(function (c) { return c.label; }))
+      .concat(["数据范围", "排序", "筛选条件"]);
+    var rows = [head];
+    rows2.forEach(function (r, i) {
+      rows.push([i + 1].concat(COLS[mode].map(function (c) {
         var v = valOf(r, c, d);
         return c.fmt ? c.fmt(v, r) : (v == null ? "" : v);
-      }).concat([K.scopeName(curScope)]));
+      })).concat([scopeTxt, col.label + (sortDir < 0 ? " ↓" : " ↑"), conds.join(" · ") || "无"]));
     });
-    K.exportCSV("数据查询_" + mode + "_" + K.scopeName(curScope) + ".csv", rows);
+    if (!rows2.length) {
+      $("#qNote").textContent = "当前筛选没有可导出的行";
+      return;
+    }
+    K.exportCSV("数据查询_" + mode + "_" + scopeTxt + ".csv", rows);
   });
 
   curScope = K.scopeBar("#scopeBar", function (id) { curScope = id; fillPos(); render(); });

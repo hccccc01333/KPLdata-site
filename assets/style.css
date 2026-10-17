@@ -35,7 +35,7 @@ img{max-width:100%}
 /* ---------------- 顶栏 ---------------- */
 .topbar{position:sticky;top:0;z-index:60;background:rgba(10,17,28,.86);backdrop-filter:blur(10px);
         border-bottom:1px solid var(--line)}
-.topbar-in{display:flex;align-items:center;gap:22px;height:64px}
+.topbar-in{display:flex;align-items:center;gap:22px;height:64px;position:relative}
 .brand{display:flex;align-items:center;gap:11px;white-space:nowrap}
 .brand-mark{width:30px;height:30px;background:linear-gradient(140deg,var(--gold),var(--orange));
             color:#131313;display:grid;place-items:center;font-weight:900;font-size:16px;border-radius:7px}
@@ -50,7 +50,25 @@ img{max-width:100%}
         border:1px solid var(--line);transition:color .15s,border-color .15s}
 .gh-ico:hover{color:var(--gold);border-color:var(--gold)}
 @media(max-width:900px){.nav a{padding:8px 9px;font-size:13.5px}}
-@media(max-width:720px){.nav{display:none}}
+/* 移动端导航：整条 nav 之前是直接 display:none（手机上没有替代入口），改成汉堡抽屉 */
+.nav-toggle{display:none;align-items:center;justify-content:center;width:38px;height:38px;flex:none;
+            border-radius:9px;border:1px solid var(--line);background:var(--card2);color:var(--ink);
+            cursor:pointer;transition:color .15s,border-color .15s}
+.nav-toggle:hover{color:var(--gold);border-color:var(--gold)}
+@media(max-width:720px){
+  .topbar-in{gap:10px}
+  .nav-toggle{display:inline-flex}
+  .nav{display:none;position:absolute;left:0;right:0;top:64px;margin:0;padding:10px 16px 16px;
+       flex-direction:column;gap:2px;background:rgba(10,17,28,.98);border-bottom:1px solid var(--line2);
+       box-shadow:0 22px 44px rgba(0,0,0,.5);z-index:61}
+  .nav.open{display:flex}
+  .nav a{padding:11px 12px;font-size:15px;border-radius:8px}
+}
+@media(max-width:560px){
+  .brand-name{display:none}
+  .search-wrap{flex:1;min-width:0}
+  .search-box{width:100%}
+}
 
 /* 搜索 */
 .search-wrap{position:relative;flex:none}
