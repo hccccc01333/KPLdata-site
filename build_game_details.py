@@ -2,7 +2,8 @@
 """生成局级数据：每局详情分片（按联赛拆分，页面按需加载）+ 全局索引 + 装备图标表。
 
 输出：
-  assets/games/index.js        KPL_GAME_INDEX = {matchId: {lg, b: [[battleId, seq, durMin, winCamp, winTeam], ...]}}
+  assets/games/index.js        KPL_GAME_INDEX = {matchId: {lg, b: [[battleId, seq, durMin, winCamp, winTeam, flags], ...]}}
+                               flags: 1=完整BP 2=选手明细 4=回放视频（数据完整度徽标）
   assets/games/<league_id>.json  {battleId: 局详情}
   assets/equip_icons.js        KPL_EQUIP_ICONS = {装备名: icon}
 
@@ -80,11 +81,20 @@ def slim_battle(det: dict, match: dict) -> dict | None:
     video = ""
     if vids and isinstance(vids[0], dict):
         video = str(vids[0].get("video_url") or "")
+    # 数据完整度标记（前端徽标用）：1=完整 BP，2=选手明细，4=回放视频
+    flags = 0
+    if len([b for b in bp if b[1] == 1]) >= 10:
+        flags |= 1
+    if len([p for p in players if p.get("n")]) >= 10:
+        flags |= 2
+    if video:
+        flags |= 4
     return {
         "match": str(match.get("match_id") or ""),
         "seq": int(det.get("battle_seq") or 0),
         "win": wc,
         "live": live,
+        "flags": flags,
         "dur": round(float(det.get("game_duration") or 0) / 60000),
         "t1": str(c1.get("team_name") or ""), "i1": str(c1.get("team_icon") or ""),
         "t2": str(c2.get("team_name") or ""), "i2": str(c2.get("team_icon") or ""),
@@ -141,7 +151,7 @@ def main() -> None:
                 league_games[bid] = slim
                 # [battleId, seq, 时长, win_camp, 胜方队名] —— 第 4 项是本局阵营序号，
                 # 只有配合第 5 项队名才能安全映射到"哪支队伍赢了"
-                rows.append([bid, slim["seq"], slim["dur"], slim["win"], winner_team_of(det)])
+                rows.append([bid, slim["seq"], slim["dur"], slim["win"], winner_team_of(det), slim["flags"]])
                 # 收集装备图标
                 for p in det.get("battle_player_list") or []:
                     if not isinstance(p, dict):
