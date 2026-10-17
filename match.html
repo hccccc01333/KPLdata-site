@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>比赛详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=39">
-<link rel="stylesheet" href="assets/pages.css?v=39">
+<link rel="stylesheet" href="assets/style.css?v=40">
+<link rel="stylesheet" href="assets/pages.css?v=40">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="比赛详情 · KPL 数据中心">
@@ -20,12 +20,12 @@
 <main class="wrap" id="main" style="margin-top:26px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=39"></script>
-<script src="assets/details.js?v=39"></script>
-<script src="assets/schedule_all.js?v=39"></script>
-<script src="assets/games/index.js?v=39"></script>
-<script src="assets/seasons.js?v=39"></script>
-<script src="assets/common.js?v=39"></script>
+<script src="assets/data.js?v=40"></script>
+<script src="assets/details.js?v=40"></script>
+<script src="assets/schedule_all.js?v=40"></script>
+<script src="assets/games/index.js?v=40"></script>
+<script src="assets/seasons.js?v=40"></script>
+<script src="assets/common.js?v=40"></script>
 <script>
 (function () {
   "use strict";
@@ -195,16 +195,17 @@
       var m = L && (L.matches || []).filter(function (x) { return x.matchId === matchId; })[0];
       if (!m) { zone.style.display = "none"; return; }
       zone.style.display = "";
-      var pNow = Math.round(m.prob * 100);
       var leadName = m.prob >= 0.5 ? m.t1 : m.t2;  // prob 为 camp1 视角
+      var pNow = Math.round((m.prob >= 0.5 ? m.prob : 1 - m.prob) * 100);
       var fc = m.forecast || {};
       function fcell(label, p, g, ahead) {
         if (p == null) return "";
-        var pTxt = Math.round(p * 100) + "%";
-        var arrow = p * 100 - m.prob * 100 > 2 ? ' <span style="color:var(--teal)">↑</span>'
-                  : (p * 100 - m.prob * 100 < -2 ? ' <span style="color:var(--red)">↓</span>' : "");
+        var pLead = m.prob >= 0.5 ? p : 1 - p;      // 领先方视角
+        var pTxt = Math.round(pLead * 100) + "%";
+        var arrow = (p - m.prob) * 100 > 2 ? ' <span style="opacity:.75">↑</span>'
+                  : ((p - m.prob) * 100 < -2 ? ' <span style="opacity:.75">↓</span>' : "");
         var gTxt = (g == null) ? "" : ('预计金差 <b>' + (g > 0 ? "+" : "") + g + "</b>");
-        return '<div class="live-kpi"><div class="k">' + ahead + ' 分钟后胜率（趋势外推）</div>' +
+        return '<div class="live-kpi"><div class="k">' + K.esc(leadName) + " · " + ahead + ' 分钟后胜率（趋势外推）</div>' +
           '<div class="v">' + pTxt + arrow + '</div><div class="s">' + gTxt + "</div></div>";
       }
       zone.innerHTML = '<div class="live-card">' +
@@ -261,12 +262,13 @@
         var tl = h.pts;
         var last = tl[tl.length - 1];
         var predWin = last[1] >= 0.5 ? h.t1 : h.t2;
+        var predConf = last[1] >= 0.5 ? last[1] : 1 - last[1];
         var actualWin = h.win === 1 ? h.t1 : h.t2;
         var ok = predWin === actualWin;
         return '<div class="hist-row">' +
           '<span class="g">G' + h.seq + "</span>" +
           '<span class="res">' + K.esc(actualWin) + " 胜</span>" +
-          '<span class="pred">终局前预测：' + K.esc(predWin) + " " + Math.round(last[1] * 100) + "% " +
+          '<span class="pred">终局前预测：' + K.esc(predWin) + " " + Math.round(predConf * 100) + "% " +
           (ok ? '<em class="ok">命中 ✓</em>' : '<em class="no">未命中 ✗</em>') + "</span>" +
           '<button class="btn ghost sm hist-btn" type="button" data-i="' + i + '">看预测曲线</button>' +
           '<div class="hist-chart" id="histChart' + i + '" style="display:none;grid-column:1/-1"></div></div>';
