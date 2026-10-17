@@ -17,7 +17,7 @@ window.KPL_REPLAY = (function () {
     fetch("assets/replay/" + encodeURIComponent(matchId) + ".json", { cache: "no-cache" })
       .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); })
       .then(function (d) { cache[matchId] = d; cb(d); })
-      .catch(function () { cb(null); });
+      .catch(function (err) { if (window.__RP_DEBUG) console.error("[replay] load failed", err); cb(null); });
   }
 
   function hasReplay(matchId) {
