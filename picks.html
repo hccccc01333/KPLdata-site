@@ -74,12 +74,21 @@
   $("#pkPicked").textContent = (P.picked || rows.length) + " 条";
   $("#pkAt").textContent = String(P.updatedAt || "").slice(0, 10) || "—";
   $("#pkRules").innerHTML = (P.rules || []).map(function (r) {
-    return "<div>· <b>" + K.esc(r.label) + "</b>：" + K.esc(r.rule) + "</div>";
+    // 同时给出"全量达标"与"入选"两个数：前者是规则命中，后者是取前 48 后的展示数，
+    // 只写一个会被误读成"这条规则只命中了这么多局"
+    var picked = rows.filter(function (x) {
+      return x.tags.some(function (t) { return t.k === r.k; });
+    }).length;
+    var cnt = (r.total != null)
+      ? '（达标 ' + r.total + ' 局 · 入选 ' + picked + ' 条）'
+      : '';
+    return "<div>· <b>" + K.esc(r.label) + "</b>：" + K.esc(r.rule) + cnt + "</div>";
   }).join("");
 
   function jumpMinute(r) {
-    // 翻盘局落到"最低点"，其余落到波动最大的起点
+    // 翻盘局落到"最低点"，其余落到波动最大那段的起点（都没有才不带 &m=）
     if (r.minMinute != null) return Math.round(r.minMinute);
+    if (r.swingMinute != null) return Math.round(r.swingMinute);
     return null;
   }
 

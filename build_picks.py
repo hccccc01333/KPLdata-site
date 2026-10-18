@@ -114,6 +114,9 @@ def analyze(b: dict) -> dict | None:
         "swing": round(swing_best[0], 3),
         "minProb": round(worst_pick[0], 3) if worst_pick else None,
         "minMinute": round(worst_pick[1], 1) if worst_pick else None,
+        # 非翻盘局的落点：波动最大那段的起点。卡片上写了"点进去落到关键分钟"，
+        # 40 条没有 minMinute 的局不能链接裸奔到第 1 分钟
+        "swingMinute": round(swing_best[1], 1) if swing_best[1] is not None else None,
         "events": ev,
         "tags": tags,
         "score": round(score, 2),
@@ -148,19 +151,22 @@ def main() -> None:
             rows.append(r)
 
     rows.sort(key=lambda r: (-r["score"], r["date"]))
+    # 每条规则的全量达标局数（含未进入前 48 的）——页面上要能看出
+    # "这条规则其实命中 34 局，为什么只列 16 条"，否则入选数会被误读成规则命中数
+    by_tag = {}
+    for r in rows:
+        for t in r["tags"]:
+            by_tag[t["k"]] = by_tag.get(t["k"], 0) + 1
     payload = {
         "updatedAt": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "rules": [{"k": k, "label": lab, "rule": rule} for k, (lab, rule) in RULES.items()],
+        "rules": [{"k": k, "label": lab, "rule": rule, "total": by_tag.get(k, 0)}
+                  for k, (lab, rule) in RULES.items()],
         "totalBattles": total_battles,
         "picked": min(len(rows), 48),
         "rows": rows[:48],
     }
     OUT.write_text("KPL_PICKS = " + json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + ";\n",
                    encoding="utf-8")
-    by_tag = {}
-    for r in rows:
-        for t in r["tags"]:
-            by_tag[t["k"]] = by_tag.get(t["k"], 0) + 1
     print(f"picks.js: {len(payload['rows'])} 条精选 / {len(rows)} 局达标 · {by_tag} · "
           f"{OUT.stat().st_size / 1024:.0f} KB · {time.time() - t0:.1f}s")
 
