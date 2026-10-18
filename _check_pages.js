@@ -1,13 +1,15 @@
 // 站点浏览器验收：真实 Edge（CDP），不是静态看 HTML
 //
 // 三条硬性规则：
-//   1. 任何页面出现未捕获 JS 异常 → 整体失败（比"HTML 里有容器"可靠得多）
+//   1. 任何页面出现未捕获 JS 异常或未处理 Promise 拒绝 → 整体失败
+//      （比"HTML 里有容器"可靠得多：一个 null 引用就能让整段内联脚本静默停摆）
 //   2. 核心区块必须真的渲染出节点，不是空壳
-//   3. 390 / 768 / 1440 三个宽度下首页与复盘页都不能报错
+//   3. 390 / 768 / 1440 三个宽度下首页与复盘页都不能报错、不能横向溢出
 //
 // 用法：
 //   python -m http.server 8777   # 先起本地服务（run_in_background）
 //   node _check_pages.js [http://127.0.0.1:8777]
+//   node _check_pages.js https://kpldata-site.hccccc01333.workers.dev   # 线上验收
 const { spawn } = require("child_process");
 const fs = require("fs");
 
@@ -97,6 +99,21 @@ async function main() {
   await send("Page.enable");
   await send("Runtime.enable");
 
+  // 在页面脚本执行之前装好兜底监听：unhandledrejection 不会触发 Runtime.exceptionThrown，
+  // 但同样会让页面静默停摆，必须单独捕获。
+  await send("Page.addScriptToEvaluateOnNewDocument", {
+    source: `
+      window.__kplUnhandled = [];
+      window.addEventListener("unhandledrejection", function (e) {
+        var r = e.reason;
+        window.__kplUnhandled.push("unhandledrejection: " + ((r && r.message) || String(r)));
+      });
+      window.addEventListener("error", function (e) {
+        window.__kplUnhandled.push("window.error: " + (e.message || ""));
+      });
+    `,
+  });
+
   async function visit(url, settle = 1400) {
     errors = [];
     await send("Page.navigate", { url });
@@ -105,10 +122,11 @@ async function main() {
       if (await evaluate("document.readyState === 'complete'")) break;
     }
     await sleep(settle);
-    return errors.slice();
+    const unhandled = await evaluate("window.__kplUnhandled || []");
+    return errors.concat(Array.isArray(unhandled) ? unhandled : []);
   }
 
-  console.log("=== 逐页：未捕获异常 + 关键区块渲染 ===");
+  console.log("=== 逐页：未捕获异常 / 未处理 Promise 拒绝 + 关键区块渲染 ===");
   for (const [path, label, sels] of PAGES) {
     const errs = await visit(BASE + path);
     const counts = await evaluate(
@@ -119,7 +137,93 @@ async function main() {
     check(label + " 关键区块已渲染", rendered, Array.isArray(counts) ? counts.join("/") : String(counts));
   }
 
-  console.log("\n=== 复盘交互（连续拖动 / 键盘 / 切局）===");
+  console.log("\n=== 首页构成（C 方案：赛事焦点，无宣传轮播）===");
+  await visit(BASE + "index.html", 1600);
+  const home = await evaluate(`(function(){
+    var q = function(s){ return document.querySelectorAll(s).length; };
+    var hero = document.getElementById('focusHero');
+    var pickHref = (document.querySelector('#replayPicks a') || {}).getAttribute
+      ? document.querySelector('#replayPicks a').getAttribute('href') : '';
+    return {
+      dome: q('#dome'), slide: q('.slide, .carousel, [data-slide]'),
+      hero3d: !![].slice.call(document.scripts).find(function(s){ return /hero3d|three/.test(s.src); }),
+      focusChildren: hero ? hero.children.length : 0,
+      focusMatchLinks: q('#focusHero a[href*="match.html"]'),
+      focusHasScore: /\\d+\\s*[:：]\\s*\\d+/.test(hero ? hero.textContent : '') ||
+                     /已结束|待开赛|直播中|进行中/.test(hero ? hero.textContent : ''),
+      picks: q('#replayPicks .rp-pick'), pickHref: pickHref || '',
+      teams: q('#stTop tr'), heroes: q('#heroTop > *'), players: q('#plTop > *'),
+      tools: q('.entry'),
+      heroHTML: hero ? hero.innerHTML.length : 0
+    };
+  })()`);
+  check("已删除 3D 穹顶容器 #dome", home && home.dome === 0, home && home.dome);
+  check("已删除宣传轮播节点", home && home.slide === 0, home && home.slide);
+  check("页面不再加载 hero3d/three", home && home.hero3d === false, home && home.hero3d);
+  check("首屏焦点卡有内容", home && home.focusChildren > 0, home && home.focusChildren);
+  check("首屏有可点的比赛链接", home && home.focusMatchLinks > 0, home && home.focusMatchLinks);
+  check("首屏显示真实比分或状态", home && home.focusHasScore === true, home && home.focusHasScore);
+  check("精选复盘卡片真实生成", home && home.picks > 0, home && home.picks);
+  check("精选复盘直达比赛详情", home && /match\.html/.test(home.pickHref), home && home.pickHref);
+  check("三榜真实生成", home && home.teams > 0 && home.heroes > 0 && home.players > 0,
+    home && home.teams + "/" + home.heroes + "/" + home.players);
+  check("分析工具入口存在", home && home.tools > 0, home && home.tools);
+
+  // 行为断言：不自动切换。3.5 秒内焦点卡 HTML 必须逐字节不变
+  // （实时比分 30s 才刷新一次，3.5s 内变化只可能来自轮播定时器）
+  const before = await evaluate("document.getElementById('focusHero').innerHTML");
+  await sleep(3500);
+  const after = await evaluate("document.getElementById('focusHero').innerHTML");
+  check("首屏 3.5s 内不自动切换", before === after,
+    before === after ? "稳定" : "内容发生变化 → 仍有自动轮播");
+
+  console.log("\n=== 导航链路：搜索 → 对象详情 → 比赛 → 复盘 ===");
+  await visit(BASE + "index.html", 1500);
+  await evaluate(`(function(){
+    var i = document.getElementById('siteSearch');
+    i.value = '狼队';
+    i.dispatchEvent(new Event('input', { bubbles: true }));
+  })()`);
+  await sleep(900);
+  const sr = await evaluate(`(function(){
+    var as = document.querySelectorAll('#searchPop a');
+    var first = as[0];
+    return { n: as.length, href: first ? first.getAttribute('href') : '', text: first ? first.textContent : '' };
+  })()`);
+  check("搜索出结果", sr && sr.n > 0, sr && sr.n);
+  check("搜索结果指向对象详情页", sr && /^(team|player|hero|match)\.html\?id=/.test(sr.href || ""), sr && sr.href);
+
+  // 点进搜索结果，再从详情里找一场比赛
+  if (sr && sr.href) {
+    await visit(BASE + sr.href, 1500);
+    const det = await evaluate(`(function(){
+      var a = document.querySelector('a[href^="match.html"]');
+      return { detailOK: document.querySelectorAll('#main .panel, .panel, .page-hero').length,
+               matchHref: a ? a.getAttribute('href') : '' };
+    })()`);
+    check("对象详情页渲染成功", det && det.detailOK > 0, det && det.detailOK);
+    check("详情页可继续进入比赛", det && !!det.matchHref, det && det.matchHref);
+    if (det && det.matchHref) {
+      // 走真实深链：比赛页必须能落到复盘滑块
+      await visit(BASE + det.matchHref, 1800);
+      const m = await evaluate(`(function(){
+        return { panels: document.querySelectorAll('#main .panel').length,
+                 hasReplay: !!document.getElementById('rpRange'),
+                 tabs: document.querySelectorAll('.rp-tab').length };
+      })()`);
+      check("比赛页渲染成功", m && m.panels > 0, m && m.panels);
+    }
+  }
+  // 复盘深链（已知有分钟级数据的场次）
+  await visit(BASE + "match.html?id=2026062603&g=3&m=13", 1800);
+  const deep = await evaluate(`(function(){
+    var r = document.getElementById('rpRange');
+    return { hasSlider: !!r, value: r ? Number(r.value) : -1,
+             time: (document.getElementById('rpTime') || {}).textContent || '' };
+  })()`);
+  check("复盘深链落到指定分钟", deep && deep.hasSlider && deep.value > 0, deep && deep.value + " · " + deep.time);
+
+  console.log("\n=== 复盘交互（拖动 / 键盘 / 切局 / 点曲线 / 分享）===");
   await visit(BASE + "match.html?id=2026062603&g=3&m=13", 1600);
   const inter = await evaluate(`(function(){
     var first = document.getElementById('rpRange');
@@ -148,6 +252,31 @@ async function main() {
   check("键盘 ArrowRight 推进一帧", inter && inter.kb === 1, inter && inter.kb);
   check("切局后三块面板仍在", inter && inter.panelsAfterSwitch === 3, inter && inter.panelsAfterSwitch);
 
+  const clickRes = await evaluate(`(function(){
+    var chart = document.getElementById('rpChart');
+    var r = document.getElementById('rpRange');
+    if (!chart || !r) return { err: 'no chart/slider' };
+    var before = Number(r.value);
+    var rect = chart.getBoundingClientRect();
+    chart.dispatchEvent(new MouseEvent('click', { bubbles: true,
+      clientX: rect.left + rect.width * 0.75, clientY: rect.top + rect.height / 2 }));
+    var after = Number(document.getElementById('rpRange').value);
+    return { before: before, after: after, sameNode: document.getElementById('rpRange') === r };
+  })()`);
+  check("点击曲线跳到对应分钟", clickRes && clickRes.after !== clickRes.before && clickRes.after > clickRes.before,
+    clickRes ? clickRes.before + " → " + clickRes.after : "n/a");
+
+  const share = await evaluate(`(function(){
+    var s = document.getElementById('rpShare');
+    if (!s) return { err: 'no share button' };
+    var before = s.textContent;
+    s.click();
+    return { before: before, after: s.textContent };
+  })()`);
+  check("分享按钮产出本帧链接", share && share.after && share.after !== share.before &&
+    (/已复制/.test(share.after) || /http/.test(share.after)),
+    share ? String(share.after).slice(0, 60) : "n/a");
+
   console.log("\n=== 响应式：390 / 768 / 1440 ===");
   for (const w of [390, 768, 1440]) {
     await send("Emulation.setDeviceMetricsOverride", { width: w, height: 900, deviceScaleFactor: 1, mobile: w < 500 });
@@ -155,6 +284,20 @@ async function main() {
     const nav = await evaluate("(function(){var h=document.getElementById('siteHeader');return h?h.getBoundingClientRect().height:0;})()");
     check(w + "px 首页无异常", e1.length === 0, e1.slice(0, 2).join(" | "));
     check(w + "px 导航可见", nav > 0, nav);
+    const mobile = await evaluate(`(function(){
+      var de = document.documentElement;
+      var over = de.scrollWidth - window.innerWidth;
+      var focus = document.querySelector('#focusHero a[href*="match.html"]');
+      var fr = focus ? focus.getBoundingClientRect() : null;
+      var pick = document.querySelector('#replayPicks a');
+      var pr = pick ? pick.getBoundingClientRect() : null;
+      return { over: over,
+               focusVisible: !!(fr && fr.width > 0 && fr.height > 0 && fr.right <= window.innerWidth + 1),
+               pickVisible: !!(pr && pr.width > 0 && pr.height > 0 && pr.right <= window.innerWidth + 1) };
+    })()`);
+    check(w + "px 无横向溢出", mobile && mobile.over <= 1, mobile && mobile.over + "px");
+    check(w + "px 首屏比赛入口在视口内", mobile && mobile.focusVisible === true, mobile && mobile.focusVisible);
+    check(w + "px 复盘入口在视口内", mobile && mobile.pickVisible === true, mobile && mobile.pickVisible);
     const e2 = await visit(BASE + "match.html?id=2026062603&g=3&m=13");
     check(w + "px 复盘页无异常", e2.length === 0, e2.slice(0, 2).join(" | "));
   }

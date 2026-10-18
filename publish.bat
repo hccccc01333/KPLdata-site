@@ -3,6 +3,10 @@ setlocal enabledelayedexpansion
 rem 一键发布：git 提交推送（代码备份 + 触发托管构建）→ wrangler 部署（主通道）
 rem 任何一步失败立即中止，避免"仓库版本"和"线上版本"对不上。
 rem
+rem 用法：
+rem   publish.bat "提交说明"       提交 + 推送 + 部署（日常）
+rem   publish.bat --deploy-only    只部署，不动 git（代码已推送、只想更新线上时用）
+rem
 rem 为什么不用 git add -A：
 rem   2026-10-18 曾因为 -A 把浏览器临时 profile（.edge-tmp3，291 个文件）提交进公开仓库。
 rem   这里只暂存「已跟踪文件的改动」+ 生成目录 assets/，其余未跟踪文件一律先拦下来。
@@ -10,6 +14,9 @@ cd /d "%~dp0"
 
 set MSG=%~1
 if "%MSG%"=="" set MSG=data update %date% %time%
+
+rem ---- 0) 仅部署模式：跳过 git，直接部署 ----
+if /i "%MSG%"=="--deploy-only" goto deploy
 
 rem ---- 1) 选择性暂存 ----
 git add -u
@@ -45,6 +52,7 @@ if errorlevel 1 (
 echo [1/2] git pushed
 
 rem ---- 5) 部署 ----
+:deploy
 call npx --yes wrangler@latest deploy
 if errorlevel 1 (
   echo [!] wrangler 部署失败（首次使用请先在本目录运行: npx wrangler login）
