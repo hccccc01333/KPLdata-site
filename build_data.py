@@ -91,6 +91,7 @@ def main() -> None:
     teams_tbl = pd.read_csv(PROJ / "data/analysis/teams.csv")
     players = pd.read_csv(PROJ / "data/processed/players.csv")
     train = jload(PROJ / "data/realtime/train_status.json", {})
+    backtest = jload(PROJ / "data/realtime/backtest_v9_report.json", {})
     catalog = jload(PROJ / "data/realtime/datasets/catalog.json", {})
 
     # ---------- 图标 ----------
@@ -507,6 +508,11 @@ def main() -> None:
         "late (16′+)": float(train.get("holdout_late_brier") or 0),
         "all": float(train.get("holdout_real_brier") or 0),
     }
+    # AUC 有两个口径，站点只能发布「独立测试」那个，训练诊断分不得混入：
+    #   test  = backtest_v9_report.json 的 holdout_real.all.auc（test 段 20 局 / 298 帧，训练与校准都没碰过）
+    #   diag  = train_status.json 的 auc（train 段内模型选型诊断分，非能力指标——它是在模型见过的数据上算的）
+    test_auc = float((((backtest.get("holdout_real") or {}).get("all") or {}).get("auc")) or 0)
+    diag_auc = float(train.get("auc") or 0)
     model = {
         "version": str(train.get("version") or "V11"),
         "name": public_model_name(train.get("model_name")),
@@ -517,14 +523,16 @@ def main() -> None:
         "holdoutLate": float(train.get("holdout_late_brier") or 0),
         "holdoutN": int(train.get("holdout_n_battles") or 0),
         "split": train.get("split") or {},
-        "auc": float(train.get("auc") or 0),
+        "auc": round(test_auc, 4),
+        "aucScope": "独立测试段（test 20 局 / 298 帧，训练与校准均未接触）",
+        "trainDiagAuc": round(diag_auc, 4),
+        "trainDiagAucScope": "训练段内诊断分（模型选型用，非能力指标；test 集不参与）",
         "compare": [
             {"phase": k, "old": _old_protocol[k], "new": round(_new_protocol[k], 4)}
             for k in ("early (≤8′)", "mid (9–15′)", "late (16′+)", "all")
         ],
         # 同一样本对照：把新模型放回旧的 8 局上重算，用来证明"数字变了不是模型退步"
         "sameSample": {"old": 0.143, "new": 0.135, "n": 8},
-        "oldAuc": 0.694,
     }
 
     league_id = str(archive.sort_values("start_time")["league_id"].iloc[-1]) if not archive.empty else "20260004"
