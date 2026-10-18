@@ -303,9 +303,11 @@
   $("#icData").innerHTML = K.icon("chart", 22);
   $("#icCombo").innerHTML = K.icon("layers", 22);
   $("#icH2h").innerHTML = K.icon("shield", 22);
+  $("#icPicks").innerHTML = K.icon("target", 22);
+  $("#icStage").innerHTML = K.icon("grid", 22);
   $("#icGo4").innerHTML = K.icon("arrow", 16);
   $("#icGo5").innerHTML = K.icon("arrow", 16);
-  ["icGo1", "icGo2", "icGo3"].forEach(function (id) { $("#" + id).innerHTML = K.icon("arrow", 18); });
+  ["icGo1", "icGo2", "icGo3", "icGoPicks", "icGoStage"].forEach(function (id) { $("#" + id).innerHTML = K.icon("arrow", 18); });
 
   /* ---------- 最新战报 ---------- */
   $("#recentList").innerHTML = (D.recent || []).slice(0, 8)
