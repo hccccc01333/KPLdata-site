@@ -1,5 +1,5 @@
 window.SITE_DETAILS = {
- "generatedAt": "2026-10-19 02:27",
+ "generatedAt": "2026-10-19 03:20",
  "matches": [
   {
    "matchId": "2026101601",
