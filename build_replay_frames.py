@@ -43,6 +43,8 @@ SCHEDULE_ALL = SITE / "assets" / "schedule_all.js"
 MIN_FRAMES = 6
 MAX_FRAMES = 40
 POS_COUNT = 5
+# 官方数字分路编码：0 对抗路 / 1 打野 / 2 中路 / 3 发育路 / 4 游走
+POS_DESC_ORDER = {"对抗路": 0, "打野": 1, "中路": 2, "发育路": 3, "游走": 4}
 
 
 def jload(path: Path, default):
@@ -58,18 +60,54 @@ def jload_js(path: Path):
     return json.loads(text[text.index("=") + 1:].rstrip().rstrip(";"))
 
 
-def _pos_golds(snap: dict, camp: int) -> list[int]:
-    """该阵营五人的金币（按选手名排序，保证跨帧同一顺序）。"""
-    ps = sorted(
-        [p for p in (snap.get("players") or []) if int(p.get("camp") or 0) == camp],
-        key=lambda p: str(p.get("player_name") or p.get("actual_player_name") or ""),
-    )
-    out = []
-    for p in ps[:POS_COUNT]:
+def _pos_ordinal(p: dict) -> int:
+    """分路序（对抗路→打野→中路→发育路→游走）。编码缺失时退回文字，再缺失排到最后。"""
+    try:
+        ordv = int(p.get("position"))
+    except (TypeError, ValueError):
+        ordv = -1
+    if 0 <= ordv < POS_COUNT:
+        return ordv
+    return POS_DESC_ORDER.get(str(p.get("position_desc") or "").strip(), POS_COUNT)
+
+
+def _roster(snaps: list[dict]) -> dict[int, list[str]]:
+    """整局固化的五人名单（按分路序）。取全部帧的并集，避免某帧缺人导致曲线跨帧错位。"""
+    seen: dict[int, dict[str, tuple[int, str]]] = {1: {}, 2: {}}
+    for s in snaps:
+        for p in (s.get("players") or []):
+            try:
+                camp = int(p.get("camp") or 0)
+            except (TypeError, ValueError):
+                camp = 0
+            if camp not in (1, 2):
+                continue
+            name = str(p.get("player_name") or p.get("actual_player_name") or "")
+            if not name:
+                continue
+            seen[camp].setdefault(name, (_pos_ordinal(p), name))
+    return {
+        camp: sorted(seen[camp], key=lambda n: seen[camp][n])[:POS_COUNT] for camp in (1, 2)
+    }
+
+
+def _pos_golds(snap: dict, camp: int, roster: list[str]) -> list[int]:
+    """按分路序取该阵营五人金币：索引 i 恒对应 roster[i]，缺人补 0，不会跨帧漂移。"""
+    gold: dict[str, int] = {}
+    for p in (snap.get("players") or []):
         try:
-            out.append(int(float(p.get("gold") or 0)))
+            if int(p.get("camp") or 0) != camp:
+                continue
         except (TypeError, ValueError):
-            out.append(0)
+            continue
+        name = str(p.get("player_name") or p.get("actual_player_name") or "")
+        if not name:
+            continue
+        try:
+            gold[name] = int(float(p.get("gold") or 0))
+        except (TypeError, ValueError):
+            gold[name] = 0
+    out = [gold.get(n, 0) for n in roster]
     while len(out) < POS_COUNT:
         out.append(0)
     return out
@@ -136,6 +174,9 @@ def build_battle(battle_id: str, meta: dict) -> dict | None:
         winner = str(meta.get("winner") or "")
         win = 1 if winner == c1 else 2 if winner == c2 else 0
 
+    # 五人经济按分路序固化：索引 i 在整个时间轴上恒对应同一名选手
+    roster = _roster(snaps)
+
     frames = []
     for mb in sorted(by_bin):
         s = by_bin[mb]
@@ -156,7 +197,7 @@ def build_battle(battle_id: str, meta: dict) -> dict | None:
                 [int(s.get("camp2_tyrant") or 0), int(s.get("camp2_dark_tyrant") or 0),
                  int(s.get("camp2_lord") or 0), int(s.get("camp2_storm") or 0)],
             ],
-            "g": [_pos_golds(s, 1), _pos_golds(s, 2)],
+            "g": [_pos_golds(s, 1, roster[1]), _pos_golds(s, 2, roster[2])],
         })
     if len(frames) < MIN_FRAMES:
         return None
@@ -166,15 +207,10 @@ def build_battle(battle_id: str, meta: dict) -> dict | None:
         picked[-1] = frames[-1]
         frames = picked
 
-    names = []
-    pcamp = []
-    seen_players = sorted(
-        [p for p in (last.get("players") or []) if int(p.get("camp") or 0) in (1, 2)],
-        key=lambda p: (int(p.get("camp") or 0), str(p.get("player_name") or p.get("actual_player_name") or "")),
-    )
-    for p in seen_players[: POS_COUNT * 2]:
-        names.append(str(p.get("player_name") or p.get("actual_player_name") or ""))
-        pcamp.append(int(p.get("camp") or 0))
+    # names 与 frames[].g 共用同一份分路序名单：names[0..4]=阵营1、names[5..9]=阵营2
+    names = (roster[1] + [""] * (POS_COUNT - len(roster[1]))
+             + roster[2] + [""] * (POS_COUNT - len(roster[2])))
+    pcamp = [1] * POS_COUNT + [2] * POS_COUNT
 
     events = []
     seen_ev = set()
