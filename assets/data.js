@@ -1,5 +1,5 @@
 window.SITE_DATA = {
- "generatedAt": "2026-10-18 14:07",
+ "generatedAt": "2026-10-18 14:12",
  "season": "2026 年度总决赛",
  "stats": {
   "matches": 173,
@@ -12,7 +12,7 @@ window.SITE_DATA = {
   "events": 2836
  },
  "model": {
-  "version": "V11",
+  "version": "V12",
   "name": "分阶段集成模型（早期 EarlyRF + 中期 MidRF）",
   "trainedAt": "2026-10-18 13:42:43",
   "holdoutAll": 0.17684488418660965,
@@ -3759,7 +3759,7 @@ window.SITE_DATA = {
    },
    {
     "m": 22.15,
-    "p": 0.5946852385044303,
+    "p": 0.5946852385044298,
     "gd": 1332.0
    },
    {
