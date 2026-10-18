@@ -91,6 +91,12 @@
     </div>
   </div>
 
+  <div class="panel" id="rvlPanel" style="margin-top:14px;display:none">
+    <div class="panel-title">重放 vs 直播 <em class="mono">同一批局、同一分钟，两条口径差多少</em></div>
+    <div class="pr-kpis" id="rvlGrid" style="margin-top:0"></div>
+    <div class="block-note mono" style="margin-top:8px" id="rvlNote">—</div>
+  </div>
+
   <div class="brief" id="brief"></div>
 
   <section class="block" style="margin-top:26px">
@@ -185,6 +191,32 @@
     $("#kAccS").textContent = nb + " 局 · " + ph.all.n + " 帧";
   }
   $("#prGate").textContent = bt.gatesPassed ? "全部通过 ✓" : "部分未达标";
+
+  /* 重放 vs 直播 */
+  (function () {
+    var rv = P.replayVsLive;
+    if (!rv || !rv.battles) return;
+    $("#rvlPanel").style.display = "";
+    var pct = function (x) { return Math.round(x * 100) + "%"; };
+    var cells = [
+      ["对齐局数", rv.battles + " 局", rv.frames + " 帧（按分钟对齐）", false],
+      ["同一分钟偏差 |Δp|", rv.medianDelta.toFixed(3), "中位 · p90 " + rv.p90Delta.toFixed(3), false],
+      ["方向一致率", pct(rv.directionAgree), "两边看好同一队的比例", false],
+      ["Brier 差（重放−直播）", (rv.gapAll > 0 ? "+" : "") + rv.gapAll.toFixed(3),
+        "live " + rv.brierLive.toFixed(3) + " · replay " + rv.brierReplay.toFixed(3), true],
+      ["其中考试段（干净估计）", (rv.gapTest > 0 ? "+" : "") + (rv.gapTest || 0).toFixed(3),
+        (rv.testFrames || 0) + " 帧 · 模型没见过的局", true]
+    ];
+    $("#rvlGrid").innerHTML = cells.map(function (c) {
+      return '<div class="pr-kpi"><div class="k">' + K.esc(c[0]) + '</div><div class="v">' +
+        K.esc(c[1]) + '</div><div class="s">' + K.esc(c[2]) + "</div></div>";
+    }).join("");
+    $("#rvlNote").textContent =
+      "「直播」= 比赛当时写下的预测（旧模型 + 实时数据延迟）；「重放」= 当前模型拿同一批快照重算。" +
+      "两者差 0.08 Brier 说明：上面那张分时点命中率是历史记录，不是当前模型的能力；" +
+      "反过来说，回测那 20 局也是重放口径，真到直播时大概会更差一些。" +
+      (rv.generatedAt ? " 数据：" + rv.generatedAt : "");
+  })();
 
   /* 预测档案表 */
   var LABELS = { early: "早期（≤8′）", mid: "中期（9–15′）", late: "后期（16′+）", all: "全部阶段" };

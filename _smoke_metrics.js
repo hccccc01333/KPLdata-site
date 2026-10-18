@@ -64,6 +64,13 @@ const kSub = p["#kAccS"]._text || "";
 check("predict: KPI 标题是动态局数", kTitle.includes("20 局"), kTitle);
 check("predict: 副标题同时给局数与帧数", /20 局 · 298 帧/.test(kSub), kSub);
 
+const rvlGrid = p["#rvlGrid"]._html || "";
+const rvlNote = p["#rvlNote"]._text || "";
+check("predict: 重放vs直播 5 个指标格", (rvlGrid.match(/pr-kpi/g) || []).length === 5,
+  (rvlGrid.match(/pr-kpi/g) || []).length);
+check("predict: 含考试段干净估计 -0.127", rvlGrid.includes("-0.127"), "");
+check("predict: 脚注点明「不是当前模型的能力」", rvlNote.includes("不是当前模型的能力"), "");
+
 console.log("\nabout 脚注：" + foot2);
 console.log("predict KPI：" + kTitle + " / " + kSub);
 process.exit(bad ? 1 : 0);
