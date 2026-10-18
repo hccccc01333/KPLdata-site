@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 """精选对局索引（V4 阶段四）：把"值得看的局"用可核对的规则筛出来。
 
-规则（全部写在 picks.html 页面上，可复核）：
-  翻盘局  收官胜方在某个时刻的胜率 <= 20%
-  拉锯局  时长 >= 18 分钟
-  波动局  任意 3 个连续采样点内胜率变化 >= 35pp
-  资源战  结构性事件（推塔/暴君/主宰/风暴）>= 12 个
-输出：assets/picks.js = KPL_PICKS = {updatedAt, rules, rows:[...]}
+规则（全部写在 picks.html 页面上，可复核；阈值见下方常量，勿在本注释里另写一套）：
+  翻盘局  第 6 分钟之后、经济落后 >= 3,000 时，收官胜方胜率仍 <= MIN_PROB
+  拉锯局  时长 >= LONG_MIN 分钟
+  波动局  任意 3 个连续采样点内胜率变化 >= SWING_PP
+  资源战  结构性事件（推塔/暴君/主宰/风暴）>= EVENTS_MIN 个
+输出：assets/picks.js = KPL_PICKS = {updatedAt, rules, totalBattles, picked, rows:[...]}
 用法：python build_picks.py
 """
 from __future__ import annotations
@@ -28,6 +28,14 @@ MIN_PROB = 0.10          # 翻盘：收官胜方曾低到 10% 以下（p10≈0.0
 LONG_MIN = 20            # 拉锯：>=20 分钟（p75≈17.7）
 SWING_PP = 0.55          # 波动：3 个采样点内 >=55pp（p75≈0.54）
 EVENTS_MIN = 16          # 资源战：结构性事件数（p75≈14）
+
+# 规则的唯一真源：页面上的规则面板、卡片 tooltip 都从这里取，避免"注释一套、常量一套"
+RULES = {
+    "comeback": ("翻盘局", f"第 6 分钟之后、经济落后 ≥3,000 时，收官胜方胜率仍 ≤ {int(MIN_PROB * 100)}%"),
+    "long": ("拉锯局", f"时长 ≥ {LONG_MIN} 分钟"),
+    "swing": ("波动局", f"任意 3 个采样点内胜率变化 ≥ {int(SWING_PP * 100)}pp"),
+    "events": ("资源战", f"结构性事件（推塔/暴君/主宰/风暴）≥ {EVENTS_MIN} 个"),
+}
 
 
 def analyze(b: dict) -> dict | None:
@@ -91,6 +99,8 @@ def analyze(b: dict) -> dict | None:
 
     if not tags:
         return None
+    for t in tags:
+        t["rule"] = RULES[t["k"]][1]
     score = 0.0
     for t in tags:
         score += {"comeback": 4.0, "long": 1.5, "swing": 2.5, "events": 1.0}.get(t["k"], 1.0)
@@ -140,13 +150,7 @@ def main() -> None:
     rows.sort(key=lambda r: (-r["score"], r["date"]))
     payload = {
         "updatedAt": time.strftime("%Y-%m-%d %H:%M:%S"),
-        "rules": [
-            {"k": "comeback", "label": "翻盘局",
-             "rule": f"第 6 分钟之后、经济落后 ≥3,000 时，收官胜方胜率仍 ≤ {int(MIN_PROB * 100)}%"},
-            {"k": "long", "label": "拉锯局", "rule": f"时长 ≥ {LONG_MIN} 分钟"},
-            {"k": "swing", "label": "波动局", "rule": f"任意 3 个采样点内胜率变化 ≥ {int(SWING_PP * 100)}pp"},
-            {"k": "events", "label": "资源战", "rule": f"结构性事件（推塔/暴君/主宰/风暴）≥ {EVENTS_MIN} 个"},
-        ],
+        "rules": [{"k": k, "label": lab, "rule": rule} for k, (lab, rule) in RULES.items()],
         "totalBattles": total_battles,
         "picked": min(len(rows), 48),
         "rows": rows[:48],
