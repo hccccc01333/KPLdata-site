@@ -90,6 +90,20 @@ async function main() {
   check("索引里 59 场 / 202 局", idx.matches === 59 && idx.battles === 202, idx.matches + "/" + idx.battles);
   check("轮播文案用上了真实数字", idx.has59 && idx.has202, JSON.stringify(idx).slice(0, 220));
   if (errors.length) console.log("  首页 JS 异常：" + errors.slice(0, 3).join(" || "));
+
+  // 首页其它区块：一个 null 就能打断整个内联脚本，所以每块都验一遍
+  const blocks = await evaluate(`(function(){
+    var q = function(s){ return document.querySelectorAll(s).length; };
+    return { replay: q('#replayPicks .rp-pick'), standings: q('#stTop tr'),
+             heroes: q('#heroTop > *'), players: q('#plTop > *'),
+             upcoming: q('#upcomingList > *'), recent: q('#recentList > *') };
+  })()`);
+  check("精选复盘卡片已渲染", blocks.replay > 0, blocks.replay);
+  check("战队榜已渲染", blocks.standings > 0, blocks.standings);
+  check("热门英雄已渲染", blocks.heroes > 0, blocks.heroes);
+  check("选手榜已渲染", blocks.players > 0, blocks.players);
+  check("即将开赛已渲染", blocks.upcoming > 0, blocks.upcoming);
+  check("最新结果已渲染", blocks.recent > 0, blocks.recent);
   check("轮播不再出现「14 场」", !idx.has14);
 
   // --- 赛程：状态筛选三态 ---

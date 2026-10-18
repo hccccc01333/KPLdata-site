@@ -147,7 +147,12 @@
   var season = D.season;
 
   /* ---------- 今日赛场（进行中优先置顶 + 未来场次带日期） ---------- */
+  // V4 首页重排后这块被「最新结果 / 即将开赛」取代，容器 #todayStrip 已从 HTML 移除。
+  // 但 JS 还在写它：一个 null.innerHTML 会把整个内联脚本打断，
+  // 连带下面的轮播、图标、精选复盘全都渲染不出来。所以这里必须提前返回。
   (function () {
+    var strip = document.getElementById("todayStrip");
+    if (!strip) return;
     var ups = D.upcoming || [];
     var ALL = window.KPL_SCHEDULE_ALL || [];
     var todayIso = new Date().toISOString().slice(0, 10);
@@ -156,7 +161,7 @@
     LIVE.forEach(function (r) { liveIds[r.matchId] = 1; });
     var future = ups.filter(function (u) { return !liveIds[u.matchId]; });
     if (!LIVE.length && !future.length) {
-      $("#todayStrip").innerHTML = '<span class="today-label">' + K.icon("clock", 15) + "本赛季赛程已全部结束</span>";
+      strip.innerHTML = '<span class="today-label">' + K.icon("clock", 15) + "本赛季赛程已全部结束</span>";
       return;
     }
     var head, cards = [];
@@ -202,7 +207,7 @@
         '<span class="tstat">' + inner + "</span></div>";
     }).join("");
     html += '<a class="btn sm ghost" style="margin-left:auto" href="schedule.html">全部赛程</a>';
-    $("#todayStrip").innerHTML = html;
+    strip.innerHTML = html;
     var cdEl = document.getElementById("cd0");
     if (cdEl && cdTarget) K.countdown(cdTarget.getTime(), cdEl);
   })();
