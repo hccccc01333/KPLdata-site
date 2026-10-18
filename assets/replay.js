@@ -174,10 +174,11 @@ window.KPL_REPLAY = (function () {
 
       function frameCount() { return battles[bi].frames.length; }
 
-      function draw() {
+      // 外壳只在切局时重建一次；拖动滑块只更新 paint() 里的几个区域。
+      // 旧版 draw() 每次 input 都重写 el.innerHTML，滑块节点被销毁 →
+      // 拖到一半指针捕获丢失，手柄不再跟随鼠标（桌面和手机都会中招）。
+      function renderShell() {
         var b = battles[bi];
-        var f = b.frames[frameIdx];
-        var prev = frameIdx > 0 ? b.frames[frameIdx - 1] : null;
         el.innerHTML =
           '<div class="rp">' +
           '<div class="rp-head">' +
@@ -194,19 +195,62 @@ window.KPL_REPLAY = (function () {
           (b.src === "replay"
             ? '<div class="rp-warn">本局没有直播期预测记录，曲线是赛后用当前模型重放的结果，只作参考；复盘结论请以经济 / 资源等客观指标为主。</div>'
             : "") +
-          '<div class="rp-chart" id="rpChart">' + curveSVG(b.frames, b.t1, b.t2, frameIdx) + "</div>" +
+          '<div class="rp-chart" id="rpChart"></div>' +
           '<div class="rp-tl"><input type="range" min="0" max="' + (b.frames.length - 1) + '" step="1" value="' + frameIdx + '" id="rpRange">' +
-          '<div class="rp-tl-meta mono"><span>第 <b>' + f.m.toFixed(0) + "′</b> / " + b.dur.toFixed(0) + "′</span>" +
+          '<div class="rp-tl-meta mono"><span id="rpTime"></span>' +
           "<span>拖动查看该时刻的经济、资源与选手表现</span></div></div>" +
-          '<div class="rp-grid">' + goldPanel(b, f, prev) + resourcePanel(b, f, prev) + evidencePanel(b, f, prev, b.frames, frameIdx) + "</div>" +
-          '<div class="rp-evs"><div class="rp-pt">关键事件 <em class="mono">点击跳到该分钟</em></div>' + eventList(b, frameIdx) + "</div>" +
+          '<div class="rp-grid" id="rpGrid"></div>' +
+          '<div class="rp-evs"><div class="rp-pt">关键事件 <em class="mono">点击跳到该分钟</em></div>' +
+          '<div class="rp-events" id="rpEvents"></div></div>' +
           "</div>";
+
+        var evBox = document.getElementById("rpEvents");
+        if (evBox) {
+          evBox.innerHTML = (b.events || []).length
+            ? b.events.map(function (e) {
+                return '<button type="button" class="rp-ev" data-m="' + e.m + '">' +
+                  '<span class="t mono">' + e.m.toFixed(0) + "′</span>" + esc(e.l) + "</button>";
+              }).join("")
+            : '<div class="empty-tip">该局没有结构性事件记录</div>';
+        }
         bind();
+        paint();
+      }
+
+      // 只改内容，不动节点：图表容器、三块面板、滑块 value/max、时间标签、事件高亮
+      function paint() {
+        var b = battles[bi];
+        var f = b.frames[frameIdx];
+        var prev = frameIdx > 0 ? b.frames[frameIdx - 1] : null;
+
+        var chart = document.getElementById("rpChart");
+        if (chart) chart.innerHTML = curveSVG(b.frames, b.t1, b.t2, frameIdx);
+
+        var grid = document.getElementById("rpGrid");
+        if (grid) {
+          grid.innerHTML = goldPanel(b, f, prev) + resourcePanel(b, f, prev) +
+            evidencePanel(b, f, prev, b.frames, frameIdx);
+        }
+
+        var r = document.getElementById("rpRange");
+        if (r) {
+          r.max = String(b.frames.length - 1);
+          if (r.value !== String(frameIdx)) r.value = String(frameIdx);
+        }
+
+        var t = document.getElementById("rpTime");
+        if (t) t.innerHTML = "第 <b>" + f.m.toFixed(0) + "′</b> / " + b.dur.toFixed(0) + "′";
+
+        // 事件按钮只切换高亮，不重建（重建会丢监听）
+        Array.prototype.forEach.call(el.querySelectorAll(".rp-ev"), function (btn) {
+          var m = parseFloat(btn.getAttribute("data-m"));
+          btn.classList.toggle("on", Math.abs(m - f.m) <= 1.5);
+        });
       }
 
       function setFrame(i) {
         frameIdx = Math.max(0, Math.min(frameCount() - 1, i));
-        draw();
+        paint();
         var r = document.getElementById("rpRange");
         if (r) r.focus({ preventScroll: true });
       }
@@ -214,8 +258,9 @@ window.KPL_REPLAY = (function () {
       function bind() {
         var r = document.getElementById("rpRange");
         if (r) {
-          r.addEventListener("input", function () { frameIdx = parseInt(r.value, 10); draw(); });
-          r.addEventListener("change", function () { frameIdx = parseInt(r.value, 10); draw(); });
+          // 拖动中只重绘内容：滑块节点必须留着，否则指针捕获丢失、手柄不跟手
+          r.addEventListener("input", function () { frameIdx = parseInt(r.value, 10); paint(); });
+          r.addEventListener("change", function () { frameIdx = parseInt(r.value, 10); paint(); });
           r.addEventListener("keydown", function (e) {
             if (e.key === "ArrowLeft") { e.preventDefault(); setFrame(frameIdx - 1); }
             if (e.key === "ArrowRight") { e.preventDefault(); setFrame(frameIdx + 1); }
@@ -225,7 +270,7 @@ window.KPL_REPLAY = (function () {
           btn.addEventListener("click", function () {
             bi = parseInt(btn.getAttribute("data-i"), 10);
             frameIdx = 0;
-            draw();
+            renderShell();
             if (opts.onBattleChange) opts.onBattleChange(battles[bi].battleId);
           });
         });
@@ -273,7 +318,7 @@ window.KPL_REPLAY = (function () {
         }
       }
 
-      draw();
+      renderShell();
     });
   }
 
