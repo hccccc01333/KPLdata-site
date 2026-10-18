@@ -26,6 +26,7 @@ PROJ = SITE.parent / "02-KPL实时胜率预测系统"
 sys.path.insert(0, str(PROJ / "scripts"))
 
 from kpl_official_core import (  # noqa: E402
+    PLAYER_LANE_ORDER,
     PREDICTION_DIR,
     RAW_DIR,
     _replay_v11_timeline,
@@ -43,7 +44,11 @@ SCHEDULE_ALL = SITE / "assets" / "schedule_all.js"
 MIN_FRAMES = 6
 MAX_FRAMES = 40
 POS_COUNT = 5
-# 官方数字分路编码：0 对抗路 / 1 打野 / 2 中路 / 3 发育路 / 4 游走
+# battle_player_list.position 官方数字编码（见 kpl_official_core.POSITIONS）：
+# 2 中路 / 4 游走 / 5 打野 / 6 对抗路 / 7 发育路；输出位序取官方对位行序
+# PLAYER_LANE_ORDER = [对抗, 打野, 中路, 发育, 游走]，即索引 0..4。
+POS_ORDINAL = {pid: i for i, pid in enumerate(PLAYER_LANE_ORDER)}
+# 编码缺失时的文字兜底
 POS_DESC_ORDER = {"对抗路": 0, "打野": 1, "中路": 2, "发育路": 3, "游走": 4}
 
 
@@ -61,19 +66,23 @@ def jload_js(path: Path):
 
 
 def _pos_ordinal(p: dict) -> int:
-    """分路序（对抗路→打野→中路→发育路→游走）。编码缺失时退回文字，再缺失排到最后。"""
+    """分路序（对抗路→打野→中路→发育路→游走）。优先用官方数字编码，缺失时退回文字。"""
     try:
         ordv = int(p.get("position"))
     except (TypeError, ValueError):
         ordv = -1
-    if 0 <= ordv < POS_COUNT:
-        return ordv
+    if ordv in POS_ORDINAL:
+        return POS_ORDINAL[ordv]
     return POS_DESC_ORDER.get(str(p.get("position_desc") or "").strip(), POS_COUNT)
 
 
 def _roster(snaps: list[dict]) -> dict[int, list[str]]:
-    """整局固化的五人名单（按分路序）。取全部帧的并集，避免某帧缺人导致曲线跨帧错位。"""
-    seen: dict[int, dict[str, tuple[int, str]]] = {1: {}, 2: {}}
+    """整局固化的五人名单（按分路序）。取全部帧的并集，避免某帧缺人导致曲线跨帧错位。
+
+    分路编码重复（个别对局的原始数据异常，如 ADC 被标成游走）时，用该选手的
+    末次经济降序破平：游走位通常经济最低，破平后可把高经济者让回缺失的发育路。
+    """
+    agg: dict[int, dict[str, list]] = {1: {}, 2: {}}
     for s in snaps:
         for p in (s.get("players") or []):
             try:
@@ -85,9 +94,15 @@ def _roster(snaps: list[dict]) -> dict[int, list[str]]:
             name = str(p.get("player_name") or p.get("actual_player_name") or "")
             if not name:
                 continue
-            seen[camp].setdefault(name, (_pos_ordinal(p), name))
+            try:
+                gold = int(float(p.get("gold") or 0))
+            except (TypeError, ValueError):
+                gold = 0
+            rec = agg[camp].setdefault(name, [_pos_ordinal(p), 0])
+            rec[1] = gold
     return {
-        camp: sorted(seen[camp], key=lambda n: seen[camp][n])[:POS_COUNT] for camp in (1, 2)
+        camp: sorted(agg[camp], key=lambda n: (agg[camp][n][0], -agg[camp][n][1], n))[:POS_COUNT]
+        for camp in (1, 2)
     }
 
 
