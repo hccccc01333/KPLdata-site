@@ -50,12 +50,15 @@ img{max-width:100%}
         border:1px solid var(--line);transition:color .15s,border-color .15s}
 .gh-ico:hover{color:var(--gold);border-color:var(--gold)}
 @media(max-width:900px){.nav a{padding:8px 9px;font-size:13.5px}}
-/* 移动端导航：整条 nav 之前是直接 display:none（手机上没有替代入口），改成汉堡抽屉 */
+/* 移动端导航：整条 nav 之前是直接 display:none（手机上没有替代入口），改成汉堡抽屉。
+   断点 900px 而不是 720px：站点有 20 个页面，横排导航实测最窄要 462px，
+   加上品牌区与搜索框，721–900px（iPad 竖屏 / 小笔记本）会横向溢出 114px。
+   实测 2026-10-18：断点改到 900px 后 390 / 768 / 1440 三档均无横向溢出。 */
 .nav-toggle{display:none;align-items:center;justify-content:center;width:38px;height:38px;flex:none;
             border-radius:9px;border:1px solid var(--line);background:var(--card2);color:var(--ink);
             cursor:pointer;transition:color .15s,border-color .15s}
 .nav-toggle:hover{color:var(--gold);border-color:var(--gold)}
-@media(max-width:720px){
+@media(max-width:900px){
   .topbar-in{gap:10px}
   .nav-toggle{display:inline-flex}
   .nav{display:none;position:absolute;left:0;right:0;top:64px;margin:0;padding:10px 16px 16px;

@@ -266,16 +266,14 @@ async function main() {
   check("点击曲线跳到对应分钟", clickRes && clickRes.after !== clickRes.before && clickRes.after > clickRes.before,
     clickRes ? clickRes.before + " → " + clickRes.after : "n/a");
 
-  const share = await evaluate(`(function(){
-    var s = document.getElementById('rpShare');
-    if (!s) return { err: 'no share button' };
-    var before = s.textContent;
-    s.click();
-    return { before: before, after: s.textContent };
-  })()`);
-  check("分享按钮产出本帧链接", share && share.after && share.after !== share.before &&
-    (/已复制/.test(share.after) || /http/.test(share.after)),
-    share ? String(share.after).slice(0, 60) : "n/a");
+  const shareBefore = await evaluate("(document.getElementById('rpShare')||{}).textContent || ''");
+  await evaluate("(function(){var s=document.getElementById('rpShare'); if(s) s.click();})()");
+  // clipboard.writeText 是 Promise，点完立刻读只能读到旧文本——必须等一拍再断言
+  await sleep(500);
+  const shareAfter = await evaluate("(document.getElementById('rpShare')||{}).textContent || ''");
+  check("分享按钮产出本帧链接", shareAfter && shareAfter !== shareBefore &&
+    (/已复制/.test(shareAfter) || /http/.test(shareAfter) || /match\.html|\?id=/.test(shareAfter)),
+    shareAfter.slice(0, 70));
 
   console.log("\n=== 响应式：390 / 768 / 1440 ===");
   for (const w of [390, 768, 1440]) {
@@ -284,6 +282,30 @@ async function main() {
     const nav = await evaluate("(function(){var h=document.getElementById('siteHeader');return h?h.getBoundingClientRect().height:0;})()");
     check(w + "px 首页无异常", e1.length === 0, e1.slice(0, 2).join(" | "));
     check(w + "px 导航可见", nav > 0, nav);
+    // 导航可达性：≤900px 走汉堡抽屉，必须真的能展开且抽屉里有赛事/复盘入口。
+    // 只看"顶栏高度 > 0"是不够的——toggle 的 JS 坏了的话导航就等于不存在。
+    const drawer = await evaluate(`(function(){
+      var tg = document.querySelector('.nav-toggle');
+      var nav = document.getElementById('siteNav');
+      if (!nav) return { err: 'no nav' };
+      if (!tg || getComputedStyle(tg).display === 'none') {
+        return { mode: 'inline', links: nav.querySelectorAll('a').length,
+                 toMatch: nav.querySelectorAll('a[href*="match.html"],a[href*="picks.html"],a[href*="schedule.html"]').length };
+      }
+      tg.click();
+      var open = nav.classList.contains('open');
+      var r = { mode: 'drawer', open: open, links: nav.querySelectorAll('a').length,
+                toMatch: nav.querySelectorAll('a[href*="match.html"],a[href*="picks.html"],a[href*="schedule.html"]').length };
+      tg.click();
+      return r;
+    })()`);
+    if (drawer && drawer.mode === "drawer") {
+      check(w + "px 汉堡导航可展开", drawer.open === true && drawer.links > 0,
+        drawer.open + " · " + drawer.links + " 条");
+      check(w + "px 抽屉含赛事/复盘入口", drawer.toMatch > 0, drawer.toMatch);
+    } else {
+      check(w + "px 横排导航含赛事/复盘入口", drawer && drawer.toMatch > 0, drawer && drawer.toMatch);
+    }
     const mobile = await evaluate(`(function(){
       var de = document.documentElement;
       var over = de.scrollWidth - window.innerWidth;
@@ -300,6 +322,8 @@ async function main() {
     check(w + "px 复盘入口在视口内", mobile && mobile.pickVisible === true, mobile && mobile.pickVisible);
     const e2 = await visit(BASE + "match.html?id=2026062603&g=3&m=13");
     check(w + "px 复盘页无异常", e2.length === 0, e2.slice(0, 2).join(" | "));
+    const mOver = await evaluate("document.documentElement.scrollWidth - window.innerWidth");
+    check(w + "px 复盘页无横向溢出", mOver <= 1, mOver + "px");
   }
   await send("Emulation.clearDeviceMetricsOverride");
 
