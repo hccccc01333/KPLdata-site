@@ -179,6 +179,27 @@ def main() -> None:
             }
     gates = backtest.get("gates") or {}
 
+    # 重放 vs 直播：两条口径的差距，用来提醒"直播档案不是当前模型的能力"
+    rvl_raw = jload(REALTIME / "replay_vs_live_report.json", {}) or {}
+    s = rvl_raw.get("summary") or {}
+    splits = rvl_raw.get("by_split") or {}
+    rvl = None
+    if s.get("battles"):
+        test_split = splits.get("test") or {}
+        rvl = {
+            "battles": int(s.get("battles") or 0),
+            "frames": int(s.get("aligned_frames") or 0),
+            "medianDelta": float(s.get("median_abs_delta") or 0),
+            "p90Delta": float(s.get("p90_abs_delta") or 0),
+            "directionAgree": float(s.get("direction_agree") or 0),
+            "brierLive": s.get("brier_live"),
+            "brierReplay": s.get("brier_replay"),
+            "gapAll": s.get("brier_gap"),
+            "gapTest": test_split.get("gap"),
+            "testFrames": test_split.get("frames"),
+            "generatedAt": str(rvl_raw.get("generatedAt") or "")[:10],
+        }
+
     data = {
         "updatedAt": __import__("time").strftime("%Y-%m-%d %H:%M:%S"),
         "archived": archived,
@@ -192,6 +213,7 @@ def main() -> None:
             "phases": phases,
             "gatesPassed": bool(gates.get("passed")),
         },
+        "replayVsLive": rvl,
     }
     path = SITE / "assets" / "predict.js"
     path.write_text("KPL_PREDICT = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n",
