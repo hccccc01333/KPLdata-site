@@ -150,6 +150,14 @@
           rr.innerHTML = '<span class="' + (t.score1 > t.score2 ? "w" : "") + '">' + t.score1 +
             '</span> : <span class="' + (t.score2 > t.score1 ? "w" : "") + '">' + t.score2 + "</span>";
         }
+        /* 首屏焦点卡的比分与状态（此前只覆盖了最新结果和即将开赛，首屏是死的） */
+        var fc = document.querySelector('.fh-tcard[data-mid="' + t.matchId + '"]');
+        if (fc && (t.st === 1 || t.st === 2)) {
+          var stEl = fc.querySelector(".st");
+          var scEl = fc.querySelector(".sc");
+          if (stEl) stEl.textContent = t.st === 2 ? "已结束" : "进行中";
+          if (scEl) scEl.textContent = t.score1 + ":" + t.score2;
+        }
         var row = document.querySelector('.up-row[data-mid="' + t.matchId + '"]');
         if (row) {
           var chip = row.querySelector(".chip");
