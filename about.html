@@ -118,16 +118,22 @@
       <div class="panel">
         <div class="panel-title">模型评估 <em class="mono">用最新比赛检验的预测误差（越低越好）</em></div>
         <table class="tbl holdout-tbl">
-          <thead><tr><th>阶段</th><th class="num">旧版</th><th class="num">当前</th><th>变化</th><th>对比</th></tr></thead>
+          <thead><tr><th>阶段</th><th class="num">旧口径</th><th class="num">新口径</th><th>变化</th><th>对比</th></tr></thead>
           <tbody id="holdoutBody"></tbody>
         </table>
         <p class="panel-foot mono" id="modelFoot">—</p>
+        <p class="panel-foot mono" id="modelFoot2">—</p>
       </div>
       <div class="panel">
         <div class="panel-title">为什么可信</div>
         <ul class="rules">
           <li><b>用最新比赛当考卷。</b>只拿最近的比赛检验模型，不挑容易的数据，模拟真实的「预测下一场」。</li>
-          <li><b>同一批考卷比高低。</b>新旧模型做同一批比赛，误差没降就不算进步。</li>
+          <li><b>考卷和练习册分开。</b>训练 / 校准 / 考试三段按时间切开：校准器（把概率掰正的那层）只看校准段，
+            考试段只用来报数字，谁都碰不到。早期版本是「同一批 8 局既调校准器又当考卷」，那批数字已作废重算。</li>
+          <li><b>同一批考卷比高低。</b>换了口径之后，新模型放回旧考卷复算是 0.135，与旧的 0.143 同量级——
+            说明数字变化来自考卷变宽，不是模型退步。</li>
+          <li><b>翻盘局单独看。</b>考试段 20 局里有 6 局是翻盘，early 阶段在这 6 局上准确率只有 15%，
+            而其余 14 局是 80%。这个差距不藏，页面直接写出来。</li>
           <li><b>异常数据隔离。</b>快照不完整的对局不参与训练与榜单。</li>
           <li><b>数字护栏。</b>当曲线与场上经济明显不符时，模型把数字拉回中间，避免误导性的极端胜率。</li>
         </ul>
@@ -249,6 +255,13 @@
       '<i class="old" style="width:' + oldW.toFixed(1) + '%"></i><i class="new" style="width:' + newW.toFixed(1) + '%"></i></span></td></tr>';
   }).join("");
   $("#modelFoot").textContent = "预测误差（越低越好）· 模型训练于 " + String(D.model.trainedAt).slice(0, 10);
+  (function () {
+    var ss = D.model.sameSample || {}, n = D.model.holdoutN || 0;
+    $("#modelFoot2").textContent =
+      "旧口径：最近 8 局，且这 8 局同时被用来拟合校准器（样本内校准）。" +
+      "新口径：最近 " + n + " 局，训练 / 校准 / 考试三段隔离。" +
+      (ss.old ? "同一样本对照（把新模型放回旧 8 局复算）：" + ss.old.toFixed(3) + " → " + ss.new.toFixed(3) + "。" : "");
+  })();
 
   var ROAD = [
     ["2026-05", "初版上线：赛程爬取 + 赛后 / 赛前基线建模"],
@@ -257,11 +270,12 @@
     ["2026-07", "数据分层、因果特征、分阶段模型（误差大幅下降）"],
     ["2026-07", "金差护栏与拐点分析、逐局战报"],
     ["2026-08", "前端改版为模块化数据看板（赛程 / 战队 / 选手 / 英雄）"],
-    ["2026-10", "数据批量回补 + 模型重训（误差 0.199 → 0.143）"],
+    ["2026-10", "数据批量回补 + 模型重训（当口径下误差 0.199 → 0.143）"],
     ["2026-10", "接入年度总决赛；对外产品站上线"],
     ["2026-10", "全历史接入：2019–2026 全部 33 个赛事、11,000+ 局"],
     ["2026-10", "实时链路：1 秒采集 + 30 秒实时页 + 全自动归档闭环"],
-    ["2026-10", "BP 八维分析、英雄组合协同算法、模型预测公开统计页"]
+    ["2026-10", "BP 八维分析、英雄组合协同算法、模型预测公开统计页"],
+    ["2026-10", "评估口径重构：训练 / 校准 / 考试三段硬隔离，作废旧口径指标并重算"]
   ];
   $("#roadList").innerHTML = ROAD.map(function (r, i) {
     return '<div class="rd reveal' + (i >= 6 ? " v12" : "") + '"><div class="h"><span class="v">' +

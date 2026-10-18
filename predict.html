@@ -75,7 +75,7 @@
   <div class="pr-kpis">
     <div class="pr-kpi hl"><div class="k">第 8 分钟命中率 <em class="mono">可信口径</em></div><div class="v" id="kCp8">—</div><div class="s" id="kCp8S">—</div></div>
     <div class="pr-kpi"><div class="k">第 12 / 16 分钟命中率</div><div class="v" id="kCp12">—</div><div class="s" id="kCp12S">—</div></div>
-    <div class="pr-kpi"><div class="k">回测总体准确率（近 8 局 holdout）</div><div class="v" id="kAcc">—</div><div class="s" id="kAccS">—</div></div>
+    <div class="pr-kpi"><div class="k" id="kAccK">回测总体准确率（holdout）</div><div class="v" id="kAcc">—</div><div class="s" id="kAccS">—</div></div>
     <div class="pr-kpi"><div class="k">最后一帧（参考，不可当能力）</div><div class="v" id="kLast">—</div><div class="s">比赛已基本结束，命中率趋近 100% 属于口径而非模型</div></div>
   </div>
 
@@ -179,7 +179,10 @@
   var ph = bt.phases || {};
   if (ph.all) {
     $("#kAcc").textContent = Math.round(ph.all.acc * 100) + "%";
-    $("#kAccS").textContent = "共 " + ph.all.n + " 个采样阶段样本";
+    // 同时给"局数"和"帧数"：只写帧数会让人以为样本有几百场
+    var nb = bt.holdoutN || 0;
+    $("#kAccK").textContent = "回测总体准确率（近 " + nb + " 局 holdout）";
+    $("#kAccS").textContent = nb + " 局 · " + ph.all.n + " 帧";
   }
   $("#prGate").textContent = bt.gatesPassed ? "全部通过 ✓" : "部分未达标";
 

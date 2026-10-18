@@ -497,6 +497,16 @@ def main() -> None:
         "quarantine": int((catalog.get("stats") or {}).get("quarantine") or 0),
         "heroes": int(len(heroes_meta)), "events": int(len(pd.read_csv(PROJ / "data/analysis/events.csv"))),
     }
+    # 口径对比（V12 三段隔离）：old = 旧口径（最近 8 局，且这 8 局同时被用来拟合校准器）；
+    # new = 新口径（最近 20 局 test 段，训练与校准都没碰过）。
+    # 注意这不是"模型变强/变弱"，是"考卷换了"——同一样本对照见 sameSample。
+    _old_protocol = {"early (≤8′)": 0.117, "mid (9–15′)": 0.129, "late (16′+)": 0.231, "all": 0.143}
+    _new_protocol = {
+        "early (≤8′)": float(train.get("holdout_early_brier") or 0),
+        "mid (9–15′)": float(train.get("holdout_mid_brier") or 0),
+        "late (16′+)": float(train.get("holdout_late_brier") or 0),
+        "all": float(train.get("holdout_real_brier") or 0),
+    }
     model = {
         "version": str(train.get("version") or "V11"),
         "name": public_model_name(train.get("model_name")),
@@ -505,13 +515,15 @@ def main() -> None:
         "holdoutEarly": float(train.get("holdout_early_brier") or 0),
         "holdoutMid": float(train.get("holdout_mid_brier") or 0),
         "holdoutLate": float(train.get("holdout_late_brier") or 0),
+        "holdoutN": int(train.get("holdout_n_battles") or 0),
+        "split": train.get("split") or {},
         "auc": float(train.get("auc") or 0),
         "compare": [
-            {"phase": "early (≤8′)", "old": 0.152, "new": 0.117},
-            {"phase": "mid (9–15′)", "old": 0.210, "new": 0.129},
-            {"phase": "late (16′+)", "old": 0.282, "new": 0.231},
-            {"phase": "all", "old": 0.199, "new": 0.143},
+            {"phase": k, "old": _old_protocol[k], "new": round(_new_protocol[k], 4)}
+            for k in ("early (≤8′)", "mid (9–15′)", "late (16′+)", "all")
         ],
+        # 同一样本对照：把新模型放回旧的 8 局上重算，用来证明"数字变了不是模型退步"
+        "sameSample": {"old": 0.143, "new": 0.135, "n": 8},
         "oldAuc": 0.694,
     }
 
