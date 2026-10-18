@@ -19,7 +19,7 @@ window.SITE_DATA = {
   "holdoutEarly": 0.23465655137525873,
   "holdoutMid": 0.10174500183686395,
   "holdoutLate": 0.20227079335831993,
-  "holdoutN": 0,
+  "holdoutN": 20,
   "split": {},
   "auc": 0.8721,
   "aucScope": "独立测试段（test 20 局 / 298 帧，训练与校准均未接触）",
