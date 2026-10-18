@@ -38,7 +38,8 @@ async function main() {
     const m = JSON.parse(ev.data);
     if (m.method === "Runtime.exceptionThrown") {
       const d = m.params.exceptionDetails;
-      errors.push((d.exception && d.exception.description || d.text || "").split("\n")[0]);
+      const desc = (d.exception && d.exception.description) || d.text || "";
+      errors.push(desc.split("\n")[0] + " @line " + (d.lineNumber + 1) + " " + (d.url || "").split("/").pop());
     }
     if (m.id && pending.has(m.id)) { pending.get(m.id)(m); pending.delete(m.id); }
   };
@@ -54,6 +55,7 @@ async function main() {
 
   async function goto(url, readyExpr) {
     await send("Page.enable");
+    await send("Runtime.enable");
     await send("Page.navigate", { url });
     for (let i = 0; i < 60; i++) {
       await sleep(250);
@@ -71,7 +73,8 @@ async function main() {
   const BASE = "http://127.0.0.1:8777/";
 
   // --- 首页：复盘覆盖数从索引现算 ---
-  const okIdx = await goto(BASE + "index.html", "!!document.querySelector('.carousel')");
+  const okIdx = await goto(BASE + "index.html",
+    "(function(){var s=document.getElementById('slides');return !!(window.KPL_REPLAY_INDEX && s && s.innerHTML.length>0);})()");
   check("首页加载出轮播", okIdx);
   const idx = await evaluate(`(function(){
     var idx = window.KPL_REPLAY_INDEX || {};
@@ -86,6 +89,7 @@ async function main() {
   })()`);
   check("索引里 59 场 / 202 局", idx.matches === 59 && idx.battles === 202, idx.matches + "/" + idx.battles);
   check("轮播文案用上了真实数字", idx.has59 && idx.has202, JSON.stringify(idx).slice(0, 220));
+  if (errors.length) console.log("  首页 JS 异常：" + errors.slice(0, 3).join(" || "));
   check("轮播不再出现「14 场」", !idx.has14);
 
   // --- 赛程：状态筛选三态 ---
