@@ -301,7 +301,6 @@
   .scopebar{flex-direction:column;align-items:stretch}
   .scopebar .fld{min-width:0}
   .scopebar .scope-meta{margin-left:0}
-  .today-in{flex-wrap:wrap}
   .g-prow{display:flex !important;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 4px}
   .g-hero{flex:0 0 92px}
   .g-player{flex:1 1 110px}
@@ -415,10 +414,6 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opa
 .search-box:focus-within{box-shadow:0 0 0 3px rgba(255,255,255,.14), 0 6px 20px rgba(0,0,0,.3)}
 
 /* ---- 首页生态：轮播卡 + today 条 + entry 卡 ---- */
-.today-strip{border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.16);
-  background:linear-gradient(180deg, rgba(14,25,41,.9), rgba(10,17,28,.94))}
-.today-match{background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.008));
-  border-color:rgba(255,255,255,.08)}
 .entry{background:linear-gradient(180deg,#122035,#0E1929); border-color:rgba(255,255,255,.065)}
 .entry:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(0,0,0,.34)}
 .entry .ic{background:linear-gradient(160deg, rgba(255,255,255,.16), rgba(157,178,204,.12))}
@@ -459,7 +454,7 @@ body::before{background:
   radial-gradient(560px 480px at 50% 106%, rgba(143,179,174,.05), transparent 62%)}
 
 /* 卡片：底色分层取代边框（更"透气"） */
-.panel,.tcard,.hcard,.combo-card,.player,.bp2-panel,.cmp-radar,.cmp-table,.pr-kpi,.live-card,.h2h-panel,.champ,.today-match,.entry{
+.panel,.tcard,.hcard,.combo-card,.player,.bp2-panel,.cmp-radar,.cmp-table,.pr-kpi,.live-card,.h2h-panel,.champ,.entry{
   background:linear-gradient(180deg,#1A2534,#17222F 55%,#141E2A);
   border-color:rgba(255,255,255,.055);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.035), 0 1px 2px rgba(0,0,0,.22);
@@ -531,7 +526,7 @@ body::before,body::after{display:none !important;content:none !important}
 .brand-name{font-weight:600 !important;letter-spacing:.02em}
 
 /* —— 无盒子：所有卡片类溶解为开放区块，用留白与发丝线分组 —— */
-.panel,.tcard,.hcard,.combo-card,.player,.bp2-panel,.cmp-radar,.cmp-table,.pr-kpi,.live-card,.h2h-panel,.champ,.today-match,.entry,.filterbar,.scopebar,.brief,.q-wrap,.day-block,.seg,.stat-strip{
+.panel,.tcard,.hcard,.combo-card,.player,.bp2-panel,.cmp-radar,.cmp-table,.pr-kpi,.live-card,.h2h-panel,.champ,.entry,.filterbar,.scopebar,.brief,.q-wrap,.day-block,.seg,.stat-strip{
   background:none !important;border:none !important;border-radius:0 !important;box-shadow:none !important;
 }
 .tcard:hover,.hcard:hover,.combo-card:hover,.player:hover,.entry:hover,.champ:hover{transform:none !important;box-shadow:none !important;background:rgba(255,255,255,.03) !important}

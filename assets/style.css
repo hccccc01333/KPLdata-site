@@ -395,8 +395,6 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
   .scopebar{flex-direction:column;align-items:stretch}
   .scopebar .fld{min-width:0}
   .scopebar .scope-meta{margin-left:0}
-  .today-in{flex-wrap:wrap}
-  .today-match{flex-wrap:wrap}
   .g-prow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 4px}
   .g-hero{flex:0 0 92px}
   .g-player{flex:1 1 110px}
