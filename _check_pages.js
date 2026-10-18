@@ -25,7 +25,8 @@ const PAGES = [
   ["players.html", "选手榜", ["#plBody tr, .player, .pl-card"]],
   ["heroes.html", "英雄列表", ["#heroGrid > *, .hcard"]],
   ["match.html?id=2026062603&g=3&m=13", "比赛复盘", ["#rpRange", "#rpChart svg", "#rpGrid .rp-panel"]],
-  ["game.html?id=2026062603&g=3", "对局详情", ["main .panel, main .wrap"]],
+  // game.html 的 id 是 battle_id（不是 match_id），传错了会走空态
+  ["game.html?id=1373651472_21_1779526666", "对局详情", ["#main .panel", "#main .bp-grid"]],
   ["bp.html", "BP 分析", ["#bpBody tr, .bp2-panel, main .panel"]],
   ["combos.html", "英雄组合", ["main .panel, .combo-card"]],
   ["compare.html", "对比工具", ["main .panel, .cmp-table"]],
