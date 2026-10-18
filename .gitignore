@@ -12,3 +12,6 @@ Thumbs.db
 
 # 复盘构建缓存
 assets/replay/.manifest.json
+
+# 浏览器无头测试的临时 profile（测试脚本用 --user-data-dir 生成，勿入库）
+.edge-tmp*/
