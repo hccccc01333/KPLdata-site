@@ -104,50 +104,6 @@ img{max-width:100%}
 .chip.done{color:var(--blue);border-color:rgba(157,178,204,.45);background:rgba(157,178,204,.12)}
 .chip.next{color:var(--gold);border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.1)}
 
-/* ---------------- Hero / 轮播 ---------------- */
-.carousel{position:relative;overflow:hidden;color:#fff;min-height:560px;display:flex;flex-direction:column;
-          background:#0A0A0C}
-#dome{position:absolute;inset:0;width:100%;height:100%;display:block}
-.carousel::after{content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(180deg,rgba(3,8,15,.3) 0%,rgba(3,8,15,0) 32%,rgba(3,8,15,.5) 100%)}
-.slides{position:relative;z-index:2;flex:1;display:flex}
-.slide{position:absolute;inset:0;display:flex;align-items:center;opacity:0;visibility:hidden;
-       transition:opacity .6s ease,visibility .6s}
-.slide.on{opacity:1;visibility:visible}
-.slide .wrap{padding-top:50px;padding-bottom:26px}
-.slide-kicker{font-size:13px;letter-spacing:1.8px;color:var(--gold)}
-.slide h1{font-size:clamp(32px,4.4vw,52px);line-height:1.24;font-weight:900;letter-spacing:.5px;margin:14px 0 14px;
-          max-width:920px;text-shadow:0 2px 30px rgba(0,8,18,.5)}
-.slide h1 .hl{color:var(--gold)}
-.slide p{max-width:720px;color:#B9CBE0;font-size:15.5px}
-.slide-mini{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
-.slide-mini span{font-family:var(--mono);font-size:13px;border:1px solid rgba(255,255,255,.14);
-                 background:rgba(8,20,34,.66);border-radius:7px;padding:7px 14px;color:#C9D9EC}
-.slide-mini b{color:var(--gold);font-weight:700;margin-left:6px}
-.slide-cta{margin-top:24px;display:flex;gap:12px;flex-wrap:wrap}
-.car-nav{position:absolute;z-index:3;top:44%;width:44px;height:72px;background:rgba(8,20,34,.55);
-         border:1px solid rgba(255,255,255,.14);color:#fff;font-size:20px;cursor:pointer;border-radius:9px;
-         transition:background .15s,border-color .15s}
-.car-nav:hover{background:rgba(255,255,255,.85);border-color:transparent;color:#151006}
-.car-nav.prev{left:16px}.car-nav.next{right:16px}
-.car-dots{position:absolute;z-index:3;bottom:26px;left:0;right:0;display:flex;justify-content:center;gap:9px}
-.car-dots button{width:30px;height:5px;border:none;border-radius:3px;background:rgba(255,255,255,.22);
-                 cursor:pointer;transition:background .15s}
-.car-dots button.on{background:var(--gold)}
-
-/* 今日赛程条（Hero 内产品入口） */
-.today-strip{position:relative;z-index:3;background:rgba(6,14,24,.82);border-top:1px solid var(--line);
-             backdrop-filter:blur(8px)}
-.today-in{display:flex;align-items:center;gap:18px;min-height:66px;padding:10px 0;flex-wrap:wrap}
-.today-label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gold);font-weight:700;flex:none}
-.today-label i{width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px rgba(192,138,141,.18)}
-.today-match{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
-             border-radius:10px;padding:9px 16px;flex:1;min-width:280px;max-width:430px}
-.today-match img{width:30px;height:30px;object-fit:contain}
-.today-match .t{font-family:var(--mono);font-size:13px;color:var(--gold);font-weight:700}
-.today-match .tm{font-size:14px;font-weight:700;flex:1;text-align:center}
-.today-match .cd{font-family:var(--mono);font-size:12px;color:var(--muted)}
-
 /* ---------------- 区块 ---------------- */
 main{padding-bottom:30px}
 .block{margin-top:60px}
