@@ -194,6 +194,21 @@
     var el = document.getElementById("focusHero");
     if (!el) return;
 
+    /* 比赛状态：静态 st 字段会滞后（构建时才写入），所以必须按当前时间兜底。
+       2026-10-18 20:30 的事故：20:00 开赛的比赛，首屏一直显示「待开赛」，
+       因为 schedule_all.js 里 st 还是 0，而 live.js 当时没覆盖首屏。 */
+    function stateText(r) {
+      if (r.st === 2) return "已结束";
+      if (r.st === 1) return "进行中";
+      var iso = String(r.date || "") + "T" + String(r.time || "00:00");
+      var t = new Date(iso).getTime();
+      // st=0 但已经过了开赛时间 → 数据在追，不能再叫「待开赛」
+      return (t && Date.now() > t) ? "进行中" : "待开赛";
+    }
+    function scoreText(r) {
+      return (r.st === 2 || (r.score1 || r.score2)) ? (r.score1 + ":" + r.score2) : "—";
+    }
+
     function teamChip(name, icon) {
       return '<a class="fh-team" href="team.html?id=' + encodeURIComponent(name) + '">' +
         (icon ? '<img src="' + K.esc(icon) + '" alt="">' : "") + "<span>" + K.esc(name) + "</span></a>";
@@ -216,12 +231,11 @@
       el.innerHTML = '<div class="fh"><div class="fh-kicker mono">今日赛程 · ' + K.dateCN(todayIso) + " " +
         K.weekdayCN(todayIso) + " · 共 " + today.length + " 场</div>" +
         '<div class="fh-today">' + today.map(function (r) {
-          var done = r.st === 2;
-          return '<a class="fh-tcard" href="match.html?id=' + encodeURIComponent(r.matchId) + '">' +
+          return '<a class="fh-tcard" data-mid="' + K.esc(r.matchId) + '" href="match.html?id=' + encodeURIComponent(r.matchId) + '">' +
             '<span class="t mono">' + K.esc(r.time) + "</span>" +
             '<span class="tm">' + K.esc(r.team1) + " vs " + K.esc(r.team2) + "</span>" +
-            '<span class="sc mono">' + (done ? r.score1 + ":" + r.score2 : "—") + "</span>" +
-            '<span class="st">' + (done ? "已结束" : r.st === 1 ? "直播中" : "待开赛") + "</span></a>";
+            '<span class="sc mono">' + scoreText(r) + "</span>" +
+            '<span class="st">' + stateText(r) + "</span></a>";
         }).join("") + "</div>" +
         '<div class="fh-actions"><a class="btn primary sm" href="schedule.html">赛事中心</a>' +
         (nextT && nextT.st === 1 ? '<span class="fh-note mono">正在进行：' + K.esc(nextT.team1) + " vs " + K.esc(nextT.team2) + "</span>"
