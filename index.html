@@ -353,6 +353,10 @@
   })();
 
   /* ---------- 轮播（产品文案） ---------- */
+  // 复盘覆盖数从 assets/replay/index.js 现算，别再写死（原来写 14 场，实际 59 场 / 202 局）
+  var RP_IDX = window.KPL_REPLAY_INDEX || {};
+  var RP_MATCHES = Object.keys(RP_IDX).length;
+  var RP_BATTLES = Object.keys(RP_IDX).reduce(function (s, k) { return s + ((RP_IDX[k].b || []).length); }, 0);
   var slides = [
     {
       kicker: season + " · 进行中",
@@ -367,9 +371,9 @@
     {
       kicker: "逐局复盘 · 分钟级",
       h: '每一局，<span class="hl">都能看到胜负是怎么失去的。</span>',
-      p: "最近 14 场大场支持逐局复盘：胜率曲线、阶段切片、资源转折与 BP 阵容一屏看完。",
+      p: "已有 " + RP_MATCHES + " 场大场、共 " + RP_BATTLES + " 局支持逐局复盘：胜率曲线、阶段切片、资源转折与 BP 阵容一屏看完。",
       cta: [["match.html?id=2026073103", "看一场翻盘局", "primary"], ["schedule.html", "选择比赛", "ghost"]],
-      mini: [["可复盘详情", "14 场"], ["曲线粒度", "分钟级"], ["事件标记", "一血 / 资源 / 推塔"]]
+      mini: [["可复盘大场", RP_MATCHES + " 场"], ["可复盘小局", RP_BATTLES + " 局"], ["曲线粒度", "分钟级"]]
     },
     {
       kicker: "榜单与梯度 · 实时滚动",

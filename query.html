@@ -184,7 +184,8 @@
     });
     $("#qBody").innerHTML = rows.slice(0, 200).map(function (r, i) {
       var name = mode === "team" ? r.team : r.name;
-      var href = mode === "team" ? "teams.html" :
+      // 战队列直接进详情页（team.html 的 id 就是队名）；原来跳到 teams.html 榜单，等于没跳
+      var href = mode === "team" ? "team.html?id=" + encodeURIComponent(r.team) :
         (mode === "hero" ? "hero.html?id=" + encodeURIComponent(r.name) : "player.html?id=" + encodeURIComponent(r.name));
       var ic = iconOf(r);
       return "<tr>" +

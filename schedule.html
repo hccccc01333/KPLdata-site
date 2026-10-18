@@ -62,8 +62,9 @@
     <label class="fld"><span>状态</span>
       <select id="fStatus">
         <option value="">全部状态</option>
-        <option>已结束</option>
+        <option>进行中</option>
         <option>未开始</option>
+        <option>已结束</option>
       </select>
     </label>
     <label class="fld grow"><span>搜索战队</span>
@@ -108,11 +109,17 @@
     return r.leagueId === curScope;
   }
 
+  // 比赛状态只有三态：进行中 / 未开始 / 已结束。
+  // 之前只有两态（done ? 已结束 : 未开始），直播中的场次被算进「未开始」，
+  // 按「未开始」筛会把正在打的比赛也列出来。
+  function isLiveRow(r) { return r.st === 1 || (!r.done && K.isLive(r)); }
+  function stateOf(r) { return r.done ? "已结束" : (isLiveRow(r) ? "进行中" : "未开始"); }
+
   function filtered() {
     var st = $("#fStatus").value, stage = $("#fStage").value, q = $("#fTeam").value.trim();
     return ALL.filter(function (r) {
       if (!inScope(r)) return false;
-      if (st && (r.done ? "已结束" : "未开始") !== st) return false;
+      if (st && stateOf(r) !== st) return false;
       if (stage && r.stage !== stage) return false;
       if (q && r.team1.indexOf(q) < 0 && r.team2.indexOf(q) < 0) return false;
       return true;
@@ -129,7 +136,7 @@
   }
 
   function rowHTML(r) {
-    var live = r.st === 1 || (!r.done && K.isLive(r));
+    var live = isLiveRow(r);
     var score;
     if (live && (r.score1 > 0 || r.score2 > 0)) {
       score = '<div class="score">' +
