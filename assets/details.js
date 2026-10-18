@@ -1,5 +1,5 @@
 window.SITE_DETAILS = {
- "generatedAt": "2026-10-19 03:20",
+ "generatedAt": "2026-10-19 04:55",
  "matches": [
   {
    "matchId": "2026101601",
@@ -383,7 +383,7 @@ window.SITE_DETAILS = {
      },
      {
       "m": 8.016666666666667,
-      "p": 0.8527640968601723,
+      "p": 0.8527640968601726,
       "gd": 2464.0
      },
      {
@@ -5097,7 +5097,7 @@ window.SITE_DETAILS = {
        "td": 1.0,
        "rd": 1.0
       },
-      "prob_mean": 0.41257971508493574
+      "prob_mean": 0.4125797150849359
      },
      {
       "code": "mid",
