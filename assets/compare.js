@@ -431,11 +431,13 @@ window.KPL_COMPARE = (function () {
       picked = [null, null, null, null];
       populatePickers();
       render();
+      syncUrl();
     });
     readUrl();
     syncMode();
     populatePickers();
     render();
+    syncUrl();   // 打开页面即把「默认答案」写进 URL，便于直接分享当前对比
   }
 
   return { init: init, MAX: MAX };
