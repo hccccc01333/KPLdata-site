@@ -25,6 +25,7 @@ PROJ = SITE.parent / "02-KPL实时胜率预测系统"
 HIST = PROJ / "data" / "history"
 DEEP = SITE / "assets" / "deep.js"
 PLAYER_DEEP = SITE / "assets" / "player_deep.js"
+PLAYERS_DETAIL = SITE / "assets" / "players_detail.js"
 REPORT = PROJ / "reports" / "series_quality_report.json"
 CN = timezone(timedelta(hours=8))
 
@@ -462,6 +463,39 @@ def compare_deep(rep: Report, exp: dict, deep: dict) -> None:
                            f"第 {i + 1} 条.{f}: deep.js={a.get(f)} / 复算={b[f]}")
 
 
+def compare_players_detail(rep: Report, deep: dict) -> int:
+    """deep.js 的逐局胜负应与选手详情页（players_detail.js）的生涯战绩一致。
+
+    两者来自同一批逐局数据，差异超过 2 局说明某一侧又出现了口径回退。
+    允许 1-2 局差异：deep.js 会剔除串场/重复局号里的无效小局。
+    """
+    try:
+        pd = load_asset(PLAYERS_DETAIL, "KPL_PLAYERS")
+    except Exception as e:
+        rep.warn("players_detail.js 不可解析", str(e))
+        return 0
+    if not isinstance(pd, dict):
+        rep.warn("players_detail.js 缺失", "无法做选手页与深挖数据的交叉校验")
+        return 0
+    got = deep.get("players") or {}
+    compared = 0
+    bad = []
+    for name, row in got.items():
+        p = pd.get(name)
+        if not isinstance(p, dict):
+            continue
+        g = int0(p.get("games"))
+        w = int0(p.get("wins"))
+        if abs(int0(row.get("g")) - g) > 2 or abs(int0(row.get("w")) - w) > 2:
+            bad.append((name, g, w, row.get("g"), row.get("w")))
+        compared += 1
+    if bad:
+        rep.severe("选手页与深挖数据胜负不一致",
+                   f"{len(bad)}/{compared} 名选手的生涯局数/胜场差异超过 2",
+                   [f"{x[0]} 页={x[1]}局/{x[2]}胜 deep={x[3]}局/{x[4]}胜" for x in bad[:8]])
+    return compared
+
+
 def compare_player_deep(rep: Report, exp: dict) -> None:
     """player_deep.js 尚未修复时只告警，不阻断系列赛门禁。"""
     try:
@@ -505,8 +539,10 @@ def main() -> int:
         deep = None
     if deep is None:
         rep.severe("deep.js 缺失", "请先运行 build_deep_data.py")
+        players_compared = 0
     else:
         compare_deep(rep, exp, deep)
+        players_compared = compare_players_detail(rep, deep)
     compare_player_deep(rep, exp)
 
     report = {
@@ -519,6 +555,7 @@ def main() -> int:
             "unresolved": exp["unresolved"],
             "crossTeamBattles": exp["crossTeamBattles"],
             "duplicateSeq": exp["duplicateSeq"],
+            "playersCompared": players_compared,
         },
         "issues": rep.issues,
     }

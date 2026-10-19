@@ -770,10 +770,10 @@ async function main() {
   check("战队入口保留逐年趋势开关", tTeam === true, tTeam);
   check("选手入口无逐年趋势开关（无逐年数据）", tPlayer === false, tPlayer);
 
-  console.log("\n=== V5 · 全站 UI 与数据可信度专项 ===");
-  // (A) 原生选择控件：本体与弹出选项都必须是「深底浅字」。
+  console.log("\n=== V5.5 · 全站 UI 与数据可信度专项 ===");
+  // (A) 原生选择控件：V5.5 竞技媒体白要求「浅底深字」。
   //     诚实说明：无头浏览器无法真正展开系统原生弹出层，这里校验的是浏览器实际计算出的
-  //     select / option 背景与前景色（浅底 + 浅字 = 文字不可见）；真实弹出层观感仍需在
+  //     select / option 背景与前景色（深底 + 深字 = 文字不可见）；真实弹出层观感仍需在
   //     桌面与手机上人工确认。
   const SEL_PAGES = ["schedule.html", "teams.html", "players.html", "heroes.html", "combos.html",
                      "h2h.html", "stage.html", "simulator.html", "bp.html", "query.html",
@@ -786,8 +786,8 @@ async function main() {
         if (!m) return null;
         var a = m[4] === undefined ? 1 : parseFloat(m[4]);
         var r = +m[1], g = +m[2], b = +m[3];
-        // 半透明前景按"叠加在深色页面"上近似成较低亮度
-        if (a < 1) { r *= a; g *= a; b *= a; }
+        // 半透明前景按"叠加在浅色页面上"近似成较高亮度
+        if (a < 1) { r = 255 - (255 - r) * a; g = 255 - (255 - g) * a; b = 255 - (255 - b) * a; }
         return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
       }
       var sels = [].slice.call(document.querySelectorAll('select'));
@@ -795,23 +795,23 @@ async function main() {
       sels.forEach(function(sel){
         var cs = getComputedStyle(sel);
         var bg = lum(cs.backgroundColor), fg = lum(cs.color);
-        if (bg === null || fg === null || bg > 0.35 || fg < 0.55) badSel.push(sel.id || sel.className || 'select');
+        if (bg === null || fg === null || bg < 0.55 || fg > 0.55) badSel.push(sel.id || sel.className || 'select');
         var os = [].slice.call(sel.options || []);
         opts += os.length;
         os.forEach(function(o){
           if (!(o.text || '').trim()) emptyOpt++;
           var oc = getComputedStyle(o);
           var obg = lum(oc.backgroundColor), ofg = lum(oc.color);
-          if (obg === null || ofg === null || obg > 0.35 || ofg < 0.55) {
+          if (obg === null || ofg === null || obg < 0.55 || ofg > 0.55) {
             if (badOpt.length < 4) badOpt.push((sel.id || '') + ':' + (o.text || '').slice(0, 6));
           }
         });
       });
       return { n: sels.length, opts: opts, badSel: badSel, badOpt: badOpt, emptyOpt: emptyOpt };
     })()`);
-    check(sp + " 选择框本体为深底浅字", s && s.n > 0 && s.badSel.length === 0,
+    check(sp + " 选择框本体为浅底深字", s && s.n > 0 && s.badSel.length === 0,
       s && (s.n + " 个" + (s.badSel.length ? " / 异常 " + s.badSel.join(",") : " / 全部合规")));
-    check(sp + " 选择框选项为深底浅字", s && s.opts > 0 && s.badOpt.length === 0,
+    check(sp + " 选择框选项为浅底深字", s && s.opts > 0 && s.badOpt.length === 0,
       s && (s.opts + " 项" + (s.badOpt.length ? " / 异常 " + s.badOpt.join(",") : " / 全部合规")));
     check(sp + " 选择框选项均有文字", s && s.emptyOpt === 0, s && s.emptyOpt);
   }

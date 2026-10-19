@@ -15,7 +15,20 @@ cd /d "%~dp0"
 set MSG=%~1
 if "%MSG%"=="" set MSG=data update %date% %time%
 
-rem ---- 0) 仅部署模式：跳过 git，直接部署 ----
+rem ---- 0) 发布前数据质量门禁：任何一项失败都不允许提交/部署 ----
+python check_data_quality.py
+if errorlevel 1 (
+  echo [!] 数据质量检查未通过，已中止发布。
+  exit /b 1
+)
+python check_series_consistency.py
+if errorlevel 1 (
+  echo [!] 系列赛口径检查未通过，已中止发布。
+  exit /b 1
+)
+echo [0/2] data quality passed
+
+rem ---- 0.5) 仅部署模式：跳过 git，直接部署 ----
 if /i "%MSG%"=="--deploy-only" goto deploy
 
 rem ---- 1) 选择性暂存 ----

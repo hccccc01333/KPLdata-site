@@ -224,15 +224,19 @@ def main() -> None:
     for nm, rows0 in per_player.items():
         for x in rows0:
             comp_game[(x[7], nm)] = x[0]
+    team_heroes = defaultdict(set)
+    for r in raw:
+        if r[17]:
+            team_heroes[(r[18], r[2])].add(r[17])
 
     # ---------------- 阵容协同模型 ----------------
     # 每名选手的实力 = 其逐局综合表现均值（同位置 z 口径）；
     # 阵容实力 = 五人实力的均值；用全部对局做逻辑回归，把「实力差」映射成期望胜率。
-    p_strength = {}
+    p_sum = {}
+    p_n = {}
     for nm, rows0 in per_player.items():
-        if len(rows0) < MIN_GAMES:
-            continue
-        p_strength[nm] = sum(x[0] for x in rows0) / len(rows0)
+        p_sum[nm] = sum(x[0] for x in rows0)
+        p_n[nm] = len(rows0)
 
     battle_teams = defaultdict(dict)
     team_won = {}
@@ -250,8 +254,18 @@ def main() -> None:
         l2 = lineup_at.get((bid, t2), [])
         if len(l1) != 5 or len(l2) != 5:
             continue
-        s1 = sum(p_strength.get(n, 0.0) for n in l1) / 5.0
-        s2 = sum(p_strength.get(n, 0.0) for n in l2) / 5.0
+        def loo_strength(names, bid):
+            vals = []
+            for nm in names:
+                n0 = p_n.get(nm, 0)
+                c = comp_game.get((bid, nm))
+                if n0 <= 1 or c is None:
+                    vals.append(0.0)
+                else:
+                    vals.append((p_sum[nm] - c) / (n0 - 1))
+            return sum(vals) / len(vals) if vals else 0.0
+        s1 = loo_strength(l1, bid)
+        s2 = loo_strength(l2, bid)
         game_ctx[bid] = {"t1": t1, "t2": t2, "s1": s1, "s2": s2}
         fit_rows.append((s1 - s2, team_won.get((bid, t1), 0)))
 
@@ -282,16 +296,6 @@ def main() -> None:
         act_mean = sum(y for _, y in fit_rows) / len(fit_rows)
         print(f"  synergy model: a={la:.2f} b={lb:.3f} | fit n={len(fit_rows)} "
               f"expected={exp_mean:.3f} actual={act_mean:.3f}")
-
-    def expected_wr(bid, team):
-        ctx = game_ctx.get(bid)
-        if not ctx or team not in (ctx["t1"], ctx["t2"]):
-            return None
-        if team == ctx["t1"]:
-            diff = ctx["s1"] - ctx["s2"]
-        else:
-            diff = ctx["s2"] - ctx["s1"]
-        return 1.0 / (1.0 + math.exp(-(la * diff + lb)))
 
     def safe_mean(vals):
         return sum(vals) / len(vals) if vals else None
@@ -437,22 +441,82 @@ def main() -> None:
         for key, (n, w, cs) in lu.items():
             if n < 30:
                 continue
+            games_L = [x for x in rows
+                       if tuple(sorted(lineup_at.get((x[7], x[6]), []))) == key]
+            if len(games_L) < 30:
+                continue
+
+            # 本方留一：把这套阵容的 n 场从每名选手的样本里剔除
+            own_vals = []
+            for p0 in key:
+                n0 = p_n.get(p0, 0)
+                if n0 - len(games_L) < 50:
+                    own_vals = None
+                    break
+                s_in = sum(comp_game.get((x[7], p0), 0.0) for x in games_L)
+                own_vals.append((p_sum[p0] - s_in) / (n0 - len(games_L)))
+            if not own_vals:
+                continue
+            own_strength = sum(own_vals) / 5.0
+
+            # 对手留一：统计对手五人在「与这套阵容交手」中的表现并剔除
+            opp_sum = defaultdict(float)
+            opp_n = defaultdict(int)
+            for x in games_L:
+                for q in lineup_at.get((x[7], x[8]), []):
+                    cq = comp_game.get((x[7], q))
+                    if cq is not None:
+                        opp_sum[q] += cq
+                        opp_n[q] += 1
+
             exp_sum = 0.0
             exp_n = 0
-            # 逐局期望：只统计属于该阵容的对局
-            for x in rows:
-                if tuple(sorted(lineup_at.get((x[7], x[6]), []))) != key:
+            for x in games_L:
+                opp_lineup = lineup_at.get((x[7], x[8]), [])
+                if len(opp_lineup) != 5:
                     continue
-                e = expected_wr(x[7], x[6])
-                if e is not None:
-                    exp_sum += e
-                    exp_n += 1
-            if exp_n < max(8, n * 0.8):
+                vals = []
+                for q in opp_lineup:
+                    n0 = p_n.get(q, 0)
+                    if n0 - opp_n[q] < 50:
+                        vals = []
+                        break
+                    vals.append((p_sum[q] - opp_sum[q]) / (n0 - opp_n[q]))
+                if not vals:
+                    continue
+                s_opp = sum(vals) / 5.0
+                exp_sum += 1.0 / (1.0 + math.exp(-(la * (own_strength - s_opp) + lb)))
+                exp_n += 1
+            if exp_n < max(20, int(n * 0.8)):
                 continue
             exp_wr = exp_sum / exp_n
+
+            # 阵容 × 英雄池：同阵容下某英雄出场时的胜率差
+            hero_stats = defaultdict(lambda: [0, 0])
+            for x in games_L:
+                for h in team_heroes.get((x[7], x[6]), []):
+                    hero_stats[h][0] += 1
+                    hero_stats[h][1] += x[1]
+            hero_rows = []
+            for h, (hn, hw) in hero_stats.items():
+                if hn < 10:
+                    continue
+                wr_h = hw / hn
+                # 小样本收缩：n/(n+10)，避免 10 场左右刷出 ±30pp
+                d_raw = (wr_h - w / n) * 100
+                hero_rows.append({"h": h, "n": hn, "wr": round(wr_h, 3),
+                                  "d": round(d_raw * hn / (hn + 10), 1)})
+            hero_rows.sort(key=lambda r: -r["d"])
+            heroes = hero_rows[:2]
+            weak = sorted(hero_rows, key=lambda r: r["d"])[:1]
+            for h in weak:
+                if h not in heroes:
+                    heroes.append(h)
+
             lineup_rows.append({
                 "names": list(key), "n": n, "wr": round(w / n, 3),
                 "exp": round(exp_wr, 3), "syn": round((w / n - exp_wr) * 100, 1),
+                "heroes": heroes[:3],
             })
         lineup_rows.sort(key=lambda r: -r["syn"])
         lineup_rows = lineup_rows[:3]

@@ -308,10 +308,14 @@
       return list.map(function (x) {
         if (kind === "lineup") {
           var syn = x.syn;
+          var hs = (x.heroes || []).map(function (h) {
+            return K.esc(h.h) + " " + h.n + " 场 " + (h.d >= 0 ? "+" : "") + h.d.toFixed(1) + "pp";
+          }).join(" · ");
           return '<div class="chem-row chem-lineup">' +
             '<span class="nm">' + x.names.map(K.esc).join(" / ") + "</span>" +
             '<span class="d ' + (syn >= 0 ? "up" : "down") + '">' + (syn >= 0 ? "+" : "") + syn.toFixed(1) + "pp</span>" +
-            '<span class="nums">' + x.n + " 场 · 实际 " + K.pct(x.wr, 0) + " / 期望 " + K.pct(x.exp, 0) + "</span></div>";
+            '<span class="nums">' + x.n + " 场 · 实际 " + K.pct(x.wr, 0) + " / 期望 " + K.pct(x.exp, 0) + "</span>" +
+            (hs ? '<span class="heroes">依赖英雄：' + hs + "</span>" : "") + "</div>";
         }
         var nm = kind === "mate" ? x.name : x.team;
         var d = x.dc;
@@ -329,9 +333,11 @@
       '<div class="chem-col"><h4>队友效应（与他在场时 vs 不在场）</h4>' + rows(C.mates, "mate") + "</div>" +
       '<div class="chem-col"><h4>对手效应（对阵该队 vs 生涯平均）</h4>' + rows(C.opps, "opp") + "</div>" +
       "</div>" +
-      '<div class="block-note mono" style="margin-top:12px">阵容协同：样本 ≥30 场；期望胜率由五人综合表现均值' +
-      "经逻辑回归标定，只反映个人能力，战队体系与磨合会计入协同值。队友效应保留同队 ≥30 场且不在场 ≥20 场的组合，" +
+      '<div class="block-note mono" style="margin-top:12px">阵容协同：样本 ≥30 场；期望胜率由五人实力经逻辑回归标定，' +
+      "评估时本方剔除该阵容自身对局、对手剔除与这套阵容的交手（留一法），只反映个人能力，" +
+      "战队体系与磨合会计入协同值。队友效应保留同队 ≥30 场且不在场 ≥20 场的组合，" +
       "正值 = 与他搭档时表现更好。对手效应按对阵 ≥8 场统计。" +
+      "阵容的英雄依赖只统计同阵容 ≥10 场，并按样本量收缩，仅表示相关、不代表因果。" +
       "队友 / 对手两列的数值是每局综合表现差（同位置 z），不是胜率差。</div></div>";
   })();
 

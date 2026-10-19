@@ -159,6 +159,7 @@
 
   /* 概率树：节点 = 状态(i,j)，边 = 该局谁获胜；节点值为到达该状态的概率之和 */
   function treeSVG(p, m) {
+    var CP = K.chartPalette();
     var states = {};
     (function walk(i, j, pr) {
       var k = i + "-" + j;
@@ -199,7 +200,6 @@
       if (st.term) return;
       var from = pos(k);
       [["p", st.i + 1, st.j], ["q", st.i, st.j + 1]].forEach(function (e) {
-    var CP = K.chartPalette();
         var ck = e[1] + "-" + e[2];
         if (!states[ck]) return;
         var to = pos(ck);
