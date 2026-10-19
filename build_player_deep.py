@@ -111,6 +111,7 @@ def main() -> None:
             if dur_min <= 0 or dur_min > 60:
                 dur_min = None
             is_dec = bool(dec_seq and int(b.get("battle_seq") or 0) == dec_seq)
+            bid = str(b.get("battle_id") or (mid + "_" + str(b.get("battle_seq") or 0)))
             for p in plist:
                 name = str(p.get("player_name") or p.get("actual_player_name") or "").strip()
                 if not name:
@@ -131,7 +132,7 @@ def main() -> None:
                     name, pos, str(p.get("team_name") or (bt1 if camp == 1 else bt2)),
                     str(p.get("player_icon") or ""), mid, date, is_dec,
                     1 if camp == win_camp else 0, k, d, a, dmg, tank, part, gs, gpm, dpm,
-                    str(p.get("hero_name") or ""),
+                    str(p.get("hero_name") or ""), bid, (bt2 if camp == 1 else bt1),
                 ))
 
     # ---------------- Elo：按时间累计，取开赛前实力分作为对手强度 ----------------
@@ -153,7 +154,7 @@ def main() -> None:
     acc = defaultdict(lambda: {m: [0.0, 0.0, 0] for m in METRICS})  # 均值/方差累计
 
     def metric_of(r):
-        (_, _, _, _, _, _, _, _, k, d, a, dmg, tank, part, gs, gpm, dpm, _) = r
+        (_, _, _, _, _, _, _, _, k, d, a, dmg, tank, part, gs, gpm, dpm, _, _, _) = r
         return {
             "kda": (k + a) / max(1, d),
             "dmg": dmg, "gold": gs, "part": part, "tank": tank,
@@ -188,7 +189,8 @@ def main() -> None:
     heroes = defaultdict(Counter)
     meta = {}
     for r in raw:
-        (name, pos, team, icon, mid, date, is_dec, won, k, d, a, dmg, tank, part, gs, gpm, dpm, hero) = r
+        (name, pos, team, icon, mid, date, is_dec, won, k, d, a, dmg, tank, part, gs, gpm, dpm, hero,
+         bid, opp_team) = r
         mv = metric_of(r)
         zs = [
             zget(pos, "kda", mv["kda"]),
@@ -202,7 +204,8 @@ def main() -> None:
         if not zs:
             continue
         comp = sum(zs) / len(zs)
-        per_player[name].append((comp, won, 1 if is_dec else 0, date, mid, pos, team))
+        per_player[name].append((comp, won, 1 if is_dec else 0, date, mid, pos, team, bid,
+                                 opp_team, dmg, gs, part, mv["kda"], hero))
         if hero:
             heroes[name][hero] += 1
         cur = meta.get(name)
@@ -210,6 +213,20 @@ def main() -> None:
             meta[name] = {"team": team, "pos": pos, "icon": icon or (cur or {}).get("icon", ""), "last": date}
         elif cur and icon and not cur.get("icon"):
             cur["icon"] = icon
+
+    # ---------------- 同场上下文：阵容 / 队友 / 对手 / 同位置对位 ----------------
+    lineup_at = defaultdict(list)
+    posgroup = defaultdict(lambda: defaultdict(list))
+    for r in raw:
+        lineup_at[(r[18], r[2])].append(r[0])
+        posgroup[(r[18], r[1])][r[2]].append(r[0])
+    comp_game = {}
+    for nm, rows0 in per_player.items():
+        for x in rows0:
+            comp_game[(x[7], nm)] = x[0]
+
+    def safe_mean(vals):
+        return sum(vals) / len(vals) if vals else None
 
     # ---------------- 选手汇总 ----------------
     pos_perf = defaultdict(list)
@@ -287,6 +304,113 @@ def main() -> None:
         pos_ceil[d["pos"]].append(d["p90"])
         pos_form[d["pos"]].append(d["formZ"])
 
+    # ---------------- 搭档 / 对手 / 赛季漂移 / 对位 ----------------
+    chem_out = {}
+    for name, rows in per_player.items():
+        if len(rows) < MIN_GAMES:
+            continue
+        tot_n = len(rows)
+        tot_w = sum(x[1] for x in rows)
+        tot_comp = sum(x[0] for x in rows)
+        mean_comp = tot_comp / tot_n
+
+        # 赛季切片
+        seasons = {}
+        for x in rows:
+            year = str(x[3])[:4]
+            if not year.isdigit():
+                continue
+            cell = seasons.setdefault(year, {"n": 0, "w": 0, "comp": 0.0, "dmg": [], "gold": [], "part": [], "kda": [], "heroes": set()})
+            cell["n"] += 1; cell["w"] += x[1]; cell["comp"] += x[0]
+            if x[9] is not None: cell["dmg"].append(x[9])
+            if x[10] is not None: cell["gold"].append(x[10])
+            if x[11] is not None: cell["part"].append(x[11])
+            cell["kda"].append(x[12])
+            if x[13]: cell["heroes"].add(x[13])
+        season_rows = []
+        for y in sorted(seasons)[-6:]:
+            c = seasons[y]
+            if c["n"] < 10:
+                continue
+            season_rows.append({
+                "y": y, "n": c["n"], "wr": round(c["w"] / c["n"], 3),
+                "perf": round(max(1, min(99, 50 + c["comp"] / c["n"] * 15)), 1),
+                "dmg": round(safe_mean(c["dmg"]) or 0, 1),
+                "gold": round(safe_mean(c["gold"]) or 0, 1),
+                "part": round(safe_mean(c["part"]) or 0, 1),
+                "kda": round(safe_mean(c["kda"]) or 0, 2),
+                "heroes": len(c["heroes"]),
+            })
+
+        # 阵容 / 队友 / 对手 / 同位置对位
+        lu = defaultdict(lambda: [0, 0, 0.0])
+        mate = defaultdict(lambda: [0, 0, 0.0])
+        opps = defaultdict(lambda: [0, 0, 0.0])
+        rivals = defaultdict(lambda: [0, 0, 0.0, 0.0])
+        for x in rows:
+            comp, won = x[0], x[1]
+            pos, team, bid, opp = x[5], x[6], x[7], x[8]
+            lineup = tuple(sorted(lineup_at.get((bid, team), [])))
+            if len(lineup) == 5:
+                cell = lu[lineup]; cell[0] += 1; cell[1] += won; cell[2] += comp
+            for m in lineup:
+                if m != name:
+                    cell = mate[m]; cell[0] += 1; cell[1] += won; cell[2] += comp
+            cell = opps[opp]; cell[0] += 1; cell[1] += won; cell[2] += comp
+            for rn in posgroup.get((bid, pos), {}).get(opp, []):
+                if rn == name:
+                    continue
+                rc = comp_game.get((bid, rn))
+                if rc is None:
+                    continue
+                cell = rivals[rn]; cell[0] += 1; cell[1] += won; cell[2] += comp; cell[3] += rc
+
+        lineup_rows = []
+        for key, (n, w, cs) in sorted(lu.items(), key=lambda kv: -kv[1][0]):
+            if n < 10:
+                continue
+            lineup_rows.append({"names": list(key), "n": n, "wr": round(w / n, 3),
+                                "delta": round(cs / n - mean_comp, 2)})
+            if len(lineup_rows) >= 3:
+                break
+
+        mate_rows = []
+        for m, (n, w, cs) in mate.items():
+            if n < 30 or tot_n - n < 20:
+                continue
+            wr_with = w / n
+            wr_without = (tot_w - w) / (tot_n - n)
+            dc = cs / n - (tot_comp - cs) / (tot_n - n)
+            mate_rows.append({"name": m, "n": n, "wr": round(wr_with, 3),
+                              "dwr": round((wr_with - wr_without) * 100, 1), "dc": round(dc, 2)})
+        mate_rows.sort(key=lambda r: -abs(r["dc"]))
+        mate_rows = mate_rows[:4]
+
+        opp_rows = []
+        for t, (n, w, cs) in opps.items():
+            if n < 8 or not t or t == "待定":
+                continue
+            opp_rows.append({"team": t, "n": n, "wr": round(w / n, 3), "dc": round(cs / n - mean_comp, 2)})
+        opp_rows.sort(key=lambda r: -abs(r["dc"]))
+        opp_rows = opp_rows[:4]
+
+        rival_rows = []
+        for rn, (n, w, cs, rcs) in rivals.items():
+            if n < 5:
+                continue
+            rival_rows.append({"name": rn, "n": n, "wr": round(w / n, 3),
+                               "dc": round((cs - rcs) / n, 2)})
+        rival_rows.sort(key=lambda r: -r["n"])
+        top = rival_rows[:5]
+        hard = sorted(rival_rows, key=lambda r: r["wr"])[:1]
+        for h in hard:
+            if h not in top:
+                top.append(h)
+        chem_out[name] = {
+            "lineups": lineup_rows, "mates": mate_rows, "opps": opp_rows,
+            "seasons": season_rows, "rivals": top[:6],
+        }
+
     out = {}
     for name, d in tmp.items():
         pp = pos_perf[d["pos"]]
@@ -331,6 +455,9 @@ def main() -> None:
             "decN": d["decN"],
             "spark": d["spark"],
             "tags": tags[:5],
+            "seasons": (chem_out.get(name) or {}).get("seasons", []),
+            "chem": {k: (chem_out.get(name) or {}).get(k, []) for k in ("lineups", "mates", "opps")},
+            "rivals": (chem_out.get(name) or {}).get("rivals", []),
         }
 
     # ---------------- 打法相似度（同位置余弦） ----------------

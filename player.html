@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>选手详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=59">
-<link rel="stylesheet" href="assets/pages.css?v=59">
-<link rel="stylesheet" href="assets/v55.css?v=59">
+<link rel="stylesheet" href="assets/style.css?v=60">
+<link rel="stylesheet" href="assets/pages.css?v=60">
+<link rel="stylesheet" href="assets/v55.css?v=60">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="选手详情 · KPL 数据中心">
@@ -21,13 +21,13 @@
 <main class="wrap" id="main" style="margin-top:24px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=59"></script>
-<script src="assets/seasons.js?v=59"></script>
-<script src="assets/players_detail.js?v=59"></script>
-<script src="assets/deep.js?v=59"></script>
-<script src="assets/player_deep.js?v=59"></script>
-<script src="assets/common.js?v=59"></script>
-<script src="assets/share.js?v=59"></script>
+<script src="assets/data.js?v=60"></script>
+<script src="assets/seasons.js?v=60"></script>
+<script src="assets/players_detail.js?v=60"></script>
+<script src="assets/deep.js?v=60"></script>
+<script src="assets/player_deep.js?v=60"></script>
+<script src="assets/common.js?v=60"></script>
+<script src="assets/share.js?v=60"></script>
 <script>
 (function () {
   "use strict";
@@ -262,6 +262,119 @@
       "硬仗表现 = 实际胜率 − 按对手实力算出的期望胜率；近期状态 = 近 30 局综合表现。</div></div>";
   })();
 
+  /* ---------- 赛季打法漂移（player_deep.js：按自然年切片） ---------- */
+  var seasonHTML = (function () {
+    var PD = window.KPL_PLAYER_DEEP;
+    var p = PD && PD.players && PD.players[NAME];
+    var ss = (p && p.seasons) || [];
+    if (ss.length < 2) return "";
+    var a = ss[0], b = ss[ss.length - 1];
+    function sg(v) { return (v >= 0 ? "+" : "") + v.toFixed(1); }
+    function cls(v) { return v >= 0 ? "up" : "down"; }
+    var rows = ss.map(function (x) {
+      return "<tr>" +
+        '<td class="mono">' + K.esc(x.y) + "</td>" +
+        '<td class="num">' + x.n + "</td>" +
+        '<td class="num">' + K.pct(x.wr) + "</td>" +
+        '<td class="num"><b>' + x.perf.toFixed(1) + "</b></td>" +
+        '<td class="num">' + x.dmg.toFixed(1) + "%</td>" +
+        '<td class="num">' + x.gold.toFixed(1) + "%</td>" +
+        '<td class="num">' + x.part.toFixed(1) + "%</td>" +
+        '<td class="num">' + x.heroes + "</td></tr>";
+    }).join("");
+    return '<div class="panel" style="grid-column:1/-1"><div class="panel-title">赛季打法漂移 ' +
+      '<em class="mono">' + K.esc(a.y) + " → " + K.esc(b.y) + " · 按自然年切片</em></div>" +
+      '<div class="table-panel"><table class="tbl"><thead><tr><th>赛季</th><th class="num">局数</th>' +
+      '<th class="num">胜率</th><th class="num">表现分</th><th class="num">输出占比</th>' +
+      '<th class="num">经济占比</th><th class="num">参团率</th><th class="num">英雄数</th></tr></thead><tbody>' +
+      rows + "</tbody></table></div>" +
+      '<div class="pd-drift-sum"><span>' + K.esc(a.y) + " → " + K.esc(b.y) + "：</span>" +
+      '<span>输出占比 <b class="' + cls(b.dmg - a.dmg) + '">' + sg(b.dmg - a.dmg) + "pp</b></span>" +
+      '<span>经济占比 <b class="' + cls(b.gold - a.gold) + '">' + sg(b.gold - a.gold) + "pp</b></span>" +
+      '<span>参团率 <b class="' + cls(b.part - a.part) + '">' + sg(b.part - a.part) + "pp</b></span>" +
+      '<span>表现分 <b class="' + cls(b.perf - a.perf) + '">' + sg(b.perf - a.perf) + "</b></span></div>" +
+      '<div class="block-note mono" style="margin-top:8px">表现分以 50 为分路平均；' +
+      "赛季按开赛年份归档，跨年赛事归入开赛年。</div></div>";
+  })();
+
+  /* ---------- 搭档与对手效应（同一批队友 / 对手队伍） ---------- */
+  var chemHTML = (function () {
+    var PD = window.KPL_PLAYER_DEEP;
+    var p = PD && PD.players && PD.players[NAME];
+    if (!p || !p.chem) return "";
+    var C = p.chem;
+    function rows(list, kind) {
+      if (!list || !list.length) return '<div class="empty-tip" style="padding:14px">样本不足</div>';
+      return list.map(function (x) {
+        var nm = kind === "mate" ? x.name : (kind === "opp" ? x.team : x.names.map(K.esc).join(" / "));
+        var d = kind === "lineup" ? x.delta : x.dc;
+        var nums = x.n + " 场 · " + K.pct(x.wr, 0);
+        return '<div class="chem-row' + (kind === "lineup" ? " chem-lineup" : "") + '">' +
+          '<span class="nm">' + (kind === "lineup" ? nm : K.esc(nm)) + "</span>" +
+          '<span class="nums">' + nums + "</span>" +
+          '<span class="d ' + (d >= 0 ? "up" : "down") + '">' + (d >= 0 ? "+" : "") + d.toFixed(2) + "</span></div>";
+      }).join("");
+    }
+    return '<div class="panel" style="grid-column:1/-1"><div class="panel-title">搭档与对手效应 ' +
+      '<em class="mono">同场阵容 / 队友 / 对手队伍 · 数值为综合表现差</em></div>' +
+      '<div class="chem-grid">' +
+      '<div class="chem-col"><h4>最佳阵容（同队五人）</h4>' + rows(C.lineups, "lineup") + "</div>" +
+      '<div class="chem-col"><h4>队友效应（与他在场时 vs 不在场）</h4>' + rows(C.mates, "mate") + "</div>" +
+      '<div class="chem-col"><h4>对手效应（对阵该队 vs 生涯平均）</h4>' + rows(C.opps, "opp") + "</div>" +
+      "</div>" +
+      '<div class="block-note mono" style="margin-top:12px">队友效应只保留同队 ≥30 场且不在场 ≥20 场的组合；' +
+      "正值 = 与他搭档时表现更好。阵容样本 ≥10 场。对手效应按对阵 ≥8 场统计。</div></div>";
+  })();
+
+  /* ---------- 同位置对位网 ---------- */
+  var rivalHTML = (function () {
+    var PD = window.KPL_PLAYER_DEEP;
+    var p = PD && PD.players && PD.players[NAME];
+    var rs = (p && p.rivals) || [];
+    if (!rs.length) return "";
+    var CP = K.chartPalette();
+    var W = 560, H = 380, CX = 280, CY = 190, R = 132;
+    var maxN = Math.max.apply(null, rs.map(function (r) { return r.n; })) || 1;
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="同位置对位网络">';
+    var nodes = [];
+    rs.forEach(function (r, i) {
+      var a = -Math.PI / 2 + i * 2 * Math.PI / Math.max(5, rs.length);
+      nodes.push({ x: CX + Math.cos(a) * R, y: CY + Math.sin(a) * R, r: r, a: a });
+    });
+    nodes.forEach(function (nd) {
+      var win = nd.r.wr >= 0.5;
+      s += '<line x1="' + CX + '" y1="' + CY + '" x2="' + nd.x.toFixed(1) + '" y2="' + nd.y.toFixed(1) +
+        '" stroke="' + (win ? CP.onLine : CP.mark) + '" stroke-width="' + (1 + nd.r.n / maxN * 5).toFixed(1) +
+        '" opacity=".38"/>';
+    });
+    nodes.forEach(function (nd) {
+      var lx = CX + Math.cos(nd.a) * (R + 34), ly = CY + Math.sin(nd.a) * (R + 34);
+      var anchor = Math.cos(nd.a) > 0.25 ? "start" : (Math.cos(nd.a) < -0.25 ? "end" : "middle");
+      s += '<circle cx="' + nd.x.toFixed(1) + '" cy="' + nd.y.toFixed(1) + '" r="13" fill="#fff" stroke="' +
+        (nd.r.wr >= 0.5 ? CP.onLine : CP.mark) + '" stroke-width="2"/>' +
+        '<text x="' + lx.toFixed(1) + '" y="' + (ly - 2).toFixed(1) + '" text-anchor="' + anchor +
+        '" font-size="12" fill="' + CP.onLine + '" font-family="Inter,PingFang SC,sans-serif">' + K.esc(nd.r.name) + "</text>" +
+        '<text x="' + lx.toFixed(1) + '" y="' + (ly + 12).toFixed(1) + '" text-anchor="' + anchor +
+        '" font-size="10.5" fill="' + CP.label + '" font-family="Inter,monospace">' + nd.r.n + " 场 · " +
+        Math.round(nd.r.wr * 100) + "%</text>";
+    });
+    s += '<circle cx="' + CX + '" cy="' + CY + '" r="30" fill="' + CP.mark + '"/>' +
+      '<text x="' + CX + '" y="' + (CY + 4) + '" text-anchor="middle" font-size="13" fill="#fff" font-weight="700" ' +
+      'font-family="Inter,PingFang SC,sans-serif">' + K.esc(NAME.slice(0, 5)) + "</text></svg>";
+    var list = rs.map(function (r) {
+      return '<div class="chem-row"><span class="nm">' + K.esc(r.name) + "</span>" +
+        '<span class="nums">' + r.n + " 场 · " + Math.round(r.wr * 100) + "%</span>" +
+        '<span class="d ' + (r.dc >= 0 ? "up" : "down") + '">' + (r.dc >= 0 ? "+" : "") + r.dc.toFixed(2) + "</span></div>";
+    }).join("");
+    return '<div class="panel" style="grid-column:1/-1"><div class="panel-title">同位置对位网 ' +
+      '<em class="mono">与同分路选手的直接交手 · 线宽 = 场次 · 红色 = 胜率不足 50%</em></div>' +
+      '<div class="rival-wrap"><div class="rival-net">' + s +
+      '<div class="rival-legend"><span><i style="background:' + CP.onLine + '"></i>交手占优</span>' +
+      '<span><i style="background:' + CP.mark + '"></i>交手落后</span>' +
+      '<span>数值为每局综合表现差</span></div></div>' +
+      '<div class="rival-list">' + list + "</div></div></div>";
+  })();
+
   /* ---------- 常用英雄 ---------- */
   var heroesHTML = (P.heroes || []).map(function (h) {
     var ic = heroIcon[h[0]];
@@ -284,7 +397,7 @@
       '<span class="kda mono">' + r[7] + "/" + r[8] + "/" + r[9] + "</span></a>";
   }).join("");
 
-  $("#main").innerHTML = kpi + trendHTML + posHTML + deepHTML + styleHTML + yearTable +
+  $("#main").innerHTML = kpi + trendHTML + posHTML + deepHTML + styleHTML + seasonHTML + chemHTML + rivalHTML + yearTable +
     '<div class="pl-grid">' +
     '<div class="panel"><div class="panel-title">英雄池 <em class="mono">共 ' + poolN + " 个英雄 · 按使用局数展示前 " + (P.heroes || []).length + "</em></div>" +
     '<div class="pl-heroes">' + (heroesHTML || '<div class="empty-tip">暂无数据</div>') + "</div></div>" +
