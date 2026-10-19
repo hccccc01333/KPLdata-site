@@ -366,3 +366,31 @@ html.v55 .usage .wr,html.v55 .pl-hero .wr{color:var(--ink) !important}
   html.v55 #focusBlock .fh-score{font-size:21px;flex:none}
   html.v55 #focusBlock .fh-kicker{font-size:11px;line-height:1.6}
 }
+
+/* ---------------- 系列赛研究 ---------------- */
+html.v55 .sr-bar{display:block;height:8px;background:var(--inset);border:1px solid var(--line);
+  border-radius:5px;overflow:hidden;min-width:110px}
+html.v55 .sr-bar i{display:block;height:100%;background:var(--brand);border-radius:4px}
+html.v55 .form-str{display:inline-flex;gap:3px;vertical-align:middle}
+html.v55 .form-str i{width:17px;height:17px;border-radius:3px;display:grid;place-items:center;
+  font-size:9.5px;font-style:normal;font-weight:800;letter-spacing:0}
+html.v55 .form-str i.w{background:var(--brand);color:#fff}
+html.v55 .form-str i.l{background:var(--inset);color:var(--muted);border:1px solid var(--line)}
+
+/* ---------------- 系列赛画像 / 关键局网格 ---------------- */
+html.v55 .sr-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  border-top:1px solid var(--line);margin-top:4px}
+html.v55 .sr-cell{padding:14px 16px 12px 0;border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-width:0}
+html.v55 .sr-cell:nth-child(4n){border-right:none}
+html.v55 .sr-cell .k{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.v55 .sr-cell .v{font-size:23px;font-weight:900;margin-top:3px;line-height:1.15;
+  font-variant-numeric:tabular-nums;color:var(--ink);display:flex;align-items:baseline;gap:6px}
+html.v55 .sr-cell .v em{font-style:normal;font-size:11px;font-weight:600;color:var(--faint)}
+html.v55 .sr-cell .s{font-size:11px;color:var(--faint);margin-top:4px;line-height:1.55}
+html.v55 .sr-cell.hl .v{color:var(--brand)}
+html.v55 .sr-form{display:flex;align-items:center;gap:8px;margin-top:4px}
+@media(max-width:860px){
+  html.v55 .sr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html.v55 .sr-cell:nth-child(4n){border-right:1px solid var(--line)}
+  html.v55 .sr-cell:nth-child(2n){border-right:none}
+}
