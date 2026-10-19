@@ -306,24 +306,33 @@
     function rows(list, kind) {
       if (!list || !list.length) return '<div class="empty-tip" style="padding:14px">样本不足</div>';
       return list.map(function (x) {
-        var nm = kind === "mate" ? x.name : (kind === "opp" ? x.team : x.names.map(K.esc).join(" / "));
-        var d = kind === "lineup" ? x.delta : x.dc;
+        if (kind === "lineup") {
+          var syn = x.syn;
+          return '<div class="chem-row chem-lineup">' +
+            '<span class="nm">' + x.names.map(K.esc).join(" / ") + "</span>" +
+            '<span class="d ' + (syn >= 0 ? "up" : "down") + '">' + (syn >= 0 ? "+" : "") + syn.toFixed(1) + "pp</span>" +
+            '<span class="nums">' + x.n + " 场 · 实际 " + K.pct(x.wr, 0) + " / 期望 " + K.pct(x.exp, 0) + "</span></div>";
+        }
+        var nm = kind === "mate" ? x.name : x.team;
+        var d = x.dc;
         var nums = x.n + " 场 · " + K.pct(x.wr, 0);
-        return '<div class="chem-row' + (kind === "lineup" ? " chem-lineup" : "") + '">' +
-          '<span class="nm">' + (kind === "lineup" ? nm : K.esc(nm)) + "</span>" +
+        return '<div class="chem-row">' +
+          '<span class="nm">' + K.esc(nm) + "</span>" +
           '<span class="nums">' + nums + "</span>" +
           '<span class="d ' + (d >= 0 ? "up" : "down") + '">' + (d >= 0 ? "+" : "") + d.toFixed(2) + "</span></div>";
       }).join("");
     }
     return '<div class="panel" style="grid-column:1/-1"><div class="panel-title">搭档与对手效应 ' +
-      '<em class="mono">同场阵容 / 队友 / 对手队伍 · 数值为综合表现差</em></div>' +
+      '<em class="mono">协同 = 实际胜率 − 五人个人实力算出的期望胜率</em></div>' +
       '<div class="chem-grid">' +
-      '<div class="chem-col"><h4>最佳阵容（同队五人）</h4>' + rows(C.lineups, "lineup") + "</div>" +
+      '<div class="chem-col"><h4>阵容协同（1+1&gt;2）</h4>' + rows(C.lineups, "lineup") + "</div>" +
       '<div class="chem-col"><h4>队友效应（与他在场时 vs 不在场）</h4>' + rows(C.mates, "mate") + "</div>" +
       '<div class="chem-col"><h4>对手效应（对阵该队 vs 生涯平均）</h4>' + rows(C.opps, "opp") + "</div>" +
       "</div>" +
-      '<div class="block-note mono" style="margin-top:12px">队友效应只保留同队 ≥30 场且不在场 ≥20 场的组合；' +
-      "正值 = 与他搭档时表现更好。阵容样本 ≥10 场。对手效应按对阵 ≥8 场统计。</div></div>";
+      '<div class="block-note mono" style="margin-top:12px">阵容协同：样本 ≥30 场；期望胜率由五人综合表现均值' +
+      "经逻辑回归标定，只反映个人能力，战队体系与磨合会计入协同值。队友效应保留同队 ≥30 场且不在场 ≥20 场的组合，" +
+      "正值 = 与他搭档时表现更好。对手效应按对阵 ≥8 场统计。" +
+      "队友 / 对手两列的数值是每局综合表现差（同位置 z），不是胜率差。</div></div>";
   })();
 
   /* ---------- 同位置对位网 ---------- */

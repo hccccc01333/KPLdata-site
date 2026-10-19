@@ -225,6 +225,74 @@ def main() -> None:
         for x in rows0:
             comp_game[(x[7], nm)] = x[0]
 
+    # ---------------- 阵容协同模型 ----------------
+    # 每名选手的实力 = 其逐局综合表现均值（同位置 z 口径）；
+    # 阵容实力 = 五人实力的均值；用全部对局做逻辑回归，把「实力差」映射成期望胜率。
+    p_strength = {}
+    for nm, rows0 in per_player.items():
+        if len(rows0) < MIN_GAMES:
+            continue
+        p_strength[nm] = sum(x[0] for x in rows0) / len(rows0)
+
+    battle_teams = defaultdict(dict)
+    team_won = {}
+    for r in raw:
+        battle_teams[r[18]][r[2]] = True
+        team_won[(r[18], r[2])] = r[7]
+
+    game_ctx = {}
+    fit_rows = []
+    for bid, teams in battle_teams.items():
+        if len(teams) != 2:
+            continue
+        t1, t2 = list(teams.keys())
+        l1 = lineup_at.get((bid, t1), [])
+        l2 = lineup_at.get((bid, t2), [])
+        if len(l1) != 5 or len(l2) != 5:
+            continue
+        s1 = sum(p_strength.get(n, 0.0) for n in l1) / 5.0
+        s2 = sum(p_strength.get(n, 0.0) for n in l2) / 5.0
+        game_ctx[bid] = {"t1": t1, "t2": t2, "s1": s1, "s2": s2}
+        fit_rows.append((s1 - s2, team_won.get((bid, t1), 0)))
+
+    # 逻辑回归（Newton-Raphson，两参数：斜率 a / 截距 b）
+    la, lb = 1.0, 0.0
+    for _ in range(40):
+        ga = gb = haa = hab = hbb = 0.0
+        for d, y in fit_rows:
+            p = 1.0 / (1.0 + math.exp(-(la * d + lb)))
+            w = p * (1.0 - p)
+            ga += (y - p) * d
+            gb += (y - p)
+            haa -= w * d * d
+            hab -= w * d
+            hbb -= w
+        det = haa * hbb - hab * hab
+        if abs(det) < 1e-12:
+            break
+        da = (hbb * ga - hab * gb) / det
+        db = (haa * gb - hab * ga) / det
+        la -= da
+        lb -= db
+        if abs(da) + abs(db) < 1e-8:
+            break
+
+    if fit_rows:
+        exp_mean = sum(1.0 / (1.0 + math.exp(-(la * d + lb))) for d, _ in fit_rows) / len(fit_rows)
+        act_mean = sum(y for _, y in fit_rows) / len(fit_rows)
+        print(f"  synergy model: a={la:.2f} b={lb:.3f} | fit n={len(fit_rows)} "
+              f"expected={exp_mean:.3f} actual={act_mean:.3f}")
+
+    def expected_wr(bid, team):
+        ctx = game_ctx.get(bid)
+        if not ctx or team not in (ctx["t1"], ctx["t2"]):
+            return None
+        if team == ctx["t1"]:
+            diff = ctx["s1"] - ctx["s2"]
+        else:
+            diff = ctx["s2"] - ctx["s1"]
+        return 1.0 / (1.0 + math.exp(-(la * diff + lb)))
+
     def safe_mean(vals):
         return sum(vals) / len(vals) if vals else None
 
@@ -366,13 +434,28 @@ def main() -> None:
                 cell = rivals[rn]; cell[0] += 1; cell[1] += won; cell[2] += comp; cell[3] += rc
 
         lineup_rows = []
-        for key, (n, w, cs) in sorted(lu.items(), key=lambda kv: -kv[1][0]):
-            if n < 10:
+        for key, (n, w, cs) in lu.items():
+            if n < 30:
                 continue
-            lineup_rows.append({"names": list(key), "n": n, "wr": round(w / n, 3),
-                                "delta": round(cs / n - mean_comp, 2)})
-            if len(lineup_rows) >= 3:
-                break
+            exp_sum = 0.0
+            exp_n = 0
+            # 逐局期望：只统计属于该阵容的对局
+            for x in rows:
+                if tuple(sorted(lineup_at.get((x[7], x[6]), []))) != key:
+                    continue
+                e = expected_wr(x[7], x[6])
+                if e is not None:
+                    exp_sum += e
+                    exp_n += 1
+            if exp_n < max(8, n * 0.8):
+                continue
+            exp_wr = exp_sum / exp_n
+            lineup_rows.append({
+                "names": list(key), "n": n, "wr": round(w / n, 3),
+                "exp": round(exp_wr, 3), "syn": round((w / n - exp_wr) * 100, 1),
+            })
+        lineup_rows.sort(key=lambda r: -r["syn"])
+        lineup_rows = lineup_rows[:3]
 
         mate_rows = []
         for m, (n, w, cs) in mate.items():
