@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>选手详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=57">
-<link rel="stylesheet" href="assets/pages.css?v=57">
-<link rel="stylesheet" href="assets/v55.css?v=57">
+<link rel="stylesheet" href="assets/style.css?v=59">
+<link rel="stylesheet" href="assets/pages.css?v=59">
+<link rel="stylesheet" href="assets/v55.css?v=59">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="选手详情 · KPL 数据中心">
@@ -21,13 +21,13 @@
 <main class="wrap" id="main" style="margin-top:24px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=57"></script>
-<script src="assets/seasons.js?v=57"></script>
-<script src="assets/players_detail.js?v=57"></script>
-<script src="assets/deep.js?v=57"></script>
-<script src="assets/player_deep.js?v=57"></script>
-<script src="assets/common.js?v=57"></script>
-<script src="assets/share.js?v=57"></script>
+<script src="assets/data.js?v=59"></script>
+<script src="assets/seasons.js?v=59"></script>
+<script src="assets/players_detail.js?v=59"></script>
+<script src="assets/deep.js?v=59"></script>
+<script src="assets/player_deep.js?v=59"></script>
+<script src="assets/common.js?v=59"></script>
+<script src="assets/share.js?v=59"></script>
 <script>
 (function () {
   "use strict";
@@ -203,7 +203,7 @@
     ];
     return '<div class="panel" style="grid-column:1/-1"><div class="panel-title">关键局与稳定性 ' +
       '<em class="mono">系列赛打满的最后一局 · 与生涯对比</em></div>' +
-      '<div class="sr-grid" style="grid-template-columns:repeat(5,minmax(0,1fr))">' + cells.join("") + "</div>" +
+      '<div class="sr-grid five">' + cells.join("") + "</div>" +
       '<div class="block-note mono" style="margin-top:10px">关键局 = 系列赛打满时的最后一局。' +
       "稳定度用逐局数据的变异系数（标准差 ÷ 均值）衡量，不比较不同位置的绝对高低。</div></div>";
   })();
@@ -258,7 +258,8 @@
         '<div class="pd-sim">' + sims + "</div>" : "") +
       '<div class="block-note mono" style="margin-top:12px">分位均在同位置内部计算（0-100，越高越靠前）。' +
       "综合表现由 KDA、输出占比、经济占比、参团率、承伤占比、生存六项同位置 z-score 合成；" +
-      "稳定性按逐局波动反向计分；硬仗表现 = 实际胜率 − 按对手实力算出的期望胜率。</div></div>";
+      "稳定性按逐局波动反向计分；英雄池按等效英雄数（exp(熵)，已用英雄的集中度换算）计分；" +
+      "硬仗表现 = 实际胜率 − 按对手实力算出的期望胜率；近期状态 = 近 30 局综合表现。</div></div>";
   })();
 
   /* ---------- 常用英雄 ---------- */

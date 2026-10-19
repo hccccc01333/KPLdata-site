@@ -256,7 +256,8 @@ def main() -> None:
         exp_wr = exp_sum / exp_n if exp_n else None
         hero_cnt = heroes[name]
         total_hero = sum(hero_cnt.values()) or 1
-        ent = -sum((c / total_hero) * math.log(c / total_hero) for c in hero_cnt.values()) / math.log(max(2, len(hero_cnt)))
+        ent_raw = -sum((c / total_hero) * math.log(c / total_hero) for c in hero_cnt.values())
+        ent = math.exp(ent_raw)      # 等效英雄数：用了 20 个英雄、集中在 5 个 → 约 5-8
         pos_perf[mpos].append(mu)
         pos_stab[mpos].append(sd)
         if clutch is not None:
@@ -309,7 +310,7 @@ def main() -> None:
             tags.append("关键局强")
         if d["oppAdj"] is not None and d["oppAdj"] >= 3:
             tags.append("硬仗型")
-        if hero_pct >= 70 and d["poolN"] >= 10:
+        if hero_pct >= 70 and d["heroEnt"] >= 8 and d["poolN"] >= 10:
             tags.append("英雄池深")
         if d["slope"] >= 0.015:
             tags.append("状态上行")
@@ -326,7 +327,7 @@ def main() -> None:
             "formWR": round(d["formWR"], 3), "formZ": round(d["formZ"], 2),
             "slope": round(d["slope"], 4),
             "oppAdj": round(d["oppAdj"], 1) if d["oppAdj"] is not None else None,
-            "heroEnt": round(d["heroEnt"], 3), "poolN": d["poolN"],
+            "heroEnt": round(d["heroEnt"], 1), "poolN": d["poolN"],
             "decN": d["decN"],
             "spark": d["spark"],
             "tags": tags[:5],
