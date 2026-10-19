@@ -302,11 +302,6 @@ def full_item(name, mm, meta, score, extra=None) -> dict:
     return it
 
 
-def slim_item(name, mm, meta, score) -> dict:
-    return {"name": name, "team": meta["team"], "tic": meta["tic"],
-            "g": int(round(mm["g"])), "m": mm["m"], "wr": round(mm["wr"], 3), "score": score}
-
-
 def compute_lane(players: dict[str, dict], ln: str, kind: str):
     entries = []
     for name, pl in players.items():
@@ -367,10 +362,11 @@ def compute_lane(players: dict[str, dict], ln: str, kind: str):
         sc = zmap[name]["score"]
         extra = {"z": round(zmap[name]["z"], 2)}
         b = boots.get(name)
-        if b:
+        if b and i == 0:               # 稳定性估计只挂在榜首，避免候选重复携带 t1/ci
             extra["t1"] = b["top1"]
             extra["ci"] = b["ci"]
-        board.append(full_item(name, mm, pl, sc, extra) if i == 0 else slim_item(name, mm, pl, sc))
+        # 全部候选都输出完整指标：任何名次都能按同一口径复核，不再裁成只剩名字/局数
+        board.append(full_item(name, mm, pl, sc, extra))
 
     t = THRESH[kind]
     note = None if boots else ("样本不足，仅候选" if not elig else "样本太少，未做稳定性估计")
@@ -478,11 +474,10 @@ def compute_team(bucket: dict, kind: str):
                 "gw": int(round(e["gw"])), "gl": int(round(e["gl"])), "wr": round(e["wr"], 3),
                 "oppAdj": round(e["oppAdj"], 3), "stab": round(e["stab"], 3), "score": e["score"]}
         b = boots.get(e["team"])
-        if b:
+        if b and i == 0:                 # 稳定性估计只挂在榜首
             item["t1"] = b["top1"]
             item["ci"] = b["ci"]
-        if i > 0:                        # 候选只留必要字段
-            item = {k: item[k] for k in ("team", "tic", "g", "m", "gw", "gl", "score") if k in item}
+        # 候选同样保留完整字段（对手校正胜率 / 局分优势 / 稳定性），可复核
         board.append(item)
     note = None if elig else "样本不足，仅候选"
     return {"n": len(elig), "board": board, "note": note, "boot": bool(boots),

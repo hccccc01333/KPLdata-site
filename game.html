@@ -132,8 +132,8 @@
           "<span>" + K.esc(p.n) + (p.mvp ? '<em class="mvp-tag">MVP</em>' : "") + "</span></a>" +
           '<div class="g-kda mono">' + p.k + "/" + p.d + "/" + p.a + "</div>" +
           '<div class="g-stat"><span class="mono">' + K.fmtInt(p.g) + "</span><small>经济</small></div>" +
-          '<div class="g-stat"><span class="mono">' + p.dmg.toFixed(1) + '%</span><small>输出</small></div>' +
-          '<div class="g-stat"><span class="mono">' + p.bh.toFixed(1) + '%</span><small>承受</small></div>' +
+          '<div class="g-stat"><span class="mono">' + K.mpct(p.dmg, 1) + '</span><small>输出</small></div>' +
+          '<div class="g-stat"><span class="mono">' + K.mpct(p.bh, 1) + '</span><small>承受</small></div>' +
           '<div class="g-kit">' + equips +
           (p.sai ? '<span class="g-eq sa" title="' + K.esc(p.sa) + '"><img src="' + K.esc(p.sai) + '" alt=""></span>' : "") +
           "</div></div>";

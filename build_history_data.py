@@ -66,6 +66,22 @@ def pct_num(x: float) -> float:
     return round(float(x), 3)
 
 
+def num_or_none(v):
+    """缺失/不可解析 → None（缺失 ≠ 0）；真实 0 原样返回 0.0。
+    指标必须用它判断「这局到底有没有这个字段」，不能再用 `or 0` 把缺失当零累加。"""
+    if v is None:
+        return None
+    if isinstance(v, str) and not v.strip():
+        return None
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return None
+    if x != x or x in (float("inf"), float("-inf")):
+        return None
+    return x
+
+
 class Acc:
     """单范围累计器。"""
 
@@ -73,12 +89,12 @@ class Acc:
         self.team = defaultdict(lambda: {"m": 0, "mw": 0, "ml": 0, "g": 0, "gw": 0, "gl": 0,
                                          "gold": 0, "kd": 0, "icon": "", "last": ""})
         self.player = defaultdict(lambda: {"g": 0, "w": 0, "k": 0, "d": 0, "a": 0, "mvp": 0,
-                                           "part_sum": 0.0, "dmg_sum": 0.0, "gold": 0,
-                                           "icon": "", "team": "", "teamIcon": "",
+                                           "part_sum": 0.0, "part_n": 0, "dmg_sum": 0.0, "dmg_n": 0,
+                                           "gold": 0, "icon": "", "team": "", "teamIcon": "",
                                            "pos_sum": defaultdict(int), "last": ""})
         self.hero = defaultdict(lambda: {"g": 0, "w": 0, "ban": 0, "icon": "",
-                                         "k": 0, "d": 0, "a": 0, "dmg_sum": 0.0,
-                                         "bh_sum": 0.0, "gold": 0, "by": {}})
+                                         "k": 0, "d": 0, "a": 0, "dmg_sum": 0.0, "dmg_n": 0,
+                                         "bh_sum": 0.0, "bh_n": 0, "gold": 0, "by": {}})
         self.combo2 = defaultdict(lambda: {"n": 0, "w": 0, "last": None})
         self.combo3 = defaultdict(lambda: {"n": 0, "w": 0, "last": None})
         self.totals = {"matches": 0, "battles": 0}
@@ -138,11 +154,15 @@ class Acc:
             pl["d"] += int(p.get("death_num") or 0)
             pl["a"] += int(p.get("assist_num") or 0)
             pl["mvp"] += 1 if str(p.get("is_mvp")) in ("1", "True", "true") else 0
-            try:
-                pl["part_sum"] += float(p.get("participation_rate") or 0)
-                pl["dmg_sum"] += float(p.get("hurt_total_rate") or 0)
-            except (TypeError, ValueError):
-                pass
+            # 参团率 / 输出占比：缺失的局不计入该指标分母（缺失 ≠ 0）
+            pv = num_or_none(p.get("participation_rate"))
+            if pv is not None:
+                pl["part_sum"] += pv
+                pl["part_n"] += 1
+            dv = num_or_none(p.get("hurt_total_rate"))
+            if dv is not None:
+                pl["dmg_sum"] += dv
+                pl["dmg_n"] += 1
             pl["gold"] += int(float(p.get("gold") or 0))
             if p.get("player_icon"):
                 pl["icon"] = str(p["player_icon"])
@@ -169,11 +189,14 @@ class Acc:
                     hb2 = h["by"].setdefault(yk2, [0, 0, 0])
                     hb2[0] += 1
                     hb2[1] += 1 if camp == win_camp else 0
-                try:
-                    h["dmg_sum"] += float(p.get("hurt_total_rate") or 0)
-                    h["bh_sum"] += float(p.get("be_hurt_total_rate") or 0)
-                except (TypeError, ValueError):
-                    pass
+                dvh = num_or_none(p.get("hurt_total_rate"))
+                if dvh is not None:
+                    h["dmg_sum"] += dvh
+                    h["dmg_n"] += 1
+                bvh = num_or_none(p.get("be_hurt_total_rate"))
+                if bvh is not None:
+                    h["bh_sum"] += bvh
+                    h["bh_n"] += 1
                 h["gold"] += int(float(p.get("gold") or 0))
         # 同队组合挖掘（双人 / 三人）+ 记录最近一次出场
         bid = str(det.get("battle_id") or "")
@@ -254,8 +277,9 @@ class Acc:
                 "name": name, "team": p["team"], "teamIcon": p["teamIcon"], "icon": p["icon"],
                 "pos": pos, "games": g, "wins": p["w"], "wr": pct_num(p["w"] / g) if g else 0,
                 "kda": round(kda, 2), "mvp": p["mvp"],
-                "part": round(p["part_sum"] / g, 1) if g else 0,
-                "dmg": round(p["dmg_sum"] / g * 100, 1) if g else 0,
+                "part": round(p["part_sum"] / p["part_n"], 1) if p["part_n"] else None,
+                "dmg": round(p["dmg_sum"] / p["dmg_n"] * 100, 1) if p["dmg_n"] else None,
+                "partN": p["part_n"], "dmgN": p["dmg_n"],
                 "last": p["last"],
             })
         players.sort(key=lambda x: (-x["games"], -x["kda"]))
@@ -273,8 +297,9 @@ class Acc:
                 "wins": h["w"], "wr": wr,
                 "bans": h["ban"], "tier": tier_of(wr),
                 "kda": round(kda, 2),
-                "dmg": round(h["dmg_sum"] / g * 100, 1) if g else 0,
-                "bh": round(h["bh_sum"] / g * 100, 1) if g else 0,
+                "dmg": round(h["dmg_sum"] / h["dmg_n"] * 100, 1) if h["dmg_n"] else None,
+                "bh": round(h["bh_sum"] / h["bh_n"] * 100, 1) if h["bh_n"] else None,
+                "dmgN": h["dmg_n"], "bhN": h["bh_n"],
                 "gold": round(h["gold"] / g) if g else 0,
             }
             if include_year and h.get("by"):

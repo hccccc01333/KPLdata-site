@@ -64,10 +64,10 @@
       sub: (P.team || "—") + (P.pos ? " · " + P.pos : "") + " · 全部赛事 " + K.fmtInt(P.games) + " 局",
       stats: [
         ["单局胜率", K.pct(P.wr)],
-        ["场均 KDA", Number(P.kda || 0).toFixed(2)],
+        ["场均 KDA", K.mnumText(P.kda, 2)],
         ["MVP 次数", K.fmtInt(P.mvp) + " 次"],
         ["场均经济", K.fmtInt(P.gold) + " 金"],
-        ["场均参团率", Math.round(P.part || 0) + "%"]
+        ["场均参团率", K.mfrac(P.part, P.partN, P.games)]
       ],
       note: "口径：2019–2026 全部职业赛事，共 " + K.fmtInt(P.games) + " 局（赢下 " + K.fmtInt(P.wins) +
         " 局）；仅统计职业赛事，不代表排位表现。",
@@ -78,9 +78,9 @@
   /* ---------- KPI 四格 ---------- */
   var kpi = '<div class="hd-stats">' +
     '<div class="hd-cell hl"><div class="k">胜率</div><div class="v">' + K.pct(P.wr) + '</div><div class="s">' + P.wins + " 胜 / " + P.games + " 局</div></div>" +
-    '<div class="hd-cell"><div class="k">KDA</div><div class="v">' + P.kda.toFixed(2) + '</div><div class="s">击杀 + 助攻 ÷ 死亡</div></div>' +
+    '<div class="hd-cell"><div class="k">KDA</div><div class="v">' + K.mnumText(P.kda, 2) + '</div><div class="s">击杀 + 助攻 ÷ 死亡</div></div>' +
     '<div class="hd-cell"><div class="k">MVP</div><div class="v">' + P.mvp + '</div><div class="s">共 ' + P.games + " 局中当选</div></div>" +
-    '<div class="hd-cell"><div class="k">场均数据</div><div class="v">' + K.fmtInt(P.gold) + '</div><div class="s">经济 · 参团 ' + Math.round(P.part) + "%</div></div>" +
+    '<div class="hd-cell"><div class="k">场均数据</div><div class="v">' + K.fmtInt(P.gold) + '</div><div class="s">经济 · 参团 ' + K.mfrac(P.part, P.partN, P.games) + "</div></div>" +
     "</div>";
 
   /* ---------- 赛季趋势（胜率折线） ---------- */
@@ -134,8 +134,8 @@
       { k: "kda", label: "KDA", fmt: function (v) { return Number(v).toFixed(2); }, get: function (p) { return p.kda; } },
       { k: "mvpRate", label: "MVP 率", fmt: function (v) { return (v * 100).toFixed(1) + "%"; },
         get: function (p) { return p.mvp / Math.max(1, p.games); } },
-      { k: "part", label: "参团率", fmt: function (v) { return Number(v).toFixed(1) + "%"; }, get: function (p) { return p.part; } },
-      { k: "dmg", label: "输出占比", fmt: function (v) { return Number(v).toFixed(1) + "%"; }, get: function (p) { return p.dmg; } }
+      { k: "part", label: "参团率", fmt: function (v) { return K.mpct(v, 1); }, get: function (p) { return p.part; } },
+      { k: "dmg", label: "输出占比", fmt: function (v) { return K.mpct(v, 1); }, get: function (p) { return p.dmg; } }
     ];
     var self = peers.filter(function (p) { return p.name === P.name; })[0];
     function pctRank(arr, v) {
@@ -144,13 +144,22 @@
     }
     var rows = METRICS.map(function (m) {
       var vals = peers.map(m.get).filter(function (v) { return typeof v === "number" && isFinite(v); });
-      var my = self ? m.get(self) : m.get({ games: P.games, wr: P.wr, kda: P.kda, mvp: P.mvp, part: P.part, dmg: 0 });
-      var r = pctRank(vals, my);
+      var my = self ? m.get(self) : m.get({ games: P.games, wr: P.wr, kda: P.kda, mvp: P.mvp, part: P.part, dmg: P.dmg });
+      var myN = K.mnum(my);
       var mid = vals.slice().sort(function (a, b) { return a - b; })[Math.floor(vals.length / 2)];
+      var midTxt = (vals.length && mid != null) ? "位置中位 " + m.fmt(mid) : "位置中位 —";
+      // 没有有效样本 → 明确标「无有效样本」，绝不按 0 参与百分位（否则会出现假的「超过 0%」）
+      if (myN === null) {
+        return '<div class="pos-row"><span class="k">' + m.label + "</span>" +
+          '<span class="bar"></span><span class="my mono">—</span>' +
+          '<span class="mid mono">' + midTxt + "</span>" +
+          '<span class="rk mono">无有效样本</span></div>';
+      }
+      var r = pctRank(vals, myN);
       return '<div class="pos-row"><span class="k">' + m.label + "</span>" +
         '<span class="bar"><i style="width:' + Math.max(2, r * 100).toFixed(1) + '%"></i></span>' +
-        '<span class="my mono">' + m.fmt(my) + "</span>" +
-        '<span class="mid mono">位置中位 ' + m.fmt(mid) + "</span>" +
+        '<span class="my mono">' + m.fmt(myN) + "</span>" +
+        '<span class="mid mono">' + midTxt + "</span>" +
         '<span class="rk mono">超过 ' + Math.round(r * 100) + "%</span></div>";
     }).join("");
     return '<div class="panel" style="grid-column:1/-1"><div class="panel-title">同位置对比 <em class="mono">' +

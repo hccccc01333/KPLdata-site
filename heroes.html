@@ -179,7 +179,12 @@
     });
     var rows = [["英雄", "档位", "出场", "胜率", "禁用数", "KDA", "输出占比", "承伤占比", "场均经济", "范围"]];
     rows2.forEach(function (h2) {
-      rows.push([h2.name, h2.tier, h2.games, (h2.wr * 100).toFixed(1) + "%", h2.bans, h2.kda, h2.dmg, h2.bh, h2.gold, K.scopeName(curScope)]);
+      rows.push([h2.name, h2.tier, h2.games,
+        h2.wr != null ? K.pct(h2.wr, 1) : "—",
+        h2.bans != null ? h2.bans : "—",
+        h2.kda != null ? h2.kda : "—", h2.dmg != null ? h2.dmg : "—",
+        h2.bh != null ? h2.bh : "—", h2.gold != null ? h2.gold : "—",
+        K.scopeName(curScope)]);
     });
     K.exportCSV("英雄榜_" + K.scopeName(curScope) + ".csv", rows);
   });

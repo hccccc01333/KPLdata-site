@@ -572,6 +572,15 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
 .p-ava,.hd-ava{border-radius:50% !important}
 .search,.fld select{background:none !important;border:1px solid var(--line) !important;border-radius:6px !important}
 .search:focus,.fld select:focus{outline:1px solid rgba(255,255,255,.5) !important;border-color:transparent !important}
+/* —— 原生选择控件统一深色（本体 + 弹出选项）——
+   style.css 只给 .fld select 设了深底浅字，pages.css 又把背景改成 none；而原生弹出层
+   的 option 从没设过颜色，Windows/部分浏览器下就是「系统白底 + 继承浅色字」，选项几乎看不见。
+   这里统一 select 本体与 option/optgroup 的深底浅字，不依赖平台默认。 */
+select,select.search,.fld select{color-scheme:dark !important;background-color:#181a1e !important;
+  color:#f5f5f5 !important;border:1px solid #484b52 !important}
+select option,select optgroup{background-color:#181a1e !important;color:#f5f5f5 !important}
+select option:checked{background-color:#2b3138 !important;color:#ffffff !important}
+select:disabled{opacity:.55 !important;cursor:not-allowed}
 .search-box{background:none !important;border:1px solid var(--line) !important;border-radius:6px !important}
 .chip{border-radius:4px !important}
 .tier{border-radius:4px !important}

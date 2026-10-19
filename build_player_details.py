@@ -28,6 +28,21 @@ def jload(path: Path):
         return None
 
 
+def num_or_none(v):
+    """缺失/不可解析 → None（缺失 ≠ 0）；真实 0 原样返回 0.0。"""
+    if v is None:
+        return None
+    if isinstance(v, str) and not v.strip():
+        return None
+    try:
+        x = float(v)
+    except (TypeError, ValueError):
+        return None
+    if x != x or x in (float("inf"), float("-inf")):
+        return None
+    return x
+
+
 def main() -> None:
     acc: dict[str, dict] = {}
 
@@ -35,7 +50,7 @@ def main() -> None:
         if name not in acc:
             acc[name] = {
                 "games": 0, "wins": 0, "k": 0, "d": 0, "a": 0, "mvp": 0,
-                "part_sum": 0.0, "gold": 0,
+                "part_sum": 0.0, "part_n": 0, "gold": 0,
                 "icon": "", "team": "", "teamIcon": "", "pos_sum": defaultdict(int),
                 "heroes": defaultdict(lambda: [0, 0, 0, 0, 0]),
                 "years": defaultdict(lambda: [0, 0, 0, 0, 0]),
@@ -80,10 +95,10 @@ def main() -> None:
                     row["d"] += d
                     row["a"] += a
                     row["mvp"] += 1 if str(p.get("is_mvp")) in ("1", "True", "true") else 0
-                    try:
-                        row["part_sum"] += float(p.get("participation_rate") or 0)
-                    except (TypeError, ValueError):
-                        pass
+                    pv = num_or_none(p.get("participation_rate"))
+                    if pv is not None:
+                        row["part_sum"] += pv
+                        row["part_n"] += 1
                     row["gold"] += int(float(p.get("gold") or 0))
                     if p.get("player_icon"):
                         row["icon"] = str(p["player_icon"])
@@ -138,7 +153,8 @@ def main() -> None:
             "wr": round(row["wins"] / g, 3),
             "kda": round((row["k"] + row["a"]) / d, 2),
             "mvp": row["mvp"],
-            "part": round(row["part_sum"] / g, 1),
+            "part": round(row["part_sum"] / row["part_n"], 1) if row["part_n"] else None,
+            "partN": row["part_n"],
             "gold": round(row["gold"] / g),
             "pos": pos, "team": row["team"], "teamIcon": row["teamIcon"], "icon": row["icon"],
             "heroes": [[h, v[0], round(v[1] / v[0], 3) if v[0] else 0,

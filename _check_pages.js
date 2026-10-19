@@ -768,6 +768,107 @@ async function main() {
   check("战队入口保留逐年趋势开关", tTeam === true, tTeam);
   check("选手入口无逐年趋势开关（无逐年数据）", tPlayer === false, tPlayer);
 
+  console.log("\n=== V5 · 全站 UI 与数据可信度专项 ===");
+  // (A) 原生选择控件：本体与弹出选项都必须是「深底浅字」。
+  //     诚实说明：无头浏览器无法真正展开系统原生弹出层，这里校验的是浏览器实际计算出的
+  //     select / option 背景与前景色（浅底 + 浅字 = 文字不可见）；真实弹出层观感仍需在
+  //     桌面与手机上人工确认。
+  const SEL_PAGES = ["schedule.html", "teams.html", "players.html", "heroes.html", "combos.html",
+                     "h2h.html", "stage.html", "simulator.html", "bp.html", "query.html",
+                     "honors.html", "compare.html", "compare-team.html", "compare-player.html", "compare-lane.html"];
+  for (const sp of SEL_PAGES) {
+    await visit(BASE + sp, 1500);
+    const s = await evaluate(`(function(){
+      function lum(c){
+        var m = /rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)(?:,\\s*([\\d.]+))?/.exec(c || '');
+        if (!m) return null;
+        var a = m[4] === undefined ? 1 : parseFloat(m[4]);
+        var r = +m[1], g = +m[2], b = +m[3];
+        // 半透明前景按"叠加在深色页面"上近似成较低亮度
+        if (a < 1) { r *= a; g *= a; b *= a; }
+        return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      }
+      var sels = [].slice.call(document.querySelectorAll('select'));
+      var opts = 0, badOpt = [], emptyOpt = 0, badSel = [];
+      sels.forEach(function(sel){
+        var cs = getComputedStyle(sel);
+        var bg = lum(cs.backgroundColor), fg = lum(cs.color);
+        if (bg === null || fg === null || bg > 0.35 || fg < 0.55) badSel.push(sel.id || sel.className || 'select');
+        var os = [].slice.call(sel.options || []);
+        opts += os.length;
+        os.forEach(function(o){
+          if (!(o.text || '').trim()) emptyOpt++;
+          var oc = getComputedStyle(o);
+          var obg = lum(oc.backgroundColor), ofg = lum(oc.color);
+          if (obg === null || ofg === null || obg > 0.35 || ofg < 0.55) {
+            if (badOpt.length < 4) badOpt.push((sel.id || '') + ':' + (o.text || '').slice(0, 6));
+          }
+        });
+      });
+      return { n: sels.length, opts: opts, badSel: badSel, badOpt: badOpt, emptyOpt: emptyOpt };
+    })()`);
+    check(sp + " 选择框本体为深底浅字", s && s.n > 0 && s.badSel.length === 0,
+      s && (s.n + " 个" + (s.badSel.length ? " / 异常 " + s.badSel.join(",") : " / 全部合规")));
+    check(sp + " 选择框选项为深底浅字", s && s.opts > 0 && s.badOpt.length === 0,
+      s && (s.opts + " 项" + (s.badOpt.length ? " / 异常 " + s.badOpt.join(",") : " / 全部合规")));
+    check(sp + " 选择框选项均有文字", s && s.emptyOpt === 0, s && s.emptyOpt);
+  }
+
+  // (B) 荣誉中心候选行不得出现「假零」：候选同样带完整指标，缺失必须是 —，不是 0
+  await visit(BASE + "honors.html", 1600);
+  const hn = await evaluate(`(function(){
+    var rows = [].slice.call(document.querySelectorAll('#boardRows tr'));
+    var zero = [], n = 0;
+    rows.forEach(function(tr){
+      var tds = [].slice.call(tr.children).map(function(td){ return td.textContent.replace(/\\s+/g, ''); });
+      if (tds.length < 12) return;   // 占位行（colspan）跳过
+      n += 1;
+      // 列序：分路/名次/选手/战队/局·场/胜率/KDA/分均经济/分均输出/参团/MVP/综合分
+      if (tds[6] === '0.0' || tds[7] === '0' || tds[8] === '0' || tds[9] === '0.0%') {
+        zero.push(tds[2] + ':' + tds[6] + '/' + tds[7] + '/' + tds[8] + '/' + tds[9]);
+      }
+    });
+    return { n: n, zero: zero };
+  })()`);
+  check("荣誉中心候选行带完整指标（无 0.0 KDA / 0 分均经济 / 0 分均输出）",
+    hn && hn.n >= 5 && hn.zero.length === 0, hn && (hn.n + " 行 / 假零 " + (hn.zero.slice(0, 3).join(" | ") || "无")));
+
+  // (C) 选手榜按「输出占比」排序：缺失值不得排到前面，也不得显示成 0%
+  await visit(BASE + "players.html", 1600);
+  await evaluate(`(function(){ var s=document.getElementById('fSort');
+    if (s) { s.value='dmg'; s.dispatchEvent(new Event('change',{bubbles:true})); } })()`);
+  await sleep(600);
+  const pd = await evaluate(`(function(){
+    var cards = [].slice.call(document.querySelectorAll('#playerGrid .player')).slice(0, 12);
+    var bad = [];
+    cards.forEach(function(c){
+      var big = c.querySelector('.p-kda');
+      var v = big ? big.textContent.replace(/输出|KDA|MVP|胜率|局数/g, '').trim() : '';
+      if (/^(0|0\\.0)%?$/.test(v)) bad.push(v + ' / ' + c.textContent.slice(0, 30));
+    });
+    return { n: cards.length, bad: bad, first: cards[0] ? cards[0].querySelector('.p-kda').textContent.trim() : '' };
+  })()`);
+  check("选手榜按输出占比排序：无假零 0% 占位", pd && pd.n > 0 && pd.bad.length === 0,
+    pd && (pd.n + " 张 / 榜首 " + pd.first + (pd.bad[0] ? " | " + pd.bad[0] : "")));
+
+  // (D) 选手详情 · 同位置对比：无有效样本必须标「— / 无有效样本」，不得出现假的「0.0% 超过 0%」
+  await visit(BASE + "player.html?id=清清", 1600);
+  const pc = await evaluate(`(function(){
+    var rows = [].slice.call(document.querySelectorAll('.pos-row'));
+    var bad = [];
+    rows.forEach(function(r){
+      var my = (r.querySelector('.my') || {}).textContent || '';
+      var rk = (r.querySelector('.rk') || {}).textContent || '';
+      if (/0\\.0%/.test(my)) bad.push('假零 ' + r.textContent.replace(/\\s+/g, ' ').slice(0, 40));
+      if (/—/.test(my) && rk.trim() && rk.trim() !== '无有效样本') {
+        bad.push('缺样本仍给排名 ' + r.textContent.replace(/\\s+/g, ' ').slice(0, 40));
+      }
+    });
+    return { n: rows.length, bad: bad };
+  })()`);
+  check("选手详情同位置对比：缺失标 —、不出现假 0.0%",
+    pc && pc.n >= 4 && pc.bad.length === 0, pc && (pc.n + " 行 / " + (pc.bad.join(" | ") || "正常")));
+
   ws.close();
   proc.kill();
   await sleep(300);

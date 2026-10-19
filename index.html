@@ -555,7 +555,7 @@
       .slice().sort(function (a, b) { return (b.mvp || 0) - (a.mvp || 0); });
     if (players[0]) cards.push({
       k: "MVP 领先", v: players[0].name,
-      s: (players[0].team || "") + " · MVP " + players[0].mvp + " 次 · KDA " + Number(players[0].kda || 0).toFixed(1),
+      s: (players[0].team || "") + " · MVP " + players[0].mvp + " 次 · KDA " + K.mnumText(players[0].kda, 1),
       href: "player.html?id=" + encodeURIComponent(players[0].name), cta: "看选手详情"
     });
 
@@ -599,14 +599,20 @@
     $("#heroTop").innerHTML = (d.heroes || []).slice(0, 12).map(K.heroCard).join("");
     /* 选手榜前 8（按 KDA，样本 >= 30 局） */
     var players = (d.players || []).filter(function (p) { return p.games >= 30; })
-      .slice().sort(function (a, b) { return b.kda - a.kda; }).slice(0, 8);
+      .slice().sort(function (a, b) {   // 降序：KDA 缺失排最后，不当作 0 参与排名
+        var x = K.mnum(a.kda), y = K.mnum(b.kda);
+        if (x === null && y === null) return 0;
+        if (x === null) return 1;
+        if (y === null) return -1;
+        return y - x;
+      }).slice(0, 8);
     $("#plTop").innerHTML = players.map(function (p, i) {
       var ava = p.icon ? '<img class="p-ava" src="' + K.esc(p.icon) + '" alt="" loading="lazy">'
         : '<span class="p-ava ph">' + K.esc(String(p.name).slice(0, 1)) + "</span>";
       return '<a class="player reveal" href="player.html?id=' + encodeURIComponent(p.name) + '" style="transition-delay:' + Math.min(i * 22, 200) + 'ms">' + ava +
         '<div class="p-main"><div class="p-top"><span class="p-name"><span class="nm">' + K.esc(p.name) + "</span>" +
         (p.pos ? "<em>" + K.esc(p.pos) + "</em>" : "") + "</span>" +
-        '<span class="p-kda">' + p.kda.toFixed(1) + "<small>KDA</small></span></div>" +
+        '<span class="p-kda">' + K.mnumText(p.kda, 1) + "<small>KDA</small></span></div>" +
         '<div class="p-team">' + (p.teamIcon ? '<img src="' + K.esc(p.teamIcon) + '" alt="">' : "") +
         "<b>" + K.esc(p.team) + "</b><span>· " + p.games + " 局 · 胜率 " + K.pct(p.wr, 0) + " · MVP " + p.mvp + "</span></div></div></a>";
     }).join("");

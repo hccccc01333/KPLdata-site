@@ -83,11 +83,11 @@
   function playerCard(p, i) {
     var ava = p.icon ? '<img class="p-ava" src="' + K.esc(p.icon) + '" alt="" loading="lazy">'
       : '<span class="p-ava ph">' + K.esc(String(p.name).slice(0, 1)) + "</span>";
-    var big = { kda: { v: p.kda.toFixed(1), l: "KDA" },
+    var big = { kda: { v: K.mnumText(p.kda, 1), l: "KDA" },
                 mvp: { v: String(p.mvp), l: "MVP" },
                 wr: { v: K.pct(p.wr, 0), l: "胜率" },
                 games: { v: String(p.games), l: "局数" },
-                dmg: { v: p.dmg.toFixed(0) + "%", l: "输出" } }[$("#fSort").value];
+                dmg: { v: K.mpct(p.dmg, 0), l: "输出" } }[$("#fSort").value];
     return '<a class="player reveal" href="player.html?id=' + encodeURIComponent(p.name) + '" style="transition-delay:' +
       Math.min((i || 0) * 22, 240) + 'ms">' + ava +
       '<div class="p-main"><div class="p-top">' +
@@ -96,8 +96,17 @@
       '<span class="p-kda">' + big.v + "<small>" + big.l + "</small></span></div>" +
       '<div class="p-team">' + (p.teamIcon ? '<img src="' + K.esc(p.teamIcon) + '" alt="">' : "") +
       "<b>" + K.esc(p.team) + "</b><span>· " + p.games + " 局 · 胜率 " + K.pct(p.wr, 0) +
-      " · MVP " + p.mvp + " · 参团 " + Math.round(p.part) + "%</span></div>" +
+      " · MVP " + p.mvp + " · 参团 " + K.mpct(p.part, 0) + "</span></div>" +
       "</div></a>";
+  }
+
+  // 降序比较：缺失值永远排在最后，绝不把「没有数据」当成最小的真实值参与排序
+  function byNum(get, a, b) {
+    var x = K.mnum(get(a)), y = K.mnum(get(b));
+    if (x === null && y === null) return b.games - a.games;
+    if (x === null) return 1;
+    if (y === null) return -1;
+    return y - x || b.games - a.games;
   }
 
   function render() {
@@ -115,7 +124,7 @@
       if (sortKey === "games") return b.games - a.games;
       if (sortKey === "mvp") return b.mvp - a.mvp || b.games - a.games;
       if (sortKey === "wr") return b.wr - a.wr || b.games - a.games;
-      if (sortKey === "dmg") return b.dmg - a.dmg || b.games - a.games;
+      if (sortKey === "dmg") return byNum(function (p) { return p.dmg; }, a, b);
       return b.kda - a.kda || b.games - a.games;
     }).slice(0, 60);
     $("#pCount").textContent = rows.length;
@@ -126,12 +135,14 @@
       : '<div class="empty-tip">没有符合条件的选手（可清空搜索或放宽条件）</div>';
     /* 数据简报 */
     if (rows.length) {
-      var bK = rows.slice().sort(function (a, b) { return b.kda - a.kda; })[0];
+      var bK = rows.slice().sort(byNum.bind(null, function (p) { return p.kda; }))[0];
       var bM = rows.slice().sort(function (a, b) { return b.mvp - a.mvp; })[0];
-      var bD = rows.slice().sort(function (a, b) { return b.dmg - a.dmg; })[0];
-      K.brief("#brief", "当前筛选有 <b>" + rows.length + "</b> 名选手。KDA 领跑：<b>" + K.esc(bK.name) + "</b>（<b>" + bK.kda.toFixed(2) +
-        "</b>，" + bK.games + " 局）；MVP 最多：<b>" + K.esc(bM.name) + "</b>（<b>" + bM.mvp + "</b> 次）；输出占比最高：<b>" +
-        K.esc(bD.name) + "</b>（<b>" + bD.dmg.toFixed(1) + "%</b>）。");
+      var dmgRows = rows.filter(function (p) { return K.mnum(p.dmg) !== null; });
+      var bD = dmgRows.length ? dmgRows.slice().sort(byNum.bind(null, function (p) { return p.dmg; }))[0] : null;
+      K.brief("#brief", "当前筛选有 <b>" + rows.length + "</b> 名选手。KDA 领跑：<b>" + K.esc(bK.name) + "</b>（<b>" + K.mnumText(bK.kda, 2) +
+        "</b>，" + bK.games + " 局）；MVP 最多：<b>" + K.esc(bM.name) + "</b>（<b>" + bM.mvp + "</b> 次）；" +
+        (bD ? "输出占比最高：<b>" + K.esc(bD.name) + "</b>（<b>" + K.mpct(bD.dmg, 1) + "</b>）。"
+            : "当前范围内输出占比没有有效样本，不参与领跑对比。"));
     } else {
       K.brief("#brief", "当前条件下没有选手数据，清空搜索或放宽局数试试。");
     }
@@ -165,7 +176,8 @@
     }).slice().sort(function (a, b) { return b.kda - a.kda || b.games - a.games; });
     var rows = [["选手", "战队", "位置", "局数", "胜率", "KDA", "MVP", "参团率", "输出占比", "范围"]];
     rows2.forEach(function (p2) {
-      rows.push([p2.name, p2.team, p2.pos, p2.games, (p2.wr * 100).toFixed(1) + "%", p2.kda, p2.mvp, p2.part, p2.dmg, K.scopeName(curScope)]);
+      rows.push([p2.name, p2.team, p2.pos, p2.games, (p2.wr * 100).toFixed(1) + "%", p2.kda, p2.mvp,
+        p2.part == null ? "—" : p2.part, p2.dmg == null ? "—" : p2.dmg, K.scopeName(curScope)]);
     });
     K.exportCSV("选手榜_" + K.scopeName(curScope) + ".csv", rows);
   });

@@ -117,9 +117,10 @@
   }
   var period = byId(LISTS[kind], qs.get("period"));
 
-  function fmtPct(v) { return Math.round(Number(v) * 100) + "%"; }
-  function num(n) { return K.fmtInt(Math.round(Number(n) || 0)); }
-  function one(n) { return (Number(n) || 0).toFixed(1); }
+  // 缺失值不是 0：拿不到字段一律显示「—」，绝不把 undefined/null 折算成 0.0 / 0%
+  function fmtPct(v) { var n = K.mnum(v); return n === null ? "—" : Math.round(n * 100) + "%"; }
+  function num(n) { var v = K.mnum(n); return v === null ? "—" : K.fmtInt(Math.round(v)); }
+  function one(n) { var v = K.mnum(n); return v === null ? "—" : v.toFixed(1); }
 
   function playerHref(n) { return "player.html?id=" + encodeURIComponent(n); }
   function teamHref(n) { return "team.html?id=" + encodeURIComponent(n); }
@@ -186,7 +187,7 @@
       "<span>KDA " + one(w.kda) + "</span>" +
       "<span>分均经济 " + num(w.gpm) + "</span>" +
       "<span>分均输出 " + num(w.dpm) + "</span>" +
-      "<span>参团 " + one(w.part) + "%</span>" +
+      "<span>参团 " + K.mpct(w.part, 1) + "</span>" +
       "<span>MVP " + w.mvp + "</span>" +
       "<span>胜率 " + fmtPct(w.wr) + "</span></div>";
     if (w.t1 !== undefined) {
@@ -269,7 +270,8 @@
       var res = period.lanes[ln];
       if (!res || !res.board) return;
       res.board.forEach(function (c, i) {
-        data.push([ln, i + 1, c.name, c.team, c.g, c.m, fmtPct(c.wr), one(c.kda), c.gpm, c.score,
+        data.push([ln, i + 1, c.name, c.team, c.g, c.m, fmtPct(c.wr), one(c.kda),
+          c.gpm != null ? c.gpm : "—", c.score,
           c.t1 !== undefined ? fmtPct(c.t1) : "—"]);
       });
     });

@@ -25,6 +25,26 @@ window.KPL = (function () {
   }
   function tierOf(wr) { return wr >= 0.55 ? "S" : wr >= 0.50 ? "A" : wr >= 0.45 ? "B" : "C"; }
 
+  /* ---------- 缺失值语义（全站统一） ----------
+     null / undefined / 空串 / 非数 一律读作「无数据」，绝不自动变成 0；
+     真实的 0（例如某段时间 MVP 率确实是 0）原样保留，正常显示为 0.0%。
+     所有展示指标的地方都必须走这三个函数，禁止直接 Number(x || 0)。 */
+  function mnum(v) {
+    if (v === null || v === undefined) return null;
+    if (typeof v === "string" && !v.trim()) return null;
+    var n = Number(v);
+    return isFinite(n) ? n : null;
+  }
+  function mpct(v, d) { var n = mnum(v); return n === null ? "—" : n.toFixed(d == null ? 1 : d) + "%"; }
+  function mnumText(v, d) { var n = mnum(v); return n === null ? "—" : n.toFixed(d == null ? 1 : d); }
+  // 有效局数不足总局数时，把样本范围一并标出来（例：62.0%（8/10 局））
+  function mfrac(v, validN, totalN) {
+    var n = mnum(v);
+    if (n === null) return "—";
+    var s = n.toFixed(1) + "%";
+    return (validN > 0 && totalN > 0 && validN < totalN) ? s + "（" + validN + "/" + totalN + " 局）" : s;
+  }
+
   /* ---------- 全量赛程索引（assets/schedule_all.js）+ 赛段 / 赛制标签 ---------- */
   // 赛果行、赛程行、卡片都要显示「赛段 · 赛制」，统一从这里取，避免各页各算一套口径。
   var _ALL_IDX = null;
@@ -455,9 +475,9 @@ window.KPL = (function () {
       Math.min((i || 0) * 30, 240) + 'ms">' + ava +
       '<div class="p-main"><div class="p-top">' +
       '<span class="p-name"><span class="nm">' + esc(p.name) + "</span><em>" + esc(p.pos) + "</em></span>" +
-      '<span class="p-kda">' + p.kda.toFixed(1) + "<small>KDA</small></span></div>" +
+      '<span class="p-kda">' + mnumText(p.kda, 1) + "<small>KDA</small></span></div>" +
       '<div class="p-team">' + (p.teamIcon ? '<img src="' + esc(p.teamIcon) + '" alt="">' : "") +
-      "<b>" + esc(p.team) + "</b><span>· " + p.games + " 局 · MVP " + p.mvp + " · 参团 " + Math.round(p.part) + "%</span></div>" +
+      "<b>" + esc(p.team) + "</b><span>· " + p.games + " 局 · MVP " + p.mvp + " · 参团 " + mpct(p.part, 0) + "</span></div>" +
       "</div></div>";
   }
 
@@ -845,6 +865,7 @@ window.KPL = (function () {
   return {
     data: D, details: DT,
     esc: esc, fmtInt: fmtInt, pct: pct, signed: signed,
+    mnum: mnum, mpct: mpct, mnumText: mnumText, mfrac: mfrac,
     dateCN: dateCN, weekdayCN: weekdayCN, tierOf: tierOf, icon: icon,
     scheduleIndex: scheduleIndex, matchMeta: matchMeta, stageLabel: stageLabel, stageTags: stageTags,
     side: side, resultRow: resultRow, muBody: muBody,
