@@ -817,3 +817,222 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
 .pk-foot{font-size:11px;color:var(--muted);line-height:1.6}
 .pk-go{position:absolute;right:14px;bottom:12px;font-size:11.5px;font-weight:800;color:var(--gold);opacity:0;transition:opacity .15s}
 .pick-card:hover .pk-go{opacity:1}
+
+/* ==================================================================
+   V5 阶段一 · 按比赛日组织（首页 / 赛事中心共用组件）
+   风格：沿用最终主题（无盒子、发丝线、四级不透明度、单色）
+   ================================================================== */
+
+/* —— 赛段 · 赛制 标签（赛果行 / 赛程行 / 卡片统一来源） —— */
+.mtags{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mtags .stag{font-size:10.5px;color:var(--muted);letter-spacing:.2px}
+.mtags .bo{font-size:10px;color:var(--faint);border:1px solid var(--line);border-radius:4px;padding:1px 5px;letter-spacing:.3px}
+.rt-date .rt-meta{display:block;font-style:normal;font-size:10.5px;color:var(--faint);margin-top:2px;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:124px}
+
+/* —— 赛果行：6 列（日期·赛段 / 队 / 比分 / 队 / 徽标 / 进入），不再换行 —— */
+.result-list .row{grid-template-columns:124px 1fr 76px 1fr 84px 58px}
+.result-list .rt-date{max-width:124px}
+@media(max-width:860px){
+  .result-list .row{grid-template-columns:94px 1fr 64px 1fr 54px;gap:8px}
+  .result-list .row .row-cov{display:none}
+  .rt-date .rt-meta{max-width:94px}
+}
+@media(max-width:520px){
+  .result-list .row{grid-template-columns:1fr 58px 1fr 50px;gap:8px;padding:9px 2px}
+  .result-list .row .rt-date{display:none}
+}
+
+/* —— 比赛日横滑 —— */
+.day-rail{display:flex;gap:14px;overflow-x:auto;padding:2px 0 12px;scroll-snap-type:x proximity;scrollbar-width:thin}
+.day-rail::-webkit-scrollbar{height:8px}
+.day-rail::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:4px}
+.day-rail::-webkit-scrollbar-track{background:transparent}
+.day-group{flex:0 0 258px;scroll-snap-align:start;border:1px solid var(--line);border-radius:10px;
+           padding:12px 12px 5px;background:rgba(255,255,255,.012)}
+.day-group.today{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.035)}
+.dg-head{display:flex;align-items:baseline;gap:7px;padding-bottom:9px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.dg-head b{font-size:14px;font-weight:700}
+.dg-head span{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.dg-head em{font-style:normal;font-size:10px;color:var(--ink);border:1px solid rgba(255,255,255,.32);border-radius:4px;padding:1px 5px}
+.dg-head i{margin-left:auto;font-style:normal;font-size:11px;color:var(--faint)}
+.dcard{display:block;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.05);text-decoration:none;border-radius:7px}
+.dcard:last-child{border-bottom:none}
+.dcard:hover{background:rgba(255,255,255,.04)}
+.dc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10.5px;color:var(--faint);margin-bottom:6px}
+.dc-top i{font-style:normal;color:var(--ink2);font-weight:700}
+.dc-top em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.dc-vs{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.dc-vs .side span{font-size:12.5px}
+.dc-vs .side img{width:18px;height:18px}
+.dc-vs b{font-size:11.5px;color:var(--ink2);white-space:nowrap}
+.dcard.live .dc-vs b{color:var(--ink)}
+.dcard.live .dc-top i{color:var(--ink)}
+.dc-st{display:block;font-size:10px;color:var(--faint);margin-top:5px}
+@media(max-width:520px){.day-group{flex:0 0 232px}}
+
+/* —— 本期看点 —— */
+.hot-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+@media(max-width:980px){.hot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.hot-grid{grid-template-columns:1fr}}
+.hot-card{display:flex;flex-direction:column;gap:5px;padding:15px 18px 13px;border-top:1px solid var(--line2);
+          border-right:1px solid var(--line);text-decoration:none;color:inherit;transition:background .2s ease}
+@media(max-width:980px){.hot-card:nth-child(2n){border-right:none}}
+@media(max-width:560px){.hot-card{border-right:none;padding:14px 4px}}
+.hot-card:hover{background:rgba(255,255,255,.035)}
+.hc-k{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted)}
+.hc-v{font-size:15.5px;font-weight:700;color:var(--ink);line-height:1.35}
+.hc-s{font-size:12px;color:var(--ink2);line-height:1.6}
+.hc-go{margin-top:auto;padding-top:9px;font-size:12px;color:var(--muted)}
+.hot-card:hover .hc-go{color:var(--ink)}
+
+/* —— 赛事中心：焦点海报 / 赛段进程 / 赛季入口 —— */
+.ev-poster{border:1px solid var(--line);border-radius:12px;padding:22px 24px;background:rgba(255,255,255,.014)}
+.ev-poster .ep-k{display:flex;align-items:center;gap:9px;font-size:12px;letter-spacing:.6px;color:var(--muted);margin-bottom:16px}
+.ev-poster .ep-vs{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+.ev-poster .ep-score{font-size:32px;font-weight:900;letter-spacing:1px;color:var(--ink)}
+.ev-poster .ep-foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:18px}
+.ev-poster .ep-note{font-size:12px;color:var(--muted)}
+.ev-poster .ep-cd{font-family:var(--mono);font-size:13px;color:var(--ink2)}
+@media(max-width:560px){.ev-poster .ep-score{font-size:26px}}
+
+.stage-track{display:flex;gap:0;overflow-x:auto;border:1px solid var(--line);border-radius:10px;padding:0}
+.st-step{flex:1 0 auto;min-width:132px;padding:14px 16px;border-right:1px solid var(--line)}
+.st-step:last-child{border-right:none}
+.st-step b{display:block;font-size:13px;font-weight:700;color:var(--ink2)}
+.st-step span{display:block;font-size:11px;color:var(--faint);margin-top:5px;font-family:var(--mono)}
+.st-step.on{background:rgba(255,255,255,.055)}
+.st-step.on b{color:var(--ink)}
+.st-step.on span{color:var(--muted)}
+.st-step .st-go{display:none;font-size:11px;color:var(--muted);margin-top:6px}
+.st-step.on .st-go{display:block}
+
+.season-rail{display:flex;gap:12px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:thin}
+.season-rail::-webkit-scrollbar{height:8px}
+.season-rail::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:4px}
+.season-card{flex:0 0 214px;display:flex;flex-direction:column;gap:5px;padding:13px 15px;border:1px solid var(--line);
+             border-radius:10px;text-decoration:none;color:inherit;transition:border-color .15s,background .15s}
+.season-card:hover{border-color:var(--line2);background:rgba(255,255,255,.03)}
+.season-card .sy{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.season-card b{font-size:14px;font-weight:700;color:var(--ink);line-height:1.35}
+.season-card .sm{font-size:11.5px;color:var(--ink2)}
+.season-card .sc{font-size:11.5px;color:var(--muted);margin-top:auto;padding-top:6px}
+
+/* ==================================================================
+   V5 阶段二 · 六入口分组导航（赛事 / 战队 / 选手 / 英雄 / 分析 / 荣誉）
+   桌面：hover / focus-within 展开下拉；移动：抽屉内静态缩进列表
+   ================================================================== */
+.nav .ngrp{position:relative;display:flex;align-items:center}
+.nav .ngrp>.ntop{display:inline-flex;align-items:center;gap:5px;border-radius:0 !important;
+  padding:8px 12px !important;font-size:14.5px;color:var(--ink2);text-decoration:none;
+  position:relative;transition:color .15s}
+.nav .ngrp>.ntop:hover{color:#fff !important;background:none !important}
+.nav .ngrp>.ntop .caret{width:5px;height:5px;border-right:1.4px solid currentColor;
+  border-bottom:1.4px solid currentColor;transform:rotate(45deg) translateY(-1px);opacity:.55}
+.nav .ngrp.on>.ntop{color:#fff;font-weight:600}
+.nav .ngrp.on>.ntop::after{content:"";position:absolute;left:12px;right:12px;bottom:3px;
+  height:1.5px;background:#fff;border-radius:1px}
+.nav .nsub{display:none;position:absolute;top:100%;left:0;min-width:168px;z-index:72;
+  flex-direction:column;padding:6px;background:rgba(10,10,12,.97);
+  border:1px solid var(--line);border-radius:8px;box-shadow:0 20px 40px rgba(0,0,0,.55)}
+.nav .ngrp:hover>.nsub,.nav .ngrp:focus-within>.nsub{display:flex}
+.nav .nsub a{display:block;padding:8px 11px;font-size:13.5px;color:var(--ink2);
+  text-decoration:none;white-space:nowrap;border-radius:6px}
+.nav .nsub a:hover{background:rgba(255,255,255,.07) !important;color:#fff !important}
+.nav .nsub a.subon{color:#fff;background:rgba(255,255,255,.09)}
+@media(max-width:900px){
+  .nav .ngrp{display:block;position:static}
+  .nav .ngrp>.ntop{display:flex;padding:11px 12px !important;font-size:15px}
+  .nav .ngrp>.ntop .caret{display:none}
+  .nav .ngrp.on>.ntop{font-weight:600}
+  .nav .ngrp.on>.ntop::after{display:none}
+  .nav .nsub{display:block;position:static;min-width:0;padding:0 0 5px 15px;
+    background:none;border:none;border-radius:0;box-shadow:none}
+  .nav .nsub a{padding:9px 12px;font-size:14px}
+  .nav .nsub a:hover{background:rgba(255,255,255,.05) !important}
+  .nav .nsub a.subon{background:none}
+}
+
+/* ==================================================================
+   V5 阶段二 · 荣誉中心（honors.html）
+   风格：沿用最终主题（发丝线、四级不透明度、单色）
+   ================================================================== */
+.hn-kind{display:flex;gap:8px;align-items:center}
+.hn-kbtn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:6px;cursor:pointer;
+  border:1px solid var(--line);background:none;color:var(--ink2);font-size:13.5px;font-weight:600;font-family:inherit}
+.hn-kbtn em{font-style:normal;font-size:11px;color:var(--muted)}
+.hn-kbtn:hover{border-color:var(--line2);color:var(--ink)}
+.hn-kbtn.on{background:#F5F5F5;border-color:#F5F5F5;color:#0A0A0C}
+.hn-kbtn.on em{color:rgba(10,10,12,.6)}
+.hn-muted{color:var(--muted);font-size:12.5px}
+
+/* —— 五路：五列数据条（相邻发丝线合并） —— */
+.hn-lanes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.hn-lane{border:1px solid var(--line);margin:-1px 0 0 -1px;padding:16px 15px 14px;min-width:0}
+.hn-lh{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+.hn-ln{font-size:13.5px;font-weight:700;color:var(--ink)}
+.hn-ne{margin-left:auto;font-style:normal;font-size:10.5px;color:var(--faint)}
+.hn-win{display:flex;align-items:center;gap:10px;margin:0 -8px 10px;padding:8px;border-radius:8px;
+  text-decoration:none;color:inherit}
+.hn-win:hover{background:rgba(255,255,255,.04)}
+.hn-ava{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;border:1px solid var(--line2)}
+.hn-ava-t{display:grid;place-items:center;background:rgba(255,255,255,.07);color:var(--ink2);font-size:16px;font-weight:700}
+.hn-wt{display:flex;flex-direction:column;min-width:0;flex:1}
+.hn-wt b{font-size:15px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hn-wt span{font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hn-ws{display:flex;flex-direction:column;align-items:flex-end;flex:none}
+.hn-ws b{font-size:22px;font-weight:900;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums}
+.hn-ws em{font-style:normal;font-size:10px;color:var(--faint)}
+.hn-kv{display:flex;flex-wrap:wrap;gap:4px 12px;padding:9px 0 0;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--ink2)}
+.hn-unc{display:flex;gap:8px;align-items:center;padding:8px 0 0;font-size:11.5px;color:var(--muted)}
+.hn-unc i{font-style:normal;color:var(--faint)}
+.hn-unc.warn span{color:var(--faint)}
+.hn-warn{margin-top:9px;padding:7px 10px;border-radius:6px;font-size:11px;line-height:1.6;
+  color:#E8C97A;background:rgba(246,192,33,.07);border:1px solid rgba(246,192,33,.22)}
+.hn-cand{display:flex;flex-direction:column;margin-top:10px;border-top:1px solid var(--line)}
+.hn-cand a{display:flex;align-items:center;gap:9px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.05);
+  text-decoration:none;color:var(--ink2);font-size:12.5px}
+.hn-cand a:last-child{border-bottom:none}
+.hn-cand a:hover{background:rgba(255,255,255,.03)}
+.hn-cand i{font-style:normal;width:14px;color:var(--faint);font-size:11px;flex:none}
+.hn-cn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.hn-cn em{font-style:normal;font-size:10.5px;color:var(--faint);margin-left:4px}
+.hn-cand b{font-variant-numeric:tabular-nums;color:var(--ink2);font-weight:700}
+@media(max-width:1180px){.hn-lanes{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:860px){.hn-lanes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.hn-lanes{grid-template-columns:1fr}}
+
+/* —— 本期最佳战队 —— */
+.hn-team{display:grid;grid-template-columns:1fr 400px;border-top:1px solid var(--line2);
+  border-bottom:1px solid var(--line)}
+.hn-team-main{padding:18px 18px 16px 8px;min-width:0}
+.hn-team-rest{border-left:1px solid var(--line);padding:8px 2px 8px 18px}
+.hn-trow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.05);
+  text-decoration:none;color:var(--ink2);font-size:13px}
+.hn-trow:last-child{border-bottom:none}
+.hn-trow:hover{background:rgba(255,255,255,.03)}
+.hn-trow i{font-style:normal;width:14px;color:var(--faint);font-size:11px}
+.hn-trow .hn-cn{color:var(--ink);font-weight:600}
+.hn-trow em{font-style:normal;font-size:11.5px;color:var(--muted)}
+.hn-trow b{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink)}
+@media(max-width:860px){
+  .hn-team{grid-template-columns:1fr}
+  .hn-team-rest{border-left:none;border-top:1px solid var(--line);padding-left:2px}
+}
+.hn-hit{font-style:normal;font-size:10.5px;color:var(--faint);margin-left:5px}
+/* 候选榜是 12 列表格：窄屏（≤760px 的全局表格滚动规则之外，761–820px 区间）会撑破页面，
+   这里给面板自身独立横向滚动，与全局规则只在更窄断点生效的区间互补 */
+#boardBlock .table-panel{overflow-x:auto}
+
+/* —— 评分口径 —— */
+.hn-fx{display:grid;grid-template-columns:1.2fr .95fr;gap:28px}
+@media(max-width:860px){.hn-fx{grid-template-columns:1fr;gap:18px}}
+.hn-fx-col h3{font-size:13.5px;font-weight:800;color:var(--ink);margin:0 0 10px}
+.hn-fnote{font-size:11.5px;color:var(--muted);line-height:1.8;margin:10px 0 0}
+.hn-flist{margin:0;padding-left:18px;font-size:12.5px;color:var(--ink2);line-height:1.9}
+.hn-flist li{margin-bottom:3px}
+.hn-flist b{color:var(--ink)}
+
+
+

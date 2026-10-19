@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>战队详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=49">
-<link rel="stylesheet" href="assets/pages.css?v=49">
+<link rel="stylesheet" href="assets/style.css?v=51">
+<link rel="stylesheet" href="assets/pages.css?v=51">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="战队详情 · KPL 数据中心">
@@ -19,13 +19,14 @@
 <main class="wrap" id="main" style="margin-top:6px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=49"></script>
-<script src="assets/details.js?v=49"></script>
-<script src="assets/schedule_all.js?v=49"></script>
-<script src="assets/seasons.js?v=49"></script>
-<script src="assets/players_detail.js?v=49"></script>
-<script src="assets/team_data.js?v=49"></script>
-<script src="assets/common.js?v=49"></script>
+<script src="assets/data.js?v=51"></script>
+<script src="assets/details.js?v=51"></script>
+<script src="assets/schedule_all.js?v=51"></script>
+<script src="assets/seasons.js?v=51"></script>
+<script src="assets/players_detail.js?v=51"></script>
+<script src="assets/team_data.js?v=51"></script>
+<script src="assets/common.js?v=51"></script>
+<script src="assets/share.js?v=51"></script>
 <script>
 (function () {
   "use strict";
@@ -112,6 +113,25 @@
                         href: "team.html?id=" + encodeURIComponent(team.team) }) + "</div>" +
       '<div class="hd-sub">' + K.scopeName(curScope) + " · 大场 " + mWin + "-" + (matches - mWin) +
       " · 单局 " + wins + "-" + (games - wins) + " · 近况 " + (form || "—") + "</div></div></div></div></header>";
+
+    /* 分享图：与页面同一口径（同一 scope、同一 Wilson 区间），避免卡片和页面数值打架 */
+    SHARE.mount($("#heroHead"), function () {
+      return {
+        kind: "战队档案",
+        title: team.team,
+        sub: K.scopeName(curScope) + " · 大场 " + mWin + "-" + (matches - mWin) + " · 单局 " + wins + "-" + (games - wins),
+        stats: [
+          ["单局胜率", K.pct(wr)],
+          ["场均经济差", K.signed(gd)],
+          ["场均击杀差", K.signed(kd)],
+          ["单局样本", K.fmtInt(games) + " 局"],
+          ["大场样本", K.fmtInt(matches) + " 场"]
+        ],
+        note: "口径：" + K.scopeName(curScope) + "；单局 " + K.fmtInt(games) + " 局 / 大场 " + K.fmtInt(matches) +
+          " 场，胜率 95% 置信区间 " + K.pct(ci[0], 0) + "–" + K.pct(ci[1], 0) + "。",
+        url: "kpldata-site.hccccc01333.workers.dev/team.html?id=" + encodeURIComponent(team.team)
+      };
+    }, "kpldata-team.png");
 
     var kpis =
       '<div class="hd-stats">' +

@@ -5,8 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>英雄详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=49">
-<link rel="stylesheet" href="assets/pages.css?v=49">
+<link rel="stylesheet" href="assets/style.css?v=51">
+<link rel="stylesheet" href="assets/pages.css?v=51">
+<style>
+/* 职业哥同款：选手 × 出装 × 代表对局 */
+.pro-warn{margin:8px 0 4px;padding:9px 12px;border-left:3px solid var(--red);background:rgba(255,255,255,.03);
+  border-radius:0 8px 8px 0;font-size:12.5px;color:var(--ink2);line-height:1.75}
+.pro-row{padding:13px 0;border-top:1px solid var(--line)}
+.pro-row:first-of-type{border-top:0}
+.pro-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px}
+.pro-name{font-weight:700;color:var(--ink);font-size:13.5px;text-decoration:none}
+.pro-name:hover{color:var(--gold)}
+.pro-head .em{color:var(--muted);font-size:12px}
+.pro-stat{margin-left:auto;color:var(--ink2);font-size:12px;white-space:nowrap}
+.eq-lead{color:var(--muted);font-size:11px;align-self:center}
+.pro-reps{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.rep-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);
+  border:1px solid var(--line);border-radius:8px;padding:3px 9px;text-decoration:none}
+.rep-chip:hover{border-color:var(--line2);color:var(--ink2)}
+.rep-chip b.w{color:var(--teal)}
+.rep-chip b.l{color:var(--red)}
+</style>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="英雄详情 · KPL 数据中心">
@@ -20,11 +39,13 @@
 <main class="wrap" id="main" style="margin-top:26px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=49"></script>
-<script src="assets/details.js?v=49"></script>
-<script src="assets/equips.js?v=49"></script>
-<script src="assets/seasons.js?v=49"></script>
-<script src="assets/common.js?v=49"></script>
+<script src="assets/data.js?v=51"></script>
+<script src="assets/details.js?v=51"></script>
+<script src="assets/equips.js?v=51"></script>
+<script src="assets/pro_hero.js?v=51"></script>
+<script src="assets/seasons.js?v=51"></script>
+<script src="assets/common.js?v=51"></script>
+<script src="assets/share.js?v=51"></script>
 <script>
 (function () {
   "use strict";
@@ -47,6 +68,29 @@
       " 个英雄；请从英雄页或站内搜索进入。</p>" +
       '<div class="slide-cta" style="margin-top:18px"><a class="btn primary" href="heroes.html">返回英雄梯度</a></div></div></header>';
     return;
+  }
+
+  /* 分享图规格：英雄档案。两条渲染分支共用同一份口径，避免卡片数值与页面打架 */
+  function heroShareSpec() {
+    var PR = window.KPL_PRO || {};
+    var pr = (PR.heroes || {})[id] || null;
+    var g = Number(HIST.games || 0);
+    var st = [
+      ["全部赛事出场", K.fmtInt(g) + " 局"],
+      ["全部赛事胜率", g ? K.pct(HIST.wr) : "—"],
+      ["被禁用次数", K.fmtInt(HIST.bans) + " 次"],
+      ["强度档位", HIST.tier || "—"]
+    ];
+    if (pr) st.push(["职业哥同款样本", K.fmtInt(pr.n) + " 局"]);
+    return {
+      kind: "英雄档案",
+      title: id,
+      sub: "2019–2026 全赛事 · " + K.fmtInt(g) + " 次出场",
+      stats: st,
+      note: "口径：全部赛事聚合（含预选赛 / 常规赛 / 季后赛），样本 " + K.fmtInt(g) + " 局；" +
+        "职业哥同款来自逐局出装明细，职业实战不等于排位推荐。",
+      url: "kpldata-site.hccccc01333.workers.dev/hero.html?id=" + encodeURIComponent(id)
+    };
   }
 
   /* 年份趋势（HIST.by = [[年, 局数, 胜率, 禁用率], ...]） */
@@ -96,11 +140,13 @@
       '<div class="panel" style="grid-column:1/-1"><div class="panel-title">逐年表现 <em class="mono">出场数 / 胜率 / 禁用率</em></div>' +
       yearTrendHTML(hero.by, hero.games) + "</div>" +
       (games ? extra : "") +
+      proPanelHTML(hero.name) +
       '<div class="panel" style="grid-column:1/-1"><div class="panel-title">数据边界说明</div>' +
       '<div class="block-note">这个英雄暂时没有逐局明细（最近出场、同位置对位、三人组合需要分钟级 / BP 明细）。' +
       "上面是从全部赛事聚合出来的可核对数据；本赛季高频英雄既有聚合也有逐局明细。" +
       '<a href="heroes.html" style="color:var(--gold)"> 回英雄梯度 </a>按「数据范围」切换到具体赛段可以看当年的口径。</div></div>' +
       "</div>";
+    SHARE.mount($("#heroHead"), heroShareSpec, "kpldata-hero.png");
     K.refresh();
   }
 
@@ -189,6 +235,58 @@
       "</div></div>";
   }
 
+  /* 职业哥同款：把"这个英雄职业怎么玩"落到具体选手与具体对局。
+     写成函数声明（会提升），使下面的兜底页 renderAggregateOnly 也能复用同一份口径。 */
+  function proPanelHTML(heroName) {
+    var PRO = window.KPL_PRO || {};
+    var pro = (PRO.heroes || {})[heroName] || null;
+    var proHTML = "";
+    if (pro && (pro.players || []).length) {
+    var EQI = PRO.eq || {}, SUI = PRO.su || {};
+    function chip(name, rate, dict, small) {
+      return '<span class="eq-chip' + (small ? " small" : "") + '"' +
+        (rate == null ? "" : ' title="' + rate + "% 的场次出了这件") + '">' +
+        (dict[name] ? '<img src="' + K.esc(dict[name]) + '" alt="" loading="lazy">' : "") +
+        K.esc(name) + (rate == null ? "" : '<b class="mono">' + rate + "%</b>") + "</span>";
+    }
+    var proRows = pro.players.map(function (pl) {
+      var eqs = (pl.eq || []).map(function (n, i) { return chip(n, (pl.eqr || [])[i], EQI); }).join("") || '<span class="em">无出装样本</span>';
+      var fes = (pl.fe || []).map(function (n) { return chip(n, null, EQI, true); }).join("");
+      var sus = (pl.su || []).map(function (n) { return chip(n, null, SUI, true); }).join("");
+      var reps = (pl.reps || []).length ? (pl.reps || []).map(function (rep) {
+        return '<a class="rep-chip" href="game.html?id=' + encodeURIComponent(rep.b) + '">' +
+          K.esc(String(rep.d || "").slice(5)) + " " +
+          (rep.r ? '<b class="w">胜</b>' : '<b class="l">负</b>') +
+          '<em class="mono">KDA ' + K.esc(String(rep.k)) + "</em></a>";
+      }).join("") : '<span class="em">无可点开的对局</span>';
+      var wr = pl.g ? Math.round(pl.w * 100 / pl.g) : 0;
+      return '<div class="pro-row">' +
+        '<div class="pro-head">' +
+        '<a class="pro-name" href="player.html?id=' + encodeURIComponent(pl.n) + '">' + K.esc(pl.n) + "</a>" +
+        '<span class="em">' + K.esc(pl.t || "—") + (pl.pos ? " · " + K.esc(pl.pos) : "") + "</span>" +
+        '<span class="pro-stat mono">' + K.fmtInt(pl.g) + " 局 · 胜率 " + wr + "% · KDA " + K.esc(String(pl.kda)) +
+        ' · 场均 ' + K.fmtInt(pl.gold) + " 金" + (pl.mvp ? " · MVP " + K.fmtInt(pl.mvp) : "") + "</span>" +
+        "</div>" +
+        '<div class="eq-row">' + eqs + "</div>" +
+        '<div class="eq-row">' + (fes ? '<span class="eq-lead mono">首件</span>' + fes : "") +
+        (sus ? '<span class="eq-lead mono"' + (fes ? ' style="margin-left:12px"' : "") + ">召唤师</span>" + sus : "") + "</div>" +
+        '<div class="pro-reps">' + reps + "</div>" +
+        "</div>";
+    }).join("");
+    var pm = PRO.meta || {};
+    proHTML = '<div class="panel" style="grid-column:1/-1"><div class="panel-title">职业哥同款 ' +
+      '<em class="mono">选手 × 出装 × 代表对局 · 该英雄 ' + K.fmtInt(pro.n) + " 局样本</em></div>" +
+      '<div class="pro-warn">这是职业实战记录，不是排位上分推荐：职业赛与排位赛的英雄选择、装备思路、团队协同环境并不相同，' +
+      "请只作为参考。</div>" + proRows +
+      '<div class="block-note mono" style="margin-top:9px">出装百分比 = 该选手使用该英雄时出了这件装备的场次占比 · ' +
+      "样本门槛：英雄 ≥ " + K.fmtInt(pm.minHeroGames || 5) + " 局、选手-英雄 ≥ " + K.fmtInt(pm.minPlayerGames || 3) +
+      " 局 · 覆盖 " + K.fmtInt(pm.battles || 0) + " 局 / " + K.fmtInt(pm.matches || 0) + " 场 · 构建于 " +
+      K.esc(pm.builtAt || "") + "</div></div>";
+    }
+    return proHTML;
+  }
+  var proHTML = proPanelHTML(H.name);
+
   var yearPanel = HIST ? '<div class="panel" style="grid-column:1/-1"><div class="panel-title">逐年表现' +
     ' <em class="mono">全部赛事 ' + K.fmtInt(HIST.games) + " 局 · 本赛季 " + K.fmtInt(H.games) + " 局</em></div>" +
     yearTrendHTML(HIST.by, HIST.games) + "</div>" : "";
@@ -199,9 +297,11 @@
     '<div class="panel"><div class="panel-title">最近出场 <em class="mono">点击进入比赛</em></div>' + recentHTML + "</div>" +
     '<div class="panel"><div class="panel-title">核心三人组合 <em class="mono">历史同队同局</em></div>' + triosHTML + "</div>" +
     eqHTML +
+    proHTML +
     '<div class="panel" style="grid-column:1/-1"><div class="panel-title">同位置对位 <em class="mono">历史交手记录 · 不代表英雄克制</em></div>' +
     muHTML + "</div>" +
     "</div>";
+  SHARE.mount($("#heroHead"), heroShareSpec, "kpldata-hero.png");
 
   K.refresh();
 })();

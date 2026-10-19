@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>赛程中心 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=49">
-<link rel="stylesheet" href="assets/pages.css?v=49">
+<link rel="stylesheet" href="assets/style.css?v=51">
+<link rel="stylesheet" href="assets/pages.css?v=51">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="赛程中心 · KPL 数据中心">
@@ -34,13 +34,27 @@
 </header>
 
 <main class="wrap" style="margin-top:26px">
-  <!-- 赛事中心闭环：今日 / 直播 → 赛果 → 详情，不用先筛表格 -->
-  <section class="block" id="todayBlock" style="margin-top:0">
+  <!-- 第 1 层：焦点海报（直播优先，其次下一场） -->
+  <section class="block" id="posterBlock" style="margin-top:0">
+    <div class="ev-poster" id="evPoster"></div>
+  </section>
+
+  <!-- 第 2 层：今日 / 直播 → 赛果 → 详情，不用先筛表格 -->
+  <section class="block" id="todayBlock">
     <div class="block-head">
       <h2><i></i>今日 &amp; 直播</h2>
       <span class="block-note mono" id="todayNote">—</span>
     </div>
     <div class="fh" style="padding:16px 18px"><div class="fh-today" id="todayCards"></div></div>
+  </section>
+
+  <!-- 第 3 层：赛段进程（当前赛事按赛段推进） -->
+  <section class="block" id="stageBlock">
+    <div class="block-head">
+      <h2><i></i>赛段进程</h2>
+      <span class="block-note mono" id="stageNote">—</span>
+    </div>
+    <div class="stage-track" id="stageTrack"></div>
   </section>
 
   <section class="block" id="recentBlock">
@@ -52,6 +66,16 @@
       <thead><tr><th class="num">日期</th><th>对阵</th><th class="num">比分</th><th>数据完整度</th><th class="num">进入</th></tr></thead>
       <tbody id="recentRows"></tbody>
     </table></div>
+  </section>
+
+  <!-- 第 4 层：历史赛季入口（点赛季卡把下方列表切到该赛事） -->
+  <section class="block" id="seasonBlock">
+    <div class="block-head">
+      <h2><i></i>历史赛季</h2>
+      <span class="block-note mono">2019–2026 · 点赛季卡把下方列表切到该赛事</span>
+      <a class="more" href="about.html">口径说明 →</a>
+    </div>
+    <div class="season-rail" id="seasonRail"></div>
   </section>
 
   <div class="scopebar" id="scopeBar"></div>
@@ -81,11 +105,11 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=49"></script>
-<script src="assets/seasons.js?v=49"></script>
-<script src="assets/schedule_all.js?v=49"></script>
-<script src="assets/coverage.js?v=49"></script>
-<script src="assets/common.js?v=49"></script>
+<script src="assets/data.js?v=51"></script>
+<script src="assets/seasons.js?v=51"></script>
+<script src="assets/schedule_all.js?v=51"></script>
+<script src="assets/coverage.js?v=51"></script>
+<script src="assets/common.js?v=51"></script>
 <script>
 (function () {
   "use strict";
@@ -132,7 +156,10 @@
     ALL.forEach(function (r) { if (inScope(r) && r.stage) stages[r.stage] = 1; });
     var keys = Object.keys(stages).slice(0, 40);
     $("#fStage").innerHTML = '<option value="">全部赛段</option>' +
-      keys.map(function (s2) { return "<option" + (s2 === cur ? " selected" : "") + ">" + K.esc(s2) + "</option>"; }).join("");
+      keys.map(function (s2) {
+        return '<option value="' + K.esc(s2) + '"' + (s2 === cur ? " selected" : "") + ">" +
+          K.esc(K.stageLabel(s2)) + "</option>";
+      }).join("");
   }
 
   function rowHTML(r) {
@@ -181,8 +208,8 @@
       if (r.date !== lastDate) {
         if (lastDate) html += "</div>";
         html += '<div class="day-block"><div class="dh"><b>' + K.esc(K.dateCN(r.date)) + "</b><span>" +
-          K.esc(K.weekdayCN(r.date)) + (r.stage ? " · " + K.esc(r.stage) : "") +
-          " · " + K.esc(r.leagueName) + "</span></div>";
+          K.esc(K.weekdayCN(r.date)) + (r.stage ? " · " + K.esc(K.stageLabel(r.stage)) : "") +
+          (r.bo ? " · BO" + r.bo : "") + " · " + K.esc(r.leagueName) + "</span></div>";
         lastDate = r.date;
       }
       html += rowHTML(r);
@@ -308,13 +335,127 @@
       return "<tr><td class='num mono'>" + K.esc(String(r.date).slice(5)) + "</td>" +
         "<td><a class='team-cell' href='match.html?id=" + encodeURIComponent(r.matchId) + "' style='color:inherit'>" +
         K.esc(r.team1) + " vs " + K.esc(r.team2) + "</a><div class='block-note mono'>" +
-        K.esc(w) + " 胜 · " + K.esc(r.leagueName || "") + "</div></td>" +
+        K.esc(w) + " 胜 · " + K.esc(r.leagueName || "") +
+        (r.stage ? " · " + K.esc(K.stageLabel(r.stage)) : "") + (r.bo ? " · BO" + r.bo : "") + "</div></td>" +
         "<td class='num mono'>" + r.score1 + " : " + r.score2 + "</td>" +
         "<td>" + K.coverageBadges(K.coverageMask(r.matchId)) + "</td>" +
         "<td class='num'><a class='go' href='match.html?id=" + encodeURIComponent(r.matchId) +
         "' style='color:var(--gold);font-weight:700'>" +
         (K.coverageMask(r.matchId) & 8 ? "复盘 →" : "详情 →") + "</a></td></tr>";
     }).join("") || "<tr><td colspan='5' style='color:var(--muted)'>暂无已结束比赛</td></tr>";
+  }
+
+  /* ---------- 第 1 层：焦点海报（直播优先，其次下一场） ---------- */
+  function renderPoster() {
+    var el = document.getElementById("evPoster");
+    if (!el) return;
+    var A = window.KPL_SCHEDULE_ALL || [];
+    var live = A.filter(function (r) { return r.st === 1; })[0];
+    var next = A.filter(function (r) { return !r.done && r.st !== 1; })
+      .sort(function (a, b) { return (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")); })[0];
+    var r = live || next;
+    if (!r) { el.innerHTML = '<div class="ep-k mono">赛事焦点</div><div class="ep-note">暂无赛程数据</div>'; return; }
+    var isLive = !!live;
+    var meta = [r.leagueName, K.stageLabel(r.stage), r.bo ? "BO" + r.bo : ""].filter(Boolean).join(" · ");
+    function tchip(name, icon) {
+      return '<a class="fh-team" href="team.html?id=' + encodeURIComponent(name) + '">' +
+        (icon ? '<img src="' + K.esc(icon) + '" alt="">' : "") + "<span>" + K.esc(name) + "</span></a>";
+    }
+    var kick = isLive ? '<span class="dot-live"></span> 正在进行'
+      : "下一场 · " + K.esc(K.dateCN(r.date)) + " " + K.esc(K.weekdayCN(r.date)) + " " + K.esc(r.time || "");
+    el.innerHTML = '<div class="ep-k mono">' + kick + (meta ? " · " + K.esc(meta) : "") + "</div>" +
+      '<div class="ep-vs">' + tchip(r.team1, r.icon1) +
+      '<span class="ep-score mono">' + (isLive ? (r.score1 + " : " + r.score2) : "VS") + "</span>" +
+      tchip(r.team2, r.icon2) + "</div>" +
+      '<div class="ep-foot"><a class="btn primary sm" href="match.html?id=' + encodeURIComponent(r.matchId) + '">' +
+      (isLive ? "进入实时页面" : "看这场比赛") + "</a>" +
+      '<span class="ep-note">' + (isLive ? "比分自动刷新" : "赛前可看双方交手、BP 与逐局数据") + "</span>" +
+      (isLive ? "" : '<span class="ep-cd mono" id="epCd"></span>') + "</div>";
+    var cd = document.getElementById("epCd");
+    if (cd) K.countdown(new Date(r.date + "T" + (r.time || "17:00") + ":00").getTime(), cd);
+  }
+
+  /* ---------- 第 3 层：赛段进程（当前赛事按赛段推进） ---------- */
+  function renderStageTrack() {
+    var el = document.getElementById("stageTrack");
+    if (!el) return;
+    var A = window.KPL_SCHEDULE_ALL || [];
+    if (!A.length) { el.innerHTML = '<div class="empty-tip">暂无赛程数据</div>'; return; }
+    // 「当前赛段」= 距「此刻」最近的一场：直接按开赛时间与当前时间的距离取最近，
+    // 这样既不会把最远未来的赛段误标为当前，也能让高亮与顶部焦点海报（下一场）保持一致。
+    var nowMs = Date.now();
+    var tms = function (r) {
+      var t = Date.parse(r.date + "T" + (r.time || "17:00") + ":00");
+      return isNaN(t) ? Date.parse(r.date + "T12:00:00") : t;
+    };
+    var cur = A.slice().sort(function (a, b) {
+      return Math.abs(tms(a) - nowMs) - Math.abs(tms(b) - nowMs);
+    })[0] || A[0];
+    var lgId = cur.leagueId;
+    var rows = A.filter(function (r) { return r.leagueId === lgId && r.stage; });
+    var order = [], byStage = {};
+    rows.forEach(function (r) {
+      var key = r.stage;
+      if (!byStage[key]) { byStage[key] = { key: key, n: 0, done: 0, min: r.date }; order.push(byStage[key]); }
+      var g = byStage[key];
+      g.n++; if (r.done) g.done++;
+      if (r.date < g.min) g.min = r.date;
+    });
+    order.sort(function (a, b) { return a.min.localeCompare(b.min); });
+    var note = document.getElementById("stageNote");
+    if (note) note.textContent = K.esc(cur.leagueName || "") + " · 共 " + order.length + " 个赛段";
+    if (!order.length) { el.innerHTML = '<div class="empty-tip">该赛事暂无赛段标注</div>'; return; }
+    // 当前赛段：取赛程顺序里第一个「尚未打完」的赛段（进行中或即将开始），
+    // 这样不会把已结束的赛段标成「当前」；若该赛事已全部结束，则退回距此刻最近的一场所在赛段。
+    var onKey = (order.filter(function (g) { return g.done < g.n; })[0] || {}).key || cur.stage;
+    el.innerHTML = order.map(function (g) {
+      var on = g.key === onKey;
+      return '<div class="st-step' + (on ? " on" : "") + '">' +
+        "<b>" + K.esc(K.stageLabel(g.key)) + "</b>" +
+        "<span>" + g.done + "/" + g.n + " 场 · " + K.esc(String(g.min).slice(5)) + " 起</span>" +
+        (on ? '<span class="st-go">当前赛段</span>' : "") + "</div>";
+    }).join("");
+  }
+
+  /* ---------- 第 4 层：历史赛季入口 ---------- */
+  function renderSeasonRail() {
+    var el = document.getElementById("seasonRail");
+    if (!el) return;
+    var S = window.KPL_SEASONS;
+    var lgs = ((S && S.leagues) || []).slice().sort(function (a, b) {
+      return String(b.start).localeCompare(String(a.start));
+    });
+    if (!lgs.length) { el.innerHTML = '<div class="empty-tip">暂无赛季数据</div>'; return; }
+    el.innerHTML = lgs.map(function (l) {
+      var champ = l.champion ? "冠军 " + K.esc(l.champion) : (l.champFinished === false ? "进行中" : "—");
+      return '<a class="season-card" href="#list" data-lg="' + K.esc(l.id) + '">' +
+        '<span class="sy mono">' + l.year + " · " + K.esc(l.type || "") + "</span>" +
+        "<b>" + K.esc(l.name) + "</b>" +
+        '<span class="sm">' + K.fmtInt(l.matches) + " 场 · " + K.fmtInt(l.battles) + " 局</span>" +
+        '<span class="sc">' + champ + "</span></a>";
+    }).join("");
+    el.addEventListener("click", function (e) {
+      var card = e.target.closest(".season-card");
+      if (!card) return;
+      e.preventDefault();
+      applyScope(card.getAttribute("data-lg"));
+      var listEl = document.getElementById("list");
+      if (listEl) listEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  /* 通过 scopebar 的两个原生 select 反设数据范围（与下拉、localStorage 保持一致） */
+  function applyScope(id) {
+    var selY = document.getElementById("scopeYear");
+    var selL = document.getElementById("scopeLeague");
+    if (!selY || !selL) return;
+    if (id === "all") { selY.value = "all"; selY.dispatchEvent(new Event("change")); return; }
+    if (/^\d{8,}$/.test(String(id))) {
+      selY.value = String(id).slice(0, 4); selY.dispatchEvent(new Event("change"));
+      selL.value = String(id); selL.dispatchEvent(new Event("change"));
+      return;
+    }
+    selY.value = String(id); selY.dispatchEvent(new Event("change"));
   }
 
   curScope = K.scopeBar("#scopeBar", function (id) { curScope = id; shown = PAGE; fillStages(); render(); });
@@ -326,8 +467,11 @@
   fillStages();
   render();
   applyToday();
+  renderPoster();
   renderTodayFocus();
+  renderStageTrack();
   renderRecentRows();
+  renderSeasonRail();
 })();
 </script>
 </body>

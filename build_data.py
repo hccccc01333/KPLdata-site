@@ -521,7 +521,10 @@ def main() -> None:
         "holdoutEarly": float(train.get("holdout_early_brier") or 0),
         "holdoutMid": float(train.get("holdout_mid_brier") or 0),
         "holdoutLate": float(train.get("holdout_late_brier") or 0),
-        "holdoutN": int(train.get("holdout_n_battles") or 0),
+        # 独立测试段（holdout）局数：取 backtest 报告里真实的 holdout 对局列表长度。
+        # 曾误读 train_status.json 的 holdout_n_battles —— V12 训练状态已不再写这个键，
+        # 结果站点「数据说明」页会显示「新口径：最近 0 局」，是错的。与 build_predict_data.py 口径保持一致。
+        "holdoutN": len(backtest.get("holdout_battles") or []),
         "split": train.get("split") or {},
         "auc": round(test_auc, 4),
         "aucScope": "独立测试段（test 20 局 / 298 帧，训练与校准均未接触）",

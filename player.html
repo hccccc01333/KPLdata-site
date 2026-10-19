@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>选手详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=49">
-<link rel="stylesheet" href="assets/pages.css?v=49">
+<link rel="stylesheet" href="assets/style.css?v=51">
+<link rel="stylesheet" href="assets/pages.css?v=51">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="选手详情 · KPL 数据中心">
@@ -20,10 +20,11 @@
 <main class="wrap" id="main" style="margin-top:24px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=49"></script>
-<script src="assets/seasons.js?v=49"></script>
-<script src="assets/players_detail.js?v=49"></script>
-<script src="assets/common.js?v=49"></script>
+<script src="assets/data.js?v=51"></script>
+<script src="assets/seasons.js?v=51"></script>
+<script src="assets/players_detail.js?v=51"></script>
+<script src="assets/common.js?v=51"></script>
+<script src="assets/share.js?v=51"></script>
 <script>
 (function () {
   "use strict";
@@ -54,6 +55,25 @@
     '<div class="hd-sub">' + (P.teamIcon ? '<img src="' + K.esc(P.teamIcon) + '" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:5px">' : "") +
     K.esc(P.team) + " · 全部赛事 " + K.fmtInt(P.games) + " 局 · 赢下 " + K.fmtInt(P.wins) + " 局</div></div>" +
     "</div></div></header>";
+
+  /* ---------- 分享图：固定尺寸卡片，自带口径与生成时间（不截屏网页） ---------- */
+  SHARE.mount($("#wrapHero"), function () {
+    return {
+      kind: "选手档案",
+      title: NAME,
+      sub: (P.team || "—") + (P.pos ? " · " + P.pos : "") + " · 全部赛事 " + K.fmtInt(P.games) + " 局",
+      stats: [
+        ["单局胜率", K.pct(P.wr)],
+        ["场均 KDA", Number(P.kda || 0).toFixed(2)],
+        ["MVP 次数", K.fmtInt(P.mvp) + " 次"],
+        ["场均经济", K.fmtInt(P.gold) + " 金"],
+        ["场均参团率", Math.round(P.part || 0) + "%"]
+      ],
+      note: "口径：2019–2026 全部职业赛事，共 " + K.fmtInt(P.games) + " 局（赢下 " + K.fmtInt(P.wins) +
+        " 局）；仅统计职业赛事，不代表排位表现。",
+      url: "kpldata-site.hccccc01333.workers.dev/player.html?id=" + NAME
+    };
+  }, "kpldata-player.png");
 
   /* ---------- KPI 四格 ---------- */
   var kpi = '<div class="hd-stats">' +

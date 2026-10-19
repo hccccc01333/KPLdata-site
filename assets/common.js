@@ -25,6 +25,40 @@ window.KPL = (function () {
   }
   function tierOf(wr) { return wr >= 0.55 ? "S" : wr >= 0.50 ? "A" : wr >= 0.45 ? "B" : "C"; }
 
+  /* ---------- 全量赛程索引（assets/schedule_all.js）+ 赛段 / 赛制标签 ---------- */
+  // 赛果行、赛程行、卡片都要显示「赛段 · 赛制」，统一从这里取，避免各页各算一套口径。
+  var _ALL_IDX = null;
+  function scheduleIndex() {
+    if (_ALL_IDX) return _ALL_IDX;
+    _ALL_IDX = {};
+    (window.KPL_SCHEDULE_ALL || []).forEach(function (r) {
+      if (r && r.matchId) _ALL_IDX[String(r.matchId)] = r;
+    });
+    return _ALL_IDX;
+  }
+  function matchMeta(matchId) {
+    return scheduleIndex()[String(matchId == null ? "" : matchId)] || null;
+  }
+  // 历史数据里少数赛段存的是官方编码（fjs/tws…），补一层中文；其余原样返回。
+  var STAGE_CN_EXTRA = {
+    cgs1: "常规赛·第 1 轮", cgs2: "常规赛·第 2 轮", cgs3: "常规赛·第 3 轮",
+    kws: "卡位赛", jhs: "季后赛", js: "决赛", zjs: "总决赛", lts: "擂台赛",
+    dbtts: "单败淘汰赛", sbtts: "双败淘汰赛", fjs: "附加赛", tws: "突围赛"
+  };
+  function stageLabel(stage) {
+    var s = String(stage == null ? "" : stage);
+    return STAGE_CN_EXTRA[s] || s;
+  }
+  function stageTags(matchId, opts) {
+    var m = matchMeta(matchId);
+    if (!m) return "";
+    opts = opts || {};
+    var t = [];
+    if (opts.stage !== false && m.stage) t.push('<span class="stag">' + esc(stageLabel(m.stage)) + "</span>");
+    if (opts.bo !== false && m.bo) t.push('<span class="bo mono">BO' + m.bo + "</span>");
+    return t.length ? '<span class="mtags">' + t.join("") + "</span>" : "";
+  }
+
   /* ---------- 图标（内联 SVG，stroke 现行色） ---------- */
   var ICONS = {
     home: '<path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-5v-6h-4v6H5a1 1 0 01-1-1z"/>',
@@ -52,24 +86,41 @@ window.KPL = (function () {
       (ICONS[name] || "") + "</svg>";
   }
 
-  /* ---------- 顶栏（含站内搜索） ---------- */
+  /* ---------- 顶栏（含站内搜索） ----------
+     V5 顶层导航只保留六组入口：赛事 / 战队 / 选手 / 英雄 / 分析 / 荣誉。
+     活跃判定按「页面所属分组」的 data-page 集合匹配（不再靠 data-page 等于主链接）：
+     detail 页（match/game/picks）沿用各自分组代表的 data-page，因此天然归组。 */
   var NAV = [
-    ["home", "首页", "index.html"],
-    ["calendar", "赛事中心", "schedule.html"],
-    ["shield", "战队", "teams.html"],
-    ["user", "选手", "players.html"],
-    ["crown", "英雄", "heroes.html"],
-    ["layers", "组合", "combos.html"],
-    ["target", "BP", "bp.html"],
-    ["pulse", "预测", "predict.html"],
-    ["grid", "查询", "query.html"],
-    ["chart", "对比", "compare.html"],
-    ["sliders", "模拟器", "simulator.html"]
+    { ic: "calendar", label: "赛事", href: "schedule.html",
+      pages: ["index.html", "schedule.html"],
+      sub: [["精选对局", "picks.html"]] },
+    { ic: "shield", label: "战队", href: "teams.html",
+      pages: ["teams.html", "h2h.html"],
+      sub: [["交手记录", "h2h.html"]] },
+    { ic: "user", label: "选手", href: "players.html",
+      pages: ["players.html"], sub: [] },
+    { ic: "crown", label: "英雄", href: "heroes.html",
+      pages: ["heroes.html", "combos.html"],
+      sub: [["英雄组合", "combos.html"]] },
+    { ic: "target", label: "分析", href: "bp.html",
+      pages: ["bp.html", "predict.html", "stage.html", "compare.html", "query.html", "simulator.html"],
+      sub: [["实时预测", "predict.html"], ["赛段对比", "stage.html"], ["战队对比", "compare.html"],
+            ["数据查询", "query.html"], ["赛事模拟器", "simulator.html"]] },
+    { ic: "layers", label: "荣誉", href: "honors.html",
+      pages: ["honors.html"], sub: [] }
   ];
-  function topbar(page) {
-    var links = NAV.map(function (n) {
-      return '<a href="' + n[2] + '"' + (n[2] === page ? ' class="on"' : "") + ">" + n[1] + "</a>";
+  function navGroupHtml(page, real) {
+    return NAV.map(function (g) {
+      var on = g.pages.indexOf(page) >= 0;
+      var sub = g.sub.length ? '<div class="nsub">' + g.sub.map(function (s) {
+        return '<a href="' + s[1] + '"' + (s[1] === real ? ' class="subon"' : "") + ">" + esc(s[0]) + "</a>";
+      }).join("") + "</div>" : "";
+      return '<div class="ngrp' + (on ? " on" : "") + '">' +
+        '<a class="ntop" href="' + g.href + '">' + g.label + (sub ? '<i class="caret"></i>' : "") + "</a>" + sub + "</div>";
     }).join("");
+  }
+  function topbar(page, real) {
+    var links = navGroupHtml(page, real || page);
     return '<div class="wrap topbar-in">' +
       '<a class="brand" href="index.html"><span class="brand-mark">K</span>' +
       '<span class="brand-name">KPL 数据中心</span></a>' +
@@ -221,7 +272,7 @@ window.KPL = (function () {
     });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
     window.addEventListener("resize", function () {
-      if (window.innerWidth > 720) setOpen(false);
+      if (window.innerWidth > 900) setOpen(false);
     });
   }
 
@@ -356,8 +407,15 @@ window.KPL = (function () {
       (coverageMask(r.matchId) & 8 ? "复盘" : "详情") + "</a>";
     // opts.badges：列表里顺带显示数据完整度（首页最新结果用）
     var cov = (opts && opts.badges) ? '<span class="row-cov">' + coverageBadges(coverageMask(r.matchId)) + "</span>" : "";
+    // 赛段 · 赛制：此前赛果行拿不到，现在统一从全量赛程索引补齐（同源，口径一致）
+    var m = matchMeta(r.matchId) || {};
+    var metaBits = [];
+    if (m.stage) metaBits.push(esc(stageLabel(m.stage)));
+    if (m.bo) metaBits.push("BO" + m.bo);
+    var meta = metaBits.length ? '<em class="rt-meta" title="' + metaBits.join(" · ") + '">' +
+      metaBits.join(" · ") + "</em>" : "";
     return '<div class="row" data-mid="' + esc(String(r.matchId || "")) + '">' +
-      '<div class="rt-date"><b>' + esc(dateCN(r.date)) + "</b>" + esc(weekdayCN(r.date)) + "</div>" +
+      '<div class="rt-date"><b>' + esc(dateCN(r.date)) + "</b>" + esc(weekdayCN(r.date)) + meta + "</div>" +
       side(r.team1, r.icon1, false) +
       '<div class="score">' + s1 + " : " + s2 + "</div>" +
       side(r.team2, r.icon2, true) + cov + go + "</div>";
@@ -565,9 +623,11 @@ window.KPL = (function () {
 
   function init() {
     var page = document.body.getAttribute("data-page") || "index.html";
+    var real = (location.pathname.split("/").pop() || "").toLowerCase();
+    if (!/\.html$/.test(real)) real = page;
     var h = document.getElementById("siteHeader");
     var f = document.getElementById("siteFooter");
-    if (h) h.innerHTML = topbar(page);
+    if (h) h.innerHTML = topbar(page, real);
     if (f) f.innerHTML = footer();
     initSearch();
     initNav();
@@ -782,6 +842,7 @@ window.KPL = (function () {
     data: D, details: DT,
     esc: esc, fmtInt: fmtInt, pct: pct, signed: signed,
     dateCN: dateCN, weekdayCN: weekdayCN, tierOf: tierOf, icon: icon,
+    scheduleIndex: scheduleIndex, matchMeta: matchMeta, stageLabel: stageLabel, stageTags: stageTags,
     side: side, resultRow: resultRow, muBody: muBody,
     heroCard: heroCard, playerCard: playerCard, wrChart: wrChart,
     countdown: countdown, scopeBar: scopeBar, scopeOf: scopeOf, scopeName: scopeName,

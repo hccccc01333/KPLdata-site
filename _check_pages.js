@@ -38,6 +38,7 @@ const PAGES = [
   ["query.html", "数据查询", ["#qBody a.cell"]],
   ["simulator.html", "大场模拟", ["main .panel, .sim-wrap"]],
   ["stage.html", "赛段对比", ["main .panel, .stage-wrap"]],
+  ["honors.html", "荣誉中心", ["#lanes .hn-lane", "#team .hn-team, #team .panel", "#boardRows tr"]],
   ["about.html", "数据说明", ["#holdoutBody tr"]],
 ];
 
@@ -324,8 +325,58 @@ async function main() {
     check(w + "px 复盘页无异常", e2.length === 0, e2.slice(0, 2).join(" | "));
     const mOver = await evaluate("document.documentElement.scrollWidth - window.innerWidth");
     check(w + "px 复盘页无横向溢出", mOver <= 1, mOver + "px");
+    // 赛事中心：4 层媒体中心（海报/赛段进程/赛季横滑）不能把页面撑出横向溢出
+    const e3 = await visit(BASE + "schedule.html");
+    check(w + "px 赛程页无异常", e3.length === 0, e3.slice(0, 2).join(" | "));
+    const sOver = await evaluate(`(function(){
+      var de = document.documentElement;
+      var bad = ['evPoster','stageTrack','seasonRail'].filter(function(id){
+        var el = document.getElementById(id);
+        return el && el.getBoundingClientRect().right > window.innerWidth + 1;
+      }).join(',');
+      var ons = document.querySelectorAll('#stageTrack .st-step.on');
+      return { over: de.scrollWidth - window.innerWidth, bad: bad, onN: ons.length,
+               onText: ons.length ? ons[0].textContent.replace(/\\s+/g, ' ').trim().slice(0, 26) : '' };
+    })()`);
+    check(w + "px 赛程页无横向溢出", sOver && sOver.over <= 1, sOver && sOver.over + "px");
+    check(w + "px 赛程页媒体组件在视口内", sOver && !sOver.bad, sOver && ("越界:" + (sOver.bad || "—")));
+    check(w + "px 赛段进程标出唯一当前赛段", sOver && sOver.onN === 1, sOver && sOver.onText);
+    // 荣誉中心：五路数据条 + 候选榜不能撑出横向溢出，且必须高亮「荣誉」分组
+    const e4 = await visit(BASE + "honors.html");
+    check(w + "px 荣誉中心无异常", e4.length === 0, e4.slice(0, 2).join(" | "));
+    const hOver = await evaluate(`(function(){
+      var de = document.documentElement;
+      var bad = ['lanes','team','boardRows'].filter(function(id){
+        var el = document.getElementById(id);
+        return el && el.getBoundingClientRect().right > window.innerWidth + 1;
+      }).join(',');
+      var g = document.querySelectorAll('#siteNav .ngrp.on');
+      return { over: de.scrollWidth - window.innerWidth, bad: bad,
+               lanes: document.querySelectorAll('#lanes .hn-lane').length,
+               onN: g.length, onHref: g.length ? g[0].querySelector('a.ntop').getAttribute('href') : '' };
+    })()`);
+    check(w + "px 荣誉中心无横向溢出", hOver && hOver.over <= 1, hOver && hOver.over + "px");
+    check(w + "px 荣誉中心五路数据条已渲染", hOver && hOver.lanes === 5, hOver && hOver.lanes);
+    check(w + "px 荣誉中心高亮荣誉入口", hOver && hOver.onN === 1 && hOver.onHref === 'honors.html',
+      hOver && (hOver.onN + " " + hOver.onHref));
   }
   await send("Emulation.clearDeviceMetricsOverride");
+
+  console.log("\n=== V5 六入口分组导航 ===");
+  await visit(BASE + "index.html", 900);
+  const navSix = await evaluate(`(function(){
+    var nav = document.getElementById('siteNav');
+    var g = nav ? nav.querySelectorAll('.ngrp') : [];
+    var hrefs = [].map.call(g, function (x) { return x.querySelector('a.ntop').getAttribute('href'); });
+    return { n: g.length, hrefs: hrefs,
+             sub: nav ? nav.querySelectorAll('.nsub a').length : 0,
+             honorsIdx: hrefs.indexOf('honors.html'),
+             on: nav ? nav.querySelectorAll('.ngrp.on').length : -1 };
+  })()`);
+  check("顶部导航为六组入口", navSix && navSix.n === 6, navSix && navSix.n + " · " + navSix.hrefs.join("/"));
+  check("六入口含荣誉中心", navSix && navSix.honorsIdx >= 0, navSix && navSix.hrefs.join("/"));
+  check("首页只高亮一个分组", navSix && navSix.on === 1, navSix && navSix.on);
+  check("分组含下拉子项", navSix && navSix.sub >= 8, navSix && navSix.sub);
 
   ws.close();
   proc.kill();

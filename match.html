@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>比赛详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=49">
-<link rel="stylesheet" href="assets/pages.css?v=49">
+<link rel="stylesheet" href="assets/style.css?v=51">
+<link rel="stylesheet" href="assets/pages.css?v=51">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="比赛详情 · KPL 数据中心">
@@ -20,15 +20,16 @@
 <main class="wrap" id="main" style="margin-top:26px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=49"></script>
-<script src="assets/details.js?v=49"></script>
-<script src="assets/schedule_all.js?v=49"></script>
-<script src="assets/games/index.js?v=49"></script>
-<script src="assets/seasons.js?v=49"></script>
-<script src="assets/replay/index.js?v=49"></script>
-<script src="assets/coverage.js?v=49"></script>
-<script src="assets/replay.js?v=49"></script>
-<script src="assets/common.js?v=49"></script>
+<script src="assets/data.js?v=51"></script>
+<script src="assets/details.js?v=51"></script>
+<script src="assets/schedule_all.js?v=51"></script>
+<script src="assets/games/index.js?v=51"></script>
+<script src="assets/seasons.js?v=51"></script>
+<script src="assets/replay/index.js?v=51"></script>
+<script src="assets/coverage.js?v=51"></script>
+<script src="assets/replay.js?v=51"></script>
+<script src="assets/common.js?v=51"></script>
+<script src="assets/share.js?v=51"></script>
 <script>
 (function () {
   "use strict";
@@ -39,6 +40,27 @@
   // 复盘分享链接：?g=3&m=12 → 直接落到第 3 局第 12 分钟
   var SHARE_SEQ = parseInt(QS.get("g") || "", 10);
   var SHARE_MIN = QS.get("m") != null ? parseFloat(QS.get("m")) : null;
+
+  /* 分享图规格：对局卡片。数值一律取官方赛程行，避免与 DT.matches 的字段口径混用 */
+  function matchShareSpec() {
+    var sr = (window.KPL_SCHEDULE_ALL || []).filter(function (r) { return r.matchId === id; })[0];
+    if (!sr) return null;
+    var done = !!(sr.done || sr.st === 2);
+    var winner = done ? (Number(sr.score1) > Number(sr.score2) ? sr.team1 : sr.team2) : "";
+    return {
+      kind: "对局卡片",
+      title: sr.team1 + " vs " + sr.team2,
+      sub: (sr.date || "") + " " + (sr.time || "") + (done ? " · 已结束" : (sr.st === 1 ? " · 进行中" : " · 待开赛")),
+      stats: [
+        ["比分", done ? sr.score1 + " : " + sr.score2 : "—"],
+        ["胜方", winner || "—"],
+        ["比赛日期", sr.date || "—"],
+        ["数据范围", "2019–2026 全部赛事"]
+      ],
+      note: "口径：官方赛程与逐局结果；比分以官方赛事接口为准，逐局明细与胜率曲线以站内复盘页为准。",
+      url: "kpldata-site.hccccc01333.workers.dev/match.html?id=" + encodeURIComponent(id)
+    };
+  }
   var list = DT.matches || [];
   var idx = -1;
   for (var i = 0; i < list.length; i++) if (list[i].matchId === id) { idx = i; break; }
@@ -55,6 +77,7 @@
       return;
     }
     renderBasic(schedRow, gidx);
+    SHARE.mount($("#wrapHero"), matchShareSpec, "kpldata-match.png");
     return;
   }
   var M = list[idx], KEY = M.key;
@@ -448,6 +471,7 @@
   initLive(M.matchId);
   initTodayOverlay(M.matchId);
   K.refresh();
+  SHARE.mount($("#wrapHero"), matchShareSpec, "kpldata-match.png");
 })();
 </script>
 </body>
