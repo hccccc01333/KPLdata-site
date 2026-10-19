@@ -394,3 +394,20 @@ html.v55 .sr-form{display:flex;align-items:center;gap:8px;margin-top:4px}
   html.v55 .sr-cell:nth-child(4n){border-right:1px solid var(--line)}
   html.v55 .sr-cell:nth-child(2n){border-right:none}
 }
+
+/* ---------------- 旧主题遗留的白色强调（浅底上不可见） ---------------- */
+html.v55 .h2h-row2:hover{background:var(--card2) !important}
+html.v55 .h2h-row2 .score{background:transparent !important;padding:0 !important}
+html.v55 .h2h-row2 .score .w{color:var(--brand) !important}
+html.v55 .h2h-bar .a{color:#fff !important}
+html.v55 .h2h-years button.on{color:#fff !important}
+html.v55 .pl-recent .res.w{color:var(--brand) !important;background:rgba(240,47,85,.08) !important}
+html.v55 .pl-recent .res.l{color:var(--muted) !important;background:var(--inset) !important}
+html.v55 .pr-row .hit.y{color:var(--brand) !important;background:rgba(240,47,85,.08) !important}
+html.v55 .hist-row:hover,html.v55 .pr-row:hover,html.v55 .bp2-chip:hover{background:var(--card2) !important}
+html.v55 .pl-hero:hover,html.v55 .recent-row:hover{background:var(--card2) !important}
+html.v55 .battle-chip.win{border-color:var(--line2) !important;color:var(--brand) !important;
+  background:rgba(240,47,85,.06) !important}
+html.v55 .g-prow.mvp{background:linear-gradient(90deg,rgba(240,47,85,.06),transparent) !important}
+html.v55 .g-eq.sa img{border-color:var(--line2) !important}
+html.v55 .seg button.on{background:var(--brand) !important;color:#fff !important}
