@@ -318,7 +318,7 @@ window.KPL_COMPARE = (function () {
     }
     dims.forEach(function (dim, i) {
       var p = pt(i, R);
-      s += '<line x1="' + CX + '" y1="' + CY + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) + '" stroke=' + CP.grid + '/>';
+      s += '<line x1="' + CX + '" y1="' + CY + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) + '" stroke=' + CP.grid + ' />';
       var lp = pt(i, R + 36);
       var anchor = lp[0] < CX - 12 ? "end" : lp[0] > CX + 12 ? "start" : "middle";
       s += '<text x="' + lp[0].toFixed(1) + '" y="' + (lp[1] + 4).toFixed(1) + '" text-anchor="' + anchor +
