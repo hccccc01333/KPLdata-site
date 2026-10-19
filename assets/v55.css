@@ -422,3 +422,26 @@ html.v55 .pos-row .my{color:var(--ink)}
 html.v55 .pos-row .rk{color:var(--brand)}
 html.v55 .pos-row .k{color:var(--ink2)}
 html.v55 .wb-toggle input{accent-color:var(--brand)}
+
+/* ---------------- 选手打法画像 ---------------- */
+html.v55 .pd-tags{display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 16px}
+html.v55 .pd-tag{font-size:11.5px;padding:3px 9px;border-radius:999px;background:rgba(240,47,85,.07);
+  color:var(--brand);border:1px solid rgba(240,47,85,.22)}
+html.v55 .pd-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 30px}
+html.v55 .pd-row{display:grid;grid-template-columns:74px 1fr 46px;gap:10px;align-items:center;padding:5px 0}
+html.v55 .pd-row .k{font-size:12px;color:var(--muted)}
+html.v55 .pd-row .bar{height:8px;background:var(--inset);border:1px solid var(--line);border-radius:5px;overflow:hidden}
+html.v55 .pd-row .bar i{display:block;height:100%;background:var(--brand);border-radius:4px}
+html.v55 .pd-row .v{font-size:12px;text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums}
+html.v55 .pd-spark{margin-top:16px}
+html.v55 .pd-spark svg{width:100%;height:auto;display:block}
+html.v55 .pd-sim{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
+html.v55 .pd-sim a{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;background:#fff;min-width:0}
+html.v55 .pd-sim a:hover{border-color:var(--line2);background:var(--card2)}
+html.v55 .pd-sim img{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none;border:1px solid var(--line)}
+html.v55 .pd-sim .n{min-width:0}
+html.v55 .pd-sim b{display:block;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.v55 .pd-sim span{display:block;font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.v55 .pd-sim em{font-style:normal;margin-left:auto;font-size:11.5px;color:var(--brand);font-variant-numeric:tabular-nums;flex:none}
+@media(max-width:860px){html.v55 .pd-grid{grid-template-columns:1fr}html.v55 .pd-sim{grid-template-columns:repeat(2,minmax(0,1fr))}}
