@@ -6,6 +6,11 @@
   2. 聚合层：deep.js 的系列赛/战队/选手胜负必须与独立复算完全一致；
   3. 覆盖层：换边、官方兜底、重复局号、串场小局等异常必须被显式统计，而不是静默算错。
 
+用法：
+    python check_series_consistency.py                 # 全量检查（含 player_deep / players_detail 交叉校验）
+    python check_series_consistency.py --warn-only     # 只报告，不阻断（排查用）
+    python check_series_consistency.py --skip-cross-page  # 比赛日快速链路：players_detail 可能尚未刷新
+
 任何 SEVERE 都以退出码 1 结束（可接入发布门禁）；--warn-only 只报告不阻断。
 报告：../02-KPL实时胜率预测系统/reports/series_quality_report.json
 """
@@ -521,6 +526,7 @@ def compare_player_deep(rep: Report, exp: dict) -> None:
 
 def main() -> int:
     warn_only = "--warn-only" in sys.argv
+    skip_cross = "--skip-cross-page" in sys.argv
     rep = Report()
 
     exp = audit_history(rep)
@@ -542,7 +548,9 @@ def main() -> int:
         players_compared = 0
     else:
         compare_deep(rep, exp, deep)
-        players_compared = compare_players_detail(rep, deep)
+        # 快速链路只重建 deep.js，players_detail 可能还是上一次全量的版本；
+        # 此时跳过交叉校验，避免把"尚未刷新"误报成"口径回退"。
+        players_compared = 0 if skip_cross else compare_players_detail(rep, deep)
     compare_player_deep(rep, exp)
 
     report = {

@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>选手详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=60">
-<link rel="stylesheet" href="assets/pages.css?v=60">
-<link rel="stylesheet" href="assets/v55.css?v=60">
+<link rel="stylesheet" href="assets/style.css?v=64">
+<link rel="stylesheet" href="assets/pages.css?v=64">
+<link rel="stylesheet" href="assets/v55.css?v=64">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="选手详情 · KPL 数据中心">
@@ -21,13 +21,13 @@
 <main class="wrap" id="main" style="margin-top:24px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=60"></script>
-<script src="assets/seasons.js?v=60"></script>
-<script src="assets/players_detail.js?v=60"></script>
-<script src="assets/deep.js?v=60"></script>
-<script src="assets/player_deep.js?v=60"></script>
-<script src="assets/common.js?v=60"></script>
-<script src="assets/share.js?v=60"></script>
+<script src="assets/data.js?v=64"></script>
+<script src="assets/seasons.js?v=64"></script>
+<script src="assets/players_detail.js?v=64"></script>
+<script src="assets/deep.js?v=64"></script>
+<script src="assets/player_deep.js?v=64"></script>
+<script src="assets/common.js?v=64"></script>
+<script src="assets/share.js?v=64"></script>
 <script>
 (function () {
   "use strict";
@@ -309,7 +309,9 @@
         if (kind === "lineup") {
           var syn = x.syn;
           var hs = (x.heroes || []).map(function (h) {
-            return K.esc(h.h) + " " + h.n + " 场 " + (h.d >= 0 ? "+" : "") + h.d.toFixed(1) + "pp";
+            var txt = K.esc(h.h) + " " + h.n + " 场 " + (h.d >= 0 ? "+" : "") + h.d.toFixed(1) + "pp";
+            if (h.m != null) txt += "（模型 " + (h.m >= 0 ? "+" : "") + h.m.toFixed(1) + "）";
+            return txt;
           }).join(" · ");
           return '<div class="chem-row chem-lineup">' +
             '<span class="nm">' + x.names.map(K.esc).join(" / ") + "</span>" +
@@ -337,7 +339,7 @@
       "评估时本方剔除该阵容自身对局、对手剔除与这套阵容的交手（留一法），只反映个人能力，" +
       "战队体系与磨合会计入协同值。队友效应保留同队 ≥30 场且不在场 ≥20 场的组合，" +
       "正值 = 与他搭档时表现更好。对手效应按对阵 ≥8 场统计。" +
-      "阵容的英雄依赖只统计同阵容 ≥10 场，并按样本量收缩，仅表示相关、不代表因果。" +
+      "英雄依赖按同赛季内比较（剔除版本差异）并做样本收缩，括号内为带 L2 的阵容×英雄逻辑回归估计；仅表示相关、不代表因果。" +
       "队友 / 对手两列的数值是每局综合表现差（同位置 z），不是胜率差。</div></div>";
   })();
 

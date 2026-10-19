@@ -20,6 +20,9 @@ from __future__ import annotations
 import json
 import math
 import sys
+
+import numpy as np
+from scipy.optimize import minimize
 from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -297,6 +300,45 @@ def main() -> None:
         print(f"  synergy model: a={la:.2f} b={lb:.3f} | fit n={len(fit_rows)} "
               f"expected={exp_mean:.3f} actual={act_mean:.3f}")
 
+    # ---------------- 全局英雄效应（带 L2 的逻辑回归） ----------------
+    # 先估计「某英雄在一般阵容下的强弱」，后面阵容×英雄交互项以它为基准，
+    # 这样 β 表示的是「这套阵容用该英雄的额外加成」，而不是「英雄本身很强」。
+    hero_list = sorted({h for hs in team_heroes.values() for h in hs if h})
+    h_index = {h: i for i, h in enumerate(hero_list)}
+    ctx_items = list(game_ctx.items())
+    n_g = len(ctx_items)
+    Xg = np.zeros((n_g, len(hero_list)), dtype=np.float64)
+    off = np.zeros(n_g, dtype=np.float64)
+    yv = np.zeros(n_g, dtype=np.float64)
+    for i, (bid, ctx) in enumerate(ctx_items):
+        for h in team_heroes.get((bid, ctx["t1"]), []):
+            j = h_index.get(h)
+            if j is not None:
+                Xg[i, j] = 1.0
+        p1 = 1.0 / (1.0 + math.exp(-(la * (ctx["s1"] - ctx["s2"]) + lb)))
+        p1 = min(max(p1, 1e-6), 1 - 1e-6)
+        off[i] = math.log(p1 / (1 - p1))
+        yv[i] = team_won.get((bid, ctx["t1"]), 0)
+
+    LAM_G = 2.0
+
+    def _nll_gamma(g):
+        z = off + Xg @ g
+        ll = np.sum(yv * z - np.logaddexp(0, z)) - 0.5 * LAM_G * np.sum(g * g)
+        p = 1.0 / (1.0 + np.exp(-z))
+        grad = Xg.T @ (yv - p) - LAM_G * g
+        return -ll, -grad
+
+    try:
+        res_g = minimize(_nll_gamma, np.zeros(len(hero_list)), jac=True,
+                         method="L-BFGS-B", options={"maxiter": 200})
+        gamma = res_g.x
+    except Exception:
+        gamma = np.zeros(len(hero_list))
+
+    def hero_offset(team_heroes_set):
+        return sum(gamma[h_index[h]] for h in team_heroes_set if h in h_index)
+
     def safe_mean(vals):
         return sum(vals) / len(vals) if vals else None
 
@@ -471,6 +513,7 @@ def main() -> None:
 
             exp_sum = 0.0
             exp_n = 0
+            base_logits = []
             for x in games_L:
                 opp_lineup = lineup_at.get((x[7], x[8]), [])
                 if len(opp_lineup) != 5:
@@ -485,27 +528,87 @@ def main() -> None:
                 if not vals:
                     continue
                 s_opp = sum(vals) / 5.0
-                exp_sum += 1.0 / (1.0 + math.exp(-(la * (own_strength - s_opp) + lb)))
+                p_base = 1.0 / (1.0 + math.exp(-(la * (own_strength - s_opp) + lb)))
+                p_base = min(max(p_base, 1e-6), 1 - 1e-6)
+                exp_sum += p_base
                 exp_n += 1
+                base_logits.append((x, math.log(p_base / (1 - p_base))))
             if exp_n < max(20, int(n * 0.8)):
                 continue
             exp_wr = exp_sum / exp_n
 
-            # 阵容 × 英雄池：同阵容下某英雄出场时的胜率差
+            # 阵容 × 英雄池：同赛季内比较 + 每阵容 L2 逻辑回归交叉验证
+            # 赛季切片：同一赛季内比较，剔除版本/环境差异
+            seasons_L = {}
             hero_stats = defaultdict(lambda: [0, 0])
             for x in games_L:
+                y_ = str(x[3])[:4]
+                cell = seasons_L.setdefault(y_, {"n": 0, "w": 0, "hero": defaultdict(lambda: [0, 0])})
+                cell["n"] += 1
+                cell["w"] += x[1]
                 for h in team_heroes.get((x[7], x[6]), []):
+                    cell["hero"][h][0] += 1
+                    cell["hero"][h][1] += x[1]
                     hero_stats[h][0] += 1
                     hero_stats[h][1] += x[1]
+
+            # 每阵容的 L2 交互模型：offset = 基础期望 + 全局英雄效应
+            heroes_use = sorted([h for h, v in hero_stats.items() if v[0] >= 10])
+            beta_map = {}
+            if heroes_use and base_logits:
+                hh_index = {h: i for i, h in enumerate(heroes_use)}
+                Xl = np.zeros((len(base_logits), len(heroes_use)), dtype=np.float64)
+                ol = np.zeros(len(base_logits), dtype=np.float64)
+                yl = np.zeros(len(base_logits), dtype=np.float64)
+                for i, (x, bl) in enumerate(base_logits):
+                    hs = team_heroes.get((x[7], x[6]), [])
+                    for h in hs:
+                        j = hh_index.get(h)
+                        if j is not None:
+                            Xl[i, j] = 1.0
+                    ol[i] = bl + hero_offset(hs)
+                    yl[i] = x[1]
+                LAM_L = 5.0
+
+                def _nll_beta(b):
+                    z = ol + Xl @ b
+                    ll = np.sum(yl * z - np.logaddexp(0, z)) - 0.5 * LAM_L * np.sum(b * b)
+                    p = 1.0 / (1.0 + np.exp(-z))
+                    grad = Xl.T @ (yl - p) - LAM_L * b
+                    return -ll, -grad
+
+                try:
+                    res_b = minimize(_nll_beta, np.zeros(len(heroes_use)), jac=True,
+                                     method="L-BFGS-B", options={"maxiter": 200})
+                    for h, b in zip(heroes_use, res_b.x):
+                        beta_map[h] = float(b)
+                except Exception:
+                    beta_map = {}
+
             hero_rows = []
             for h, (hn, hw) in hero_stats.items():
                 if hn < 10:
                     continue
-                wr_h = hw / hn
-                # 小样本收缩：n/(n+10)，避免 10 场左右刷出 ±30pp
-                d_raw = (wr_h - w / n) * 100
-                hero_rows.append({"h": h, "n": hn, "wr": round(wr_h, 3),
-                                  "d": round(d_raw * hn / (hn + 10), 1)})
+                # 同赛季内的胜率差，按英雄场次加权
+                wsum = 0.0
+                den = 0
+                for y_, cell in seasons_L.items():
+                    hhn, hhw = cell["hero"].get(h, (0, 0))
+                    if hhn >= 6 and cell["n"] >= 15:
+                        delta = (hhw / hhn) - (cell["w"] / cell["n"])
+                        wsum += delta * hhn
+                        den += hhn
+                if den < 8:
+                    continue
+                d_raw = wsum / den * 100
+                # 小样本收缩：n/(n+10)
+                d_adj = d_raw * den / (den + 10)
+                m_pp = beta_map.get(h, None)
+                hero_rows.append({
+                    "h": h, "n": hn, "used": den, "wr": round(hw / hn, 3),
+                    "d": round(d_adj, 1),
+                    "m": round(m_pp * 25.0, 1) if m_pp is not None else None,
+                })
             hero_rows.sort(key=lambda r: -r["d"])
             heroes = hero_rows[:2]
             weak = sorted(hero_rows, key=lambda r: r["d"])[:1]
