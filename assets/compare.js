@@ -9,7 +9,7 @@
    赛段之间的变化沿用 stage.html（不在此引擎内）。
 
    约定：页面不自己调 KPL.init()，由 KPL_COMPARE.init() 统一初始化顶栏/页脚/范围条。
-   用法：<script src="assets/compare.js?v=51"></script> 后 KPL_COMPARE.init("hero");
+   用法：<script src="assets/compare.js?v=52"></script> 后 KPL_COMPARE.init("hero");
    URL 可分享：?items=对象A,对象B / ?trend=1（仅英雄、战队支持趋势）
 */
 window.KPL_COMPARE = (function () {

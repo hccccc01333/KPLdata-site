@@ -105,7 +105,7 @@ async function main() {
   await send("Page.enable");
   await send("Runtime.enable");
   // 验收必须看到"磁盘上的当前版本"：复用同一 profile 时 Edge 会按 URL 命中 CSS/JS 缓存
-  // （pages.css?v=51 内容改了但 URL 未变），陈旧缓存会让断言假失败/假通过。
+  // （pages.css?v=52 内容改了但 URL 未变），陈旧缓存会让断言假失败/假通过。
   await send("Network.enable");
   await send("Network.setCacheDisabled", { cacheDisabled: true });
 
