@@ -56,6 +56,15 @@
     <label class="fld" id="posWrap" style="display:none"><span>位置</span>
       <select id="qPos"><option value="">全部位置</option></select>
     </label>
+    <label class="fld"><span>最少局数</span>
+      <select id="qMin">
+        <option value="0">不限</option>
+        <option value="10">≥10 局</option>
+        <option value="30" selected>≥30 局</option>
+        <option value="50">≥50 局</option>
+        <option value="100">≥100 局</option>
+      </select>
+    </label>
     <span class="block-note mono" id="qNote"></span>
     <button class="btn ghost sm" id="qExport" type="button">导出 CSV</button>
   </div>
@@ -152,6 +161,7 @@
   /* 当前视图（范围 + 搜索 + 位置筛选 + 排序）——表格和导出共用同一份，避免"看到的和导出的不一致" */
   function currentView() {
     var d = K.scopeOf(curScope);
+    var minG = parseInt(($("#qMin") || {}).value || "0", 10) || 0;
     var q = $("#qSearch").value.trim().toLowerCase();
     var rows = dataOf().filter(function (r) {
       if (mode === "player" && $("#qPos").value && r.pos !== $("#qPos").value) return false;
@@ -159,6 +169,7 @@
         var hay = mode === "team" ? r.team : (mode === "hero" ? r.name : r.name + " " + r.team);
         if (String(hay).toLowerCase().indexOf(q) < 0) return false;
       }
+      if (minG > 0 && (Number(r.games) || 0) < minG) return false;
       return true;
     });
     var key = sortKey || (mode === "player" ? "kda" : mode === "hero" ? "games" : "wr");
@@ -230,6 +241,7 @@
   });
   $("#qSearch").addEventListener("input", render);
   $("#qPos").addEventListener("change", render);
+  $("#qMin").addEventListener("change", function () { sortKey = null; sortDir = -1; render(); });
   $("#qExport").addEventListener("click", function () {
     // 导出 = 当前视图（同一范围/搜索/位置筛选/排序），并带上排名与筛选条件说明
     var view = currentView();
