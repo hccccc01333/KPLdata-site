@@ -411,3 +411,14 @@ html.v55 .battle-chip.win{border-color:var(--line2) !important;color:var(--brand
 html.v55 .g-prow.mvp{background:linear-gradient(90deg,rgba(240,47,85,.06),transparent) !important}
 html.v55 .g-eq.sa img{border-color:var(--line2) !important}
 html.v55 .seg button.on{background:var(--brand) !important;color:#fff !important}
+
+/* ---------------- 选手页 / 比赛页的白色强调 ---------------- */
+html.v55 .yr-row .wr{color:var(--ink) !important}
+html.v55 .result-row .score span.w{color:var(--brand) !important}
+html.v55 .hist-row .ok{color:#0F8A78 !important}
+html.v55 .pos-row .bar{background:var(--inset);border:1px solid var(--line)}
+html.v55 .pos-row .bar i{background:var(--brand)}
+html.v55 .pos-row .my{color:var(--ink)}
+html.v55 .pos-row .rk{color:var(--brand)}
+html.v55 .pos-row .k{color:var(--ink2)}
+html.v55 .wb-toggle input{accent-color:var(--brand)}
