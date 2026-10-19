@@ -169,6 +169,7 @@
 <script src="assets/coverage.js?v=51"></script>
 <script src="assets/replay/index.js?v=51"></script>
 <script src="assets/common.js?v=51"></script>
+<script src="assets/share.js?v=51"></script>
 <script>
 (function () {
   "use strict";
@@ -334,6 +335,11 @@
     var el = document.getElementById("focusHero");
     if (!el) return;
 
+    /* 分享图取用的当前焦点场次（无赛程时为 null） */
+    window.__KPL_FOCUS = live ||
+      (today.length ? (today.filter(function (r) { return r.st !== 2; })[0] || today[0]) : null) ||
+      last || null;
+
     /* 比赛状态：静态 st 字段会滞后（构建时才写入），所以必须按当前时间兜底。 */
     function stateText(r) {
       if (r.st === 2) return "已结束";
@@ -407,6 +413,27 @@
     el.innerHTML = '<div class="fh"><div class="fh-kicker mono">赛事焦点</div>' +
       '<p style="color:var(--muted);font-size:13.5px">暂无赛程数据。</p></div>';
   })();
+
+  /* ---------- 分享图：把首屏焦点场次导成固定尺寸卡片（口径与比赛页一致） ---------- */
+  SHARE.mount(document.getElementById("focusBlock"), function () {
+    var r = window.__KPL_FOCUS;
+    if (!r) return null;
+    var st = r.st === 2 ? "已结束" : (r.st === 1 ? "进行中" : "待开赛");
+    var hasScore = (r.st === 2 || r.score1 || r.score2);
+    return {
+      kind: "赛事焦点",
+      title: r.team1 + " vs " + r.team2,
+      sub: [r.leagueName || "", K.stageLabel(r.stage), r.bo ? "BO" + r.bo : "", r.date]
+        .filter(Boolean).join(" · "),
+      stats: [
+        ["比分", hasScore ? (r.score1 + " : " + r.score2) : "—"],
+        ["状态", st],
+        ["开赛时间", String(r.date || "") + " " + String(r.time || "")]
+      ],
+      note: "数据来源：KPL 官方赛程。实时比分以比赛页为准。",
+      url: location.origin + "/match.html?id=" + encodeURIComponent(r.matchId)
+    };
+  }, "kpl-focus.png");
 
   /* ---------- ② 比赛日横滑：按比赛日组织，每列一个比赛日 ---------- */
   (function renderDayRail() {

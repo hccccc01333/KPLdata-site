@@ -124,7 +124,7 @@
 .hd-cell.hl .v{color:var(--gold)}
 .hd-cell .s{font-size:11.5px;color:var(--muted)}
 .hd-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:920px){.hd-grid{grid-template-columns:1fr}}
+@media(max-width:920px){.hd-grid{grid-template-columns:minmax(0,1fr)}}
 .usage{display:flex;flex-direction:column;gap:2px}
 .usage a,.usage .ur{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:9px;
                     border-bottom:1px dashed var(--line)}
@@ -660,6 +660,42 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
          color:#E8C97A;background:rgba(246,192,33,.08);border:1px solid rgba(246,192,33,.28)}
 .rp-lc{color:#E8C97A}
 
+/* 复盘分层：队伍总量（默认）→ 分路对位；转折诊断 */
+.rp-layer{margin:10px 0 12px}
+.rp-panel .rp-disc{margin:4px 0 0;font-size:11.5px;color:var(--muted);line-height:1.6}
+.rp-tot{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;font-size:12px;color:var(--muted);margin-bottom:10px}
+.rp-tot b{font-size:15px;color:var(--ink)}
+.rp-lbwrap{display:flex;flex-direction:column;gap:5px;margin:2px 0 6px}
+.rp-lbrow{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.rp-lbrow > span{flex:none;width:74px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp-lb{display:flex;flex:1;height:14px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.05)}
+.rp-lb i{display:block;height:100%}
+.rp-lb i + i{box-shadow:-1px 0 0 rgba(10,17,28,.85)}
+.rp-lb .ln0{background:#F6C021;opacity:.95}
+.rp-lb .ln1{background:#8FC7F0;opacity:.8}
+.rp-lb .ln2{background:#9FBBD0;opacity:.62}
+.rp-lb .ln3{background:#7E93AE;opacity:.48}
+.rp-lb .ln4{background:#5C7189;opacity:.36}
+.rp-lbaxis{display:flex;gap:0;margin-left:82px}
+.rp-lbaxis span{flex:1;font-size:10.5px;color:var(--muted);text-align:center}
+.rp-tblwrap{overflow-x:auto;max-width:100%}
+.rp-tbl td.ln,.rp-tbl th.ln{white-space:nowrap;font-size:11px;color:var(--muted);text-align:left;padding-right:8px}
+.rp-tp-item{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.rp-tp-item:last-child{border-bottom:none}
+.rp-tp-hd{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;font-size:13px}
+.rp-tp-hd .t{font-size:11.5px;color:var(--muted)}
+.rp-tp-hd b{color:var(--ink)}
+.rp-tp-hd .pp{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.rp-tp-hd .pp.up{color:#7BD88F}
+.rp-tp-hd .pp.down{color:#FF7A7E}
+.rp-tp-ev{margin-top:4px;font-size:11.5px;color:var(--muted);line-height:1.6}
+/* 数据曲线：按分路拆分的同位置对位小图（small multiples） */
+.rp-sm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.rp-sm{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+.rp-sm-t{font-size:12px;font-weight:700;color:var(--gold);margin-bottom:4px}
+.rp-sm-c{width:100%}
+.rp-sm-c svg{width:100%;height:auto;display:block}
+
 /* ---------------- 战队详情（team.html） ---------------- */
 .form-chip{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:5px;
            font-size:11px;font-weight:800;margin-left:4px;vertical-align:middle}
@@ -776,6 +812,26 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
            padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card2);cursor:pointer}
 .wb-toggle input{accent-color:#F6C021;width:15px;height:15px}
 .cmp-table td.num{text-align:right;font-variant-numeric:tabular-nums}
+/* 对比入口（英雄 / 战队 / 选手 / 位置）共用：四页复用同一套雷达 + 对照表版式，
+   因此样式提到公共层，避免某个入口缺约束导致布局溢出。 */
+.cmp-grid{display:grid;grid-template-columns:560px minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:1100px){.cmp-grid{grid-template-columns:1fr}}
+.cmp-radar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.cmp-radar svg{width:100%;height:auto;display:block}
+.cmp-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;justify-content:center}
+.cmp-legend span{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700}
+.cmp-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.cmp-table{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
+.cmp-table table{width:100%;border-collapse:collapse}
+.cmp-table th,.cmp-table td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;font-size:13.5px}
+.cmp-table th:first-child,.cmp-table td:first-child{text-align:left;color:var(--muted);font-size:12.5px}
+.cmp-table thead th{font-size:12px;color:var(--muted);font-weight:600}
+.cmp-table td b{font-family:var(--mono);font-weight:800}
+.cmp-head{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.cmp-head img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:1px solid var(--line2)}
+.cmp-tip{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.7}
+.pickers{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.pickers .fld{min-width:158px}
 
 .rp-share{margin-left:8px;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:10.5px;
           border:1px solid var(--line2);background:var(--card2);color:var(--ink2)}
@@ -1033,6 +1089,33 @@ input,select,.search,.p-ava,.g-ava,.hd-ava,.combo-heroes a,.g-heroes a{border-ra
 .hn-flist{margin:0;padding-left:18px;font-size:12.5px;color:var(--ink2);line-height:1.9}
 .hn-flist li{margin-bottom:3px}
 .hn-flist b{color:var(--ink)}
+
+/* ==================================================================
+   V5 阶段三 · 战队战力体系（teams.html 战力榜 / team.html 三层）
+   风格：沿用最终主题（发丝线、四级不透明度、单色）
+   ================================================================== */
+.tcard .pw{display:flex;align-items:baseline;gap:8px;padding:11px 0 2px;border-top:1px solid var(--line);margin-top:12px}
+.pw .pwl{font-size:11.5px;color:var(--muted)}
+.pw b{font-family:var(--mono);font-size:27px;font-weight:900;color:var(--ink);line-height:1;font-variant-numeric:tabular-nums}
+.pw .pwv{margin-left:auto;font-size:10.5px;color:var(--faint);white-space:nowrap;text-align:right}
+.pw.low b{font-size:20px;color:var(--muted)}
+.pwbars{display:flex;flex-direction:column;gap:5px;margin:9px 0 12px}
+.pwbar{display:grid;grid-template-columns:34px 1fr 30px;gap:8px;align-items:center}
+.pwbar .pk{font-size:10.5px;color:var(--muted)}
+.pwbar .pb{height:7px;border-radius:4px;background:#16233A;border:1px solid var(--line);overflow:hidden}
+.pwbar .pb i{display:block;height:100%;background:linear-gradient(90deg,rgba(246,192,33,.4),var(--gold))}
+.pwbar .pv{font-size:11px;color:var(--ink2);text-align:right;font-variant-numeric:tabular-nums}
+.tcard .num-cell .s{margin-top:3px;font-size:10.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.radar-wrap{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:24px;align-items:start}
+@media(max-width:820px){.radar-wrap{grid-template-columns:minmax(0,1fr);gap:14px}}
+.radar-wrap .cmp-radar{min-width:0}
+.cmp-radar svg{width:100%;height:auto;display:block}
+.radar-side{min-width:0}
+.radar-side .block-note{margin-bottom:10px}
+.gold-t{color:var(--gold);font-weight:800}
+.silver-t{color:#CBD6E4;font-weight:700}
+.lead-t{color:var(--muted);font-weight:700}
 
 
 

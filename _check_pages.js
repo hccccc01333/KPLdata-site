@@ -22,21 +22,26 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const PAGES = [
   ["index.html", "首页", ["#focusHero > *", "#replayPicks .rp-pick", "#stTop tr", "#heroTop > *", "#plTop > *", ".entry"]],
   ["schedule.html", "赛程", ["#fStatus option", "#schBody tr, .day-block, .sched-row"]],
-  ["teams.html", "战队榜", ["#teamGrid > *, .tcard, .team-card"]],
-  ["team.html?id=重庆狼队", "战队详情", ["#teamHead, .page-hero", ".tstat-grid, .panel"]],
+  ["teams.html", "战队榜", ["#teamGrid > *, .tcard, .team-card", ".champ", ".pw b"]],
+  ["team.html?id=重庆狼队", "战队详情", ["#teamHead, .page-hero", ".tstat-grid, .panel", ".cmp-radar svg, .radar-wrap .empty-tip"]],
   ["players.html", "选手榜", ["#plBody tr, .player, .pl-card"]],
   ["heroes.html", "英雄列表", ["#heroGrid > *, .hcard"]],
+  ["hero.html?id=曹操", "英雄详情", ["#heroHead .page-hero, #heroHead .hd-top", "#main .panel", "#heroGrowthChart svg"]],
   ["match.html?id=2026062603&g=3&m=13", "比赛复盘", ["#rpRange", "#rpChart svg", "#rpGrid .rp-panel"]],
   // game.html 的 id 是 battle_id（不是 match_id），传错了会走空态
   ["game.html?id=1373651472_21_1779526666", "对局详情", ["#main .panel", "#main .bp-grid"]],
   ["bp.html", "BP 分析", ["#bpBody tr, .bp2-panel, main .panel"]],
   ["combos.html", "英雄组合", ["main .panel, .combo-card"]],
-  ["compare.html", "对比工具", ["main .panel, .cmp-table"]],
+  ["compare.html", "英雄对比", ["#radar svg", "#cmpTable tbody tr"]],
+  ["compare-team.html", "战队对比", ["#radar svg", "#cmpTable tbody tr"]],
+  ["compare-player.html", "选手对比", ["#radar svg", "#cmpTable tbody tr"]],
+  ["compare-lane.html", "位置对比", ["#radar svg", "#cmpTable tbody tr"]],
+  ["comeback.html", "翻盘研究所", ["#cbKpi .hd-cell", "#cbRows tr", "#cbBins .cb-row", "#cbNote"]],
   ["h2h.html", "交手记录", ["main .panel, .h2h-panel"]],
   ["predict.html", "预测统计", ["#cpRows tr", "#kAccK"]],
   ["picks.html", "精选对局", [".pick-card"]],
   ["query.html", "数据查询", ["#qBody a.cell"]],
-  ["simulator.html", "大场模拟", ["main .panel, .sim-wrap"]],
+  ["simulator.html", "大场模拟", ["main .panel, .sim-wrap", "#sumCheck", "#qaList .qa-item"]],
   ["stage.html", "赛段对比", ["main .panel, .stage-wrap"]],
   ["honors.html", "荣誉中心", ["#lanes .hn-lane", "#team .hn-team, #team .panel", "#boardRows tr"]],
   ["about.html", "数据说明", ["#holdoutBody tr"]],
@@ -99,6 +104,10 @@ async function main() {
 
   await send("Page.enable");
   await send("Runtime.enable");
+  // 验收必须看到"磁盘上的当前版本"：复用同一 profile 时 Edge 会按 URL 命中 CSS/JS 缓存
+  // （pages.css?v=51 内容改了但 URL 未变），陈旧缓存会让断言假失败/假通过。
+  await send("Network.enable");
+  await send("Network.setCacheDisabled", { cacheDisabled: true });
 
   // 在页面脚本执行之前装好兜底监听：unhandledrejection 不会触发 Runtime.exceptionThrown，
   // 但同样会让页面静默停摆，必须单独捕获。
@@ -276,6 +285,114 @@ async function main() {
     (/已复制/.test(shareAfter) || /http/.test(shareAfter) || /match\.html|\?id=/.test(shareAfter)),
     shareAfter.slice(0, 70));
 
+  console.log("\n=== V5 阶段5 复盘图表分层 / 同位置对位 / 转折诊断 ===");
+  await visit(BASE + "match.html?id=2026062603&g=3&m=13", 1600);
+  const lay0 = await evaluate(`(function(){
+    var lb = document.getElementById('rpLayer');
+    var on = lb ? lb.querySelector('button.on') : null;
+    return { btns: lb ? lb.querySelectorAll('button').length : 0,
+             onText: on ? on.textContent.trim() : '',
+             teamBars: document.querySelectorAll('#rpGrid .rp-lbrow').length,
+             laneTables: document.querySelectorAll('#rpGrid .rp-tblwrap').length };
+  })()`);
+  check("复盘默认答案=队伍总量（分层第一层）",
+    lay0 && lay0.btns === 2 && lay0.onText === "队伍总量" && lay0.teamBars === 2 && lay0.laneTables === 0,
+    lay0 && (lay0.onText + " · 分路条 " + lay0.teamBars + " · 对位表 " + lay0.laneTables));
+  const lay1 = await evaluate(`(function(){
+    var b = document.querySelector('#rpLayer button[data-layer="lane"]');
+    if (b) b.click();
+    var lanes = Array.prototype.map.call(document.querySelectorAll('#rpGrid td.ln'), function(t){return t.textContent.trim();});
+    return { rows: document.querySelectorAll('#rpGrid .rp-tblwrap tbody tr').length, lanes: lanes,
+             onText: (document.querySelector('#rpLayer button.on')||{}).textContent||'',
+             disc: (document.querySelector('#rpGrid .rp-panel .rp-disc')||{}).textContent||'' };
+  })()`);
+  check("切到分路对位：5 行同位置对位表",
+    lay1 && lay1.rows === 5 && lay1.lanes.length === 5 && lay1.lanes[0] === "对抗路",
+    lay1 && (lay1.rows + " 行 / " + lay1.lanes.join(",")));
+  check("分路对位标注对齐口径", lay1 && /同一分路/.test(lay1.disc), lay1 && lay1.disc.slice(0, 28));
+  const turn = await evaluate(`(function(){
+    var items = document.querySelectorAll('#rpTurn .rp-tp-item');
+    return { has: !!document.querySelector('#rpTurn .rp-tp'), items: items.length,
+             disc: (document.querySelector('#rpTurn .rp-disc')||{}).textContent||'' };
+  })()`);
+  check("比赛转折面板已渲染", turn && turn.has && turn.items >= 1 && turn.items <= 3,
+    turn && turn.items + " 段");
+  check("转折结论标注非因果口径", turn && /不构成因果归因/.test(turn.disc), turn && turn.disc.slice(0, 24));
+
+  console.log("\n=== V5 阶段5 对局数据曲线：按分路拆同位置对位小图 ===");
+  await visit(BASE + "game.html?id=1054884368_40_1792313942", 2400);
+  const smReady = await evaluate("(function(){var t=document.querySelector('#curveTabs button[data-t=\"player\"]');return {has:!!t, chart:!!document.getElementById('curveChart'), note:(document.getElementById('curveNote')||{}).textContent||''};})()");
+  if (smReady && smReady.has) {
+    const sm = await evaluate(`(function(){
+      document.querySelector('#curveTabs button[data-t="player"]').click();
+      return { blocks: document.querySelectorAll('#curveChart .rp-sm').length,
+               svgs: document.querySelectorAll('#curveChart .rp-sm-c svg').length,
+               titles: Array.prototype.map.call(document.querySelectorAll('#curveChart .rp-sm-t'), function(t){return t.textContent.trim();}),
+               note: (document.getElementById('curveNote')||{}).textContent||'' };
+    })()`);
+    check("选手经济按分路拆成 5 张同位置对位小图",
+      sm && sm.blocks === 5 && sm.svgs === 5 && sm.titles[0] === "对抗路" && sm.titles[4] === "游走",
+      sm && (sm.blocks + " 块 / " + sm.titles.join(",")));
+    check("对位小图标注分路序来源", sm && /复盘名单/.test(sm.note), sm && sm.note.slice(0, 30));
+    const smd = await evaluate(`(function(){
+      document.querySelector('#curveTabs button[data-t="dmg"]').click();
+      return { blocks: document.querySelectorAll('#curveChart .rp-sm').length };
+    })()`);
+    check("选手输出同样按分路拆图", smd && smd.blocks === 5, smd && smd.blocks);
+  } else {
+    check("对局详情提供分钟级数据曲线入口（本局无直播采集，跳过）", true, smReady && smReady.note.slice(0, 20));
+  }
+
+  console.log("\n=== V5 阶段5 翻盘路径研究所 ===");
+  await visit(BASE + "comeback.html", 1600);
+  const cb = await evaluate(`(function(){
+    var rows = document.querySelectorAll('#cbRows tr');
+    var first = rows.length ? rows[0].textContent : '';
+    var link = rows.length ? (rows[0].querySelector('a')||{}).getAttribute('href') : '';
+    return { kpi: document.querySelectorAll('#cbKpi .hd-cell').length,
+             bins: document.querySelectorAll('#cbBins .cb-row').length,
+             lows: document.querySelectorAll('#cbLows .cb-row').length,
+             rows: rows.length, first: first, link: link || '',
+             note: (document.getElementById('cbNote')||{}).textContent||'',
+             share: document.querySelectorAll('.share-fab').length };
+  })()`);
+  check("翻盘研究所：样本概览 4 个关键指标", cb && cb.kpi === 4, cb && cb.kpi);
+  check("翻盘研究所：低点分档与时段分布都有样本", cb && cb.bins >= 3 && cb.lows >= 3,
+    cb && ("分档 " + cb.bins + " / 时段 " + cb.lows));
+  check("翻盘研究所：典型翻盘榜有数据且能回到那一局",
+    cb && cb.rows >= 10 && /match\.html\?id=.+&g=\d+/.test(cb.link), cb && (cb.rows + " 行 · " + cb.link.slice(0, 46)));
+  check("翻盘研究所：口径写清 8 分钟窗口与覆盖率边界",
+    cb && /第 8 分钟/.test(cb.note) && /覆盖率/.test(cb.note) && /不能代表全部/.test(cb.note),
+    cb && cb.note.slice(0, 30));
+  check("翻盘研究所：提供分享图入口", cb && cb.share >= 1, cb && cb.share);
+
+  console.log("\n=== V5 阶段5 英雄成长曲线 ===");
+  await visit(BASE + "hero.html?id=曹操", 1500);
+  const hg = await evaluate(`(function(){
+    var ms = document.querySelectorAll('#main .panel');
+    var title = '', note = '';
+    Array.prototype.some.call(ms, function (m) {
+      var t = m.querySelector('.panel-title');
+      if (t && /成长曲线/.test(t.textContent)) { title = t.textContent; note = m.textContent; return true; }
+      return false;
+    });
+    var host = document.getElementById('heroGrowthChart');
+    return { title: title, note: note, svg: host ? host.querySelectorAll('svg').length : 0 };
+  })()`);
+  check("英雄详情：成长曲线面板（8 / 12 / 16 分钟）已渲染",
+    hg && /成长曲线/.test(hg.title) && /8 \/ 12 \/ 16/.test(hg.title), hg && hg.title.slice(0, 34));
+  check("英雄详情：成长曲线画出 3 个采样点", hg && hg.svg === 1, hg && hg.svg);
+  check("英雄详情：成长曲线标注样本门槛与覆盖率边界",
+    hg && /分钟级出场 ≥/.test(hg.note) && /全量/.test(hg.note), hg && hg.note.slice(-40));
+  const hgData = await evaluate(`(function(){
+    var G = window.KPL_HERO_GROWTH || {};
+    return { n: Object.keys(G.heroes||{}).length, min: (G.meta||{}).minGames,
+             targets: ((G.meta||{}).targets||[]).join(','), honest: /样本量不足/.test(((G.meta||{}).note)||'') };
+  })()`);
+  check("成长曲线数据：样本不足的英雄不输出（诚实门槛）",
+    hgData && hgData.n >= 20 && hgData.min === 5 && hgData.targets === "8,12,16" && hgData.honest,
+    hgData && (hgData.n + " 个英雄 · 门槛 " + hgData.min + " 次"));
+
   console.log("\n=== 响应式：390 / 768 / 1440 ===");
   for (const w of [390, 768, 1440]) {
     await send("Emulation.setDeviceMetricsOverride", { width: w, height: 900, deviceScaleFactor: 1, mobile: w < 500 });
@@ -359,6 +476,75 @@ async function main() {
     check(w + "px 荣誉中心五路数据条已渲染", hOver && hOver.lanes === 5, hOver && hOver.lanes);
     check(w + "px 荣誉中心高亮荣誉入口", hOver && hOver.onN === 1 && hOver.onHref === 'honors.html',
       hOver && (hOver.onN + " " + hOver.onHref));
+    // 战队页：战力榜卡片 / 冠军墙 / 详情三层都不能撑出横向溢出
+    const e5 = await visit(BASE + "teams.html");
+    check(w + "px 战队榜无异常", e5.length === 0, e5.slice(0, 2).join(" | "));
+    const tOver = await evaluate("document.documentElement.scrollWidth - window.innerWidth");
+    check(w + "px 战队榜无横向溢出", tOver <= 1, tOver + "px");
+    const e6 = await visit(BASE + "team.html?id=重庆狼队");
+    check(w + "px 战队详情无异常", e6.length === 0, e6.slice(0, 2).join(" | "));
+    const dOver = await evaluate(`(function(){
+      var de = document.documentElement;
+      var bad = ['baseSeg'].filter(function(id){
+        var el = document.getElementById(id);
+        return el && el.getBoundingClientRect().right > window.innerWidth + 1;
+      }).join(',');
+      var wrap = document.querySelector('.radar-wrap');
+      if (wrap && wrap.getBoundingClientRect().right > window.innerWidth + 1) bad += ',radar-wrap';
+      return { over: de.scrollWidth - window.innerWidth, bad: bad };
+    })()`);
+    check(w + "px 战队详情无横向溢出", dOver && dOver.over <= 1, dOver && dOver.over + "px");
+    check(w + "px 战队详情雷达/基准切换在视口内", dOver && !dOver.bad, dOver && ("越界:" + (dOver.bad || "—")));
+    // 对比四入口：雷达 + 对照表 + 分享按钮在窄屏下都不能撑出横向溢出
+    for (const cp of ["compare.html", "compare-team.html", "compare-player.html", "compare-lane.html"]) {
+      const ec = await visit(BASE + cp, 1500);
+      check(w + "px " + cp + " 无异常", ec.length === 0, ec.slice(0, 2).join(" | "));
+      const cOver = await evaluate(`(function(){
+        var de = document.documentElement;
+        var bad = ["radar","legend","cmpTable"].filter(function(id){
+          var el = document.getElementById(id);
+          return el && el.getBoundingClientRect().right > window.innerWidth + 1;
+        }).join(',');
+        var fab = document.querySelector('.filterbar .share-fab');
+        if (fab && fab.getBoundingClientRect().right > window.innerWidth + 1) bad += ',share';
+        return { over: de.scrollWidth - window.innerWidth, bad: bad,
+                 svg: document.querySelectorAll('#radar svg').length };
+      })()`);
+      check(w + "px " + cp + " 无横向溢出", cOver && cOver.over <= 1, cOver && cOver.over + "px");
+      check(w + "px " + cp + " 雷达在视口内", cOver && cOver.svg >= 1 && !cOver.bad,
+        cOver && (cOver.svg + " 个 / 越界 " + (cOver.bad || "—")));
+    }
+    // 阶段5 新页：翻盘研究所 / 英雄成长曲线在窄屏下也不能撑出横向溢出
+    const e7 = await visit(BASE + "comeback.html", 1500);
+    check(w + "px 翻盘研究所无异常", e7.length === 0, e7.slice(0, 2).join(" | "));
+    const cbOver = await evaluate(`(function(){
+      var de = document.documentElement;
+      // 宽表在窄屏是「面板内横向滚动」：tbody 自带宽度必然超出视口，
+      // 越界要看承载它的 .table-panel（必须被约束在视口内），不是 tbody 的原始矩形。
+      var bad = ["cbKpi","cbBins"].filter(function(id){
+        var el = document.getElementById(id);
+        return el && el.getBoundingClientRect().right > window.innerWidth + 1;
+      }).join(',');
+      var body = document.getElementById('cbRows');
+      var tp = body && body.closest('.table-panel');
+      if (tp && tp.getBoundingClientRect().right > window.innerWidth + 1) bad = (bad ? bad + ',' : '') + 'table-panel';
+      return { over: de.scrollWidth - window.innerWidth, bad: bad,
+               rows: document.querySelectorAll('#cbRows tr').length };
+    })()`);
+    check(w + "px 翻盘研究所无横向溢出", cbOver && cbOver.over <= 1, cbOver && cbOver.over + "px");
+    check(w + "px 翻盘研究所榜单未越界", cbOver && !cbOver.bad && cbOver.rows > 0,
+      cbOver && ("越界 " + (cbOver.bad || "—")));
+    const e8 = await visit(BASE + "hero.html?id=曹操", 1500);
+    check(w + "px 英雄详情无异常", e8.length === 0, e8.slice(0, 2).join(" | "));
+    const gOver = await evaluate(`(function(){
+      var de = document.documentElement;
+      var host = document.getElementById('heroGrowthChart');
+      var bad = host && host.getBoundingClientRect().right > window.innerWidth + 1 ? 'growth' : '';
+      return { over: de.scrollWidth - window.innerWidth, bad: bad,
+               svg: host ? host.querySelectorAll('svg').length : 0 };
+    })()`);
+    check(w + "px 英雄成长曲线无横向溢出", gOver && gOver.over <= 1 && !gOver.bad && gOver.svg === 1,
+      gOver && (gOver.over + "px / svg " + gOver.svg));
   }
   await send("Emulation.clearDeviceMetricsOverride");
 
@@ -377,6 +563,210 @@ async function main() {
   check("六入口含荣誉中心", navSix && navSix.honorsIdx >= 0, navSix && navSix.hrefs.join("/"));
   check("首页只高亮一个分组", navSix && navSix.on === 1, navSix && navSix.on);
   check("分组含下拉子项", navSix && navSix.sub >= 8, navSix && navSix.sub);
+
+  console.log("\n=== V5 阶段三 战队战力体系（战力榜 / 三层详情 / 冠军墙）===");
+  await visit(BASE + "teams.html", 1500);
+  const pw = await evaluate(`(function(){
+    var cards = document.querySelectorAll('#teamGrid .tcard');
+    var scored = [].filter.call(document.querySelectorAll('#teamGrid .pw b'),
+      function(b){ return b.textContent.trim() !== '—'; });
+    var bars = document.querySelectorAll('#teamGrid .pwbar');
+    var champs = document.querySelectorAll('#champStrip .champ');
+    var withScore = [].filter.call(document.querySelectorAll('#champStrip .champ span'),
+      function(s){ return /\\d+\\s*:\\s*\\d+/.test(s.textContent); });
+    return { cards: cards.length, scored: scored.length, bars: bars.length,
+             champs: champs.length, withScore: withScore.length,
+             src: (document.getElementById('srcNote')||{}).textContent || '' };
+  })()`);
+  check("战力榜卡片已渲染", pw && pw.cards > 0, pw && pw.cards);
+  check("战力榜按多维战力分评级", pw && pw.scored > 0, pw && pw.scored);
+  check("已评级卡片含六维能力条", pw && pw.bars === pw.scored * 6, pw && (pw.bars + "/" + pw.scored));
+  check("冠军墙渲染历届冠军", pw && pw.champs > 0, pw && pw.champs);
+  check("冠军墙含真实决赛比分", pw && pw.withScore > 0, pw && pw.withScore);
+  check("来源标签标注基准与算法版本", pw && /power-v1/.test(pw.src), pw && pw.src.slice(0, 60));
+
+  await visit(BASE + "team.html?id=重庆狼队", 1700);
+  const tl = await evaluate(`(function(){
+    return { kpis: document.querySelectorAll('#main .hd-cell').length,
+      radar: !!(document.querySelector('#main .cmp-radar svg') || document.querySelector('#main .radar-wrap .empty-tip')),
+      rings: document.querySelectorAll('#main .cmp-radar svg polygon').length,
+      segs: document.querySelectorAll('#baseSeg button').length,
+      on: document.querySelectorAll('#baseSeg button.on').length,
+      rows: document.querySelectorAll('#main table.tbl tr').length,
+      wall: document.querySelectorAll('#main .champ-strip .champ').length };
+  })()`);
+  check("详情页第一层总览 KPI 渲染", tl && tl.kpis >= 6, tl && tl.kpis);
+  check("详情页第二层能力雷达渲染", tl && tl.radar === true, tl && tl.radar);
+  check("雷达含 4 环 + 数据多边形", tl && tl.rings >= 5, tl && tl.rings);
+  check("三基准切换按钮（赛事/年度/历史）", tl && tl.segs === 3, tl && tl.segs);
+  check("默认只高亮一个基准", tl && tl.on === 1, tl && tl.on);
+  check("详情页第三层时间轴/冠军墙有内容", tl && tl.rows > 0 && tl.wall > 0,
+    tl && (tl.rows + " 行 / " + tl.wall + " 冠"));
+
+  // 行为断言：切换基准后雷达仍渲染，且基准说明随之变化
+  const segBefore = await evaluate("(document.querySelector('.radar-side .block-note')||{}).textContent || ''");
+  await evaluate(`(function(){ var b = document.querySelector('#baseSeg button[data-base="history"]'); if (b) b.click(); })()`);
+  await sleep(450);
+  const segAfter = await evaluate(`(function(){
+    return { note: (document.querySelector('.radar-side .block-note')||{}).textContent || '',
+             radar: !!(document.querySelector('#main .cmp-radar svg') || document.querySelector('#main .radar-wrap .empty-tip')) };
+  })()`);
+  check("切换基准后雷达仍渲染", segAfter && segAfter.radar === true, segAfter && segAfter.radar);
+  check("切换基准后基准说明更新为历史基准", segAfter && segAfter.note !== segBefore && /全部年份/.test(segAfter.note),
+    segAfter && segAfter.note.slice(0, 40));
+
+  console.log("\n=== V5 阶段四 大场模拟升级（概率校验 / 参数输入 / 概率树 / 可解释结论）===");
+  await visit(BASE + "simulator.html", 1500);
+  const p0 = await evaluate("(document.querySelector('#simKpis .sim-kpi .v')||{}).textContent || ''");
+  const sim = await evaluate(`(function(){
+    var q = function(s){ return document.querySelectorAll(s).length; };
+    return { qa: q('#qaList .qa-item'), rows: q('#simDist .sd-row'),
+      sum: (document.getElementById('sumCheck')||{}).textContent || '',
+      ok: !!document.querySelector('#sumCheck.ok'),
+      manual: !!document.getElementById('simManual'), range: !!document.getElementById('simP'),
+      bo: (document.getElementById('simBo')||{}).value || '' };
+  })()`);
+  check("模拟器可解释结论条数 ≥4", sim && sim.qa >= 4, sim && sim.qa);
+  check("局分概率条数与赛制匹配", sim && sim.rows === parseInt(sim.bo, 10) + 1, sim && (sim.rows + " 条 / BO" + sim.bo));
+  check("概率合计校验通过且显示 100%", sim && sim.ok === true && /100\.0/.test(sim.sum), sim && sim.sum.slice(0, 60));
+  check("提供手动单局胜率参数输入", sim && sim.manual && sim.range, sim && (sim.manual + "/" + sim.range));
+
+  // 行为：展开概率树
+  await evaluate(`(function(){ var t=document.getElementById('treeOn'); if(t){ t.checked=true; t.dispatchEvent(new Event('change',{bubbles:true})); } })()`);
+  await sleep(500);
+  const tree = await evaluate(`(function(){
+    var panel = document.getElementById('treePanel');
+    return { svg: !!document.querySelector('#treeBox svg'),
+      nodes: document.querySelectorAll('#treeBox svg circle').length,
+      edges: document.querySelectorAll('#treeBox svg line').length,
+      vis: !!panel && getComputedStyle(panel).display !== 'none' };
+  })()`);
+  check("概率树已渲染", tree && tree.svg === true && tree.vis === true, tree && (tree.nodes + " 节点 / " + tree.edges + " 边"));
+  check("概率树覆盖系列赛状态", tree && tree.nodes >= 8, tree && tree.nodes);
+
+  // 行为：手动参数生效，且守恒校验仍通过
+  await evaluate(`(function(){
+    var c=document.getElementById('simManual'); if(c){ c.checked=true; c.dispatchEvent(new Event('change',{bubbles:true})); }
+    var r=document.getElementById('simP'); if(r){ r.value='78'; r.dispatchEvent(new Event('input',{bubbles:true})); }
+  })()`);
+  await sleep(400);
+  const man = await evaluate(`(function(){
+    return { p: (document.querySelector('#simKpis .sim-kpi .v')||{}).textContent || '',
+      ok: !!document.querySelector('#sumCheck.ok'),
+      src: (document.getElementById('simSrc')||{}).textContent || '' };
+  })()`);
+  check("手动参数生效且仍守恒校验", man && man.p !== p0 && man.ok === true && /手动/.test(man.src),
+    man && (man.p + " | " + man.src.slice(0, 18)));
+
+  console.log("\n=== V5 阶段四 BP 双模式（官方赛事板 / 分析模式 + 为什么推荐）===");
+  await visit(BASE + "bp.html", 1600);
+  const bpm = await evaluate(`(function(){
+    var q = function(s){ return document.querySelectorAll(s).length; };
+    return { tabs: q('#bpMode button'), on: q('#bpMode button.on'),
+      board: (document.getElementById('draftPanel')||{}).offsetParent !== null,
+      bench: (document.getElementById('benchBlock')||{}).offsetParent !== null,
+      why: (document.getElementById('whyPanel')||{}).offsetParent !== null,
+      note: (document.getElementById('modeNote')||{}).textContent || '' };
+  })()`);
+  check("BP 提供两个模式入口", bpm && bpm.tabs === 2 && bpm.on === 1, bpm && (bpm.tabs + " 个 / 高亮 " + bpm.on));
+  check("默认官方赛事板：赛事板可见、分析区块隐藏", bpm && bpm.board === true && bpm.bench === false && bpm.why === false,
+    bpm && ("板/工作台/依据 = " + bpm.board + "/" + bpm.bench + "/" + bpm.why));
+
+  // 切到分析模式
+  await evaluate(`(function(){ var b=document.querySelector('#bpMode button[data-mode="analyze"]'); if(b) b.click(); })()`);
+  await sleep(500);
+  const bpa = await evaluate(`(function(){
+    var why = document.getElementById('whyBox');
+    return { bench: (document.getElementById('benchBlock')||{}).offsetParent !== null,
+      why: (document.getElementById('whyPanel')||{}).offsetParent !== null,
+      note: (document.getElementById('modeNote')||{}).textContent || '',
+      items: document.querySelectorAll('#whyBox .why-item').length,
+      text: (why||{}).textContent || '',
+      boardModeCls: document.getElementById('bp2Grid').classList.contains('board-mode') };
+  })()`);
+  check("分析模式：分析区块与推荐依据面板可见", bpa && bpa.bench === true && bpa.why === true, bpa && (bpa.bench + "/" + bpa.why));
+  check("切换后模式说明更新", bpa && /分析模式/.test(bpa.note), bpa && bpa.note.slice(0, 24));
+  check("推荐依据给出候选与证据", bpa && bpa.items >= 1 && /综合评分/.test(bpa.text) && /%/.test(bpa.text), bpa && bpa.items);
+
+  console.log("\n=== V5 阶段四 对比工具拆分（英雄 / 战队 / 选手 / 位置：默认答案 + 高级条件）===");
+  // 四个入口必须以「默认答案」打开（雷达 + 对照表先给结论），且确实是四类不同对象
+  const CMP_KINDS = [
+    ["compare.html", "英雄", ["禁用率", "选用率", "承伤"]],
+    ["compare-team.html", "战队", ["大场胜率", "场均金差", "场均击杀差"]],
+    ["compare-player.html", "选手", ["MVP 率", "参团率", "输出伤害"]],
+    ["compare-lane.html", "位置", ["KDA", "胜率", "MVP 率", "参团率"]],
+  ];
+  for (const [path, label, mustDims] of CMP_KINDS) {
+    await visit(BASE + path, 1500);
+    const c = await evaluate(`(function(){
+      var polys = document.querySelectorAll('#radar svg polygon').length;
+      var rows = document.querySelectorAll('#cmpTable tbody tr').length;
+      var heads = [].map.call(document.querySelectorAll('#cmpTable thead th'), function(t){ return t.textContent.trim(); });
+      var dims = [].map.call(document.querySelectorAll('#cmpTable tbody tr td:first-child'), function(t){ return t.textContent.trim(); });
+      var sels = document.querySelectorAll('#pickers select').length;
+      var on = document.querySelectorAll('#siteNav .ngrp.on').length;
+      var onHref = (document.querySelector('#siteNav .ngrp.on a.ntop')||{}).getAttribute
+        ? document.querySelector('#siteNav .ngrp.on a.ntop').getAttribute('href') : '';
+      return { polys: polys, rows: rows, heads: heads, dims: dims, sels: sels,
+               on: on, onHref: onHref, url: location.search };
+    })()`);
+    check(label + "对比入口默认即有答案（雷达 + 对照表）", c && c.rows >= 5 && c.polys >= 5,
+      c && (c.rows + " 行 / " + c.polys + " 多边形"));
+    check(label + "对比入口提供 4 个对象选择器", c && c.sels === 4 && c.heads[0] === "指标",
+      c && (c.sels + " 个 / 首列 " + (c.heads[0] || "")));
+    check(label + "对比入口维度与对象类型匹配", c && mustDims.every(function (d) { return c.dims.indexOf(d) >= 0; }),
+      c && c.dims.join(","));
+    check(label + "对比入口默认答案进 URL（可分享）", c && /items=/.test(c.url || ""), c && c.url);
+    check(label + "对比入口导航高亮分析组", c && c.on === 1 && /bp\.html/.test(c.onHref || ""),
+      c && (c.on + " / " + c.onHref));
+  }
+
+  // 阶段5-A：分享图入口必须出现在首页与四个对比入口（生成固定尺寸卡片，非截屏）
+  await visit(BASE + "index.html", 1400);
+  const idxFab = await evaluate("document.querySelectorAll('#focusBlock .share-fab').length");
+  check("首页赛事焦点提供分享图入口", idxFab >= 1, idxFab);
+  for (const cp of ["compare.html", "compare-team.html", "compare-player.html", "compare-lane.html"]) {
+    await visit(BASE + cp, 1400);
+    const fab = await evaluate("document.querySelectorAll('.filterbar .share-fab').length");
+    check(cp + " 提供分享图入口", fab === 1, fab);
+  }
+
+  // 位置入口的专有口径：必须标注「分路画像 ≠ 强弱排名」
+  const laneNote = await evaluate(`(function(){
+    var tip = (document.getElementById('cmpTip')||{}).textContent || '';
+    var body = document.body.textContent || '';
+    return { tip: tip, boundary: /分路画像/.test(tip) && /不能/.test(tip),
+             weighted: /加权/.test(tip), page: /实际出场位置/.test(body) };
+  })()`);
+  check("位置入口标注加权聚合与画像口径", laneNote && laneNote.weighted === true,
+    laneNote && laneNote.tip.slice(0, 70));
+  check("位置入口声明不可跨分路比强弱", laneNote && laneNote.boundary === true && laneNote.page === true,
+    laneNote && (laneNote.boundary + "/" + laneNote.page));
+
+  // 交互：挪到只剩 2 个对象 → 对照表多一列「差（1−2）」
+  await evaluate(`(function(){
+    ['sel3','sel2'].forEach(function(id){
+      var s = document.getElementById(id); if (s) { s.value = ''; s.dispatchEvent(new Event('change', { bubbles: true })); }
+    });
+  })()`);
+  await sleep(450);
+  const twoSel = await evaluate(`(function(){
+    return { cols: document.querySelectorAll('#cmpTable thead th').length,
+             diff: /差（1−2）/.test((document.querySelector('#cmpTable thead')||{}).textContent || '') };
+  })()`);
+  check("位置入口：选 2 个对象多一列差值", twoSel && twoSel.diff === true && twoSel.cols === 4,
+    twoSel && (twoSel.cols + " 列 / 差值 " + twoSel.diff));
+
+  // 趋势开关：英雄 / 战队有逐年数据，选手 / 位置没有
+  await visit(BASE + "compare.html", 1400);
+  const tHero = await evaluate("!!document.getElementById('trendToggle')");
+  await visit(BASE + "compare-team.html", 1400);
+  const tTeam = await evaluate("!!document.getElementById('trendToggle')");
+  await visit(BASE + "compare-player.html", 1400);
+  const tPlayer = await evaluate("!!document.getElementById('trendToggle')");
+  check("英雄入口保留逐年趋势开关", tHero === true, tHero);
+  check("战队入口保留逐年趋势开关", tTeam === true, tTeam);
+  check("选手入口无逐年趋势开关（无逐年数据）", tPlayer === false, tPlayer);
 
   ws.close();
   proc.kill();

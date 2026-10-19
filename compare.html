@@ -3,34 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>对比工具 · KPL 数据中心</title>
+<title>英雄对比 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css?v=51">
 <link rel="stylesheet" href="assets/pages.css?v=51">
-<style>
-.cmp-grid{display:grid;grid-template-columns:560px minmax(0,1fr);gap:16px;align-items:start}
-@media(max-width:1100px){.cmp-grid{grid-template-columns:1fr}}
-.cmp-radar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
-.cmp-radar svg{width:100%;height:auto;display:block}
-.cmp-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;justify-content:center}
-.cmp-legend span{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700}
-.cmp-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
-.cmp-table{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
-.cmp-table table{width:100%;border-collapse:collapse}
-.cmp-table th,.cmp-table td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:right;font-size:13.5px}
-.cmp-table th:first-child,.cmp-table td:first-child{text-align:left;color:var(--muted);font-size:12.5px}
-.cmp-table thead th{font-size:12px;color:var(--muted);font-weight:600}
-.cmp-table td b{font-family:var(--mono);font-weight:800}
-.cmp-head{display:flex;align-items:center;gap:8px;justify-content:flex-end}
-.cmp-head img{width:26px;height:26px;border-radius:50%;object-fit:cover;border:1px solid var(--line2)}
-.cmp-tip{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.7}
-.pickers{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
-.pickers .fld{min-width:158px}
-</style>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
-<meta property="og:title" content="对比工具 · KPL 数据中心">
-<meta property="og:description" content="KPL 赛事数据产品：赛程比分、战队/选手/英雄数据、BP 分析、逐局复盘与实时胜率预测。2019–2026 全历史。">
+<meta property="og:title" content="英雄对比 · KPL 数据中心">
+<meta property="og:description" content="把 2–4 个英雄放在一起对比：胜率、选用率、禁用率、输出、承伤与 KDA，并看多年份趋势。">
 <meta property="og:image" content="https://kpldata-site.hccccc01333.workers.dev/assets/shots/02-live.png">
 <meta name="twitter:card" content="summary_large_image">
 </head>
@@ -39,12 +19,14 @@
 
 <header class="page-hero">
   <div class="wrap">
-    <div class="ph-kicker mono">COMPARE · 对比工具</div>
-    <h1>对比工具</h1>
-    <p>把 2–4 个对象放在一起对比：英雄、选手或战队，还可看多年份趋势。雷达图显示<b>在当前数据范围内的相对水平</b>
-      （越靠外越强），右侧表格给出原始数字。只看两队的历史交锋？用
-      <a href="h2h.html" style="color:var(--gold);font-weight:700">「交手记录」</a>。
-      想看两个赛段之间的变化？用 <a href="stage.html" style="color:var(--gold);font-weight:700">「赛段对比」</a>。</p>
+    <div class="ph-kicker mono">COMPARE · 英雄对比</div>
+    <h1>英雄对比</h1>
+    <p>默认把<b>当前数据范围内出场最多的 3 个英雄</b>放在一起，下方即刻给出雷达与原始数字；想换对象就在「高级条件」里改。
+      雷达显示英雄在<b>当前范围内的相对水平</b>（越靠外越强）。也可切「趋势视图」看某几个英雄逐年胜率 / 禁用率。
+      想看战队？用 <a href="compare-team.html" style="color:var(--gold);font-weight:700">「战队对比」</a>；
+      想看选手或分路？用 <a href="compare-player.html" style="color:var(--gold);font-weight:700">「选手对比」</a>
+      / <a href="compare-lane.html" style="color:var(--gold);font-weight:700">「位置对比」</a>；
+      看两个赛段之间的变化？用 <a href="stage.html" style="color:var(--gold);font-weight:700">「赛段对比」</a>。</p>
   </div>
 </header>
 
@@ -52,11 +34,6 @@
   <div class="scopebar" id="scopeBar"></div>
 
   <div class="filterbar">
-    <div class="seg" id="modeTabs">
-      <button data-mode="hero" class="on">英雄</button>
-      <button data-mode="player">选手</button>
-      <button data-mode="team">战队</button>
-    </div>
     <label class="fld" id="trendWrap"><span>视图</span>
       <label class="wb-toggle"><input type="checkbox" id="trendToggle"> 趋势视图（逐年）</label>
     </label>
@@ -86,378 +63,11 @@
 <script src="assets/data.js?v=51"></script>
 <script src="assets/seasons.js?v=51"></script>
 <script src="assets/common.js?v=51"></script>
+<script src="assets/share.js?v=51"></script>
+<script src="assets/compare.js?v=51"></script>
 <script>
-(function () {
-  "use strict";
-  var D = KPL.data, K = KPL, $ = function (s) { return document.querySelector(s); };
-  K.init();
-
-  var COLORS = ["#FFFFFF", "#9DB2CC", "#C08A8D", "#8FB3AE"];
-  var curScope = "all", baseMode = "hero", trendView = false, mode = "hero", MAX = 4;
-
-  // 三套对象（英雄/选手/战队）+ 一个趋势开关 = 一套交互；
-  // 内部仍沿用旧的 mode 字符串（trend-hero / trend-team），避免重写渲染层。
-  function effMode() {
-    if (!trendView) return baseMode;
-    if (baseMode === "player") return "player";   // 选手没有逐年 by 数据，趋势开关会被禁用
-    return "trend-" + baseMode;
-  }
-  function syncMode() {
-    mode = effMode();
-    var tv = document.getElementById("trendToggle");
-    if (tv) tv.checked = trendView && baseMode !== "player";
-    var mw = document.getElementById("metricWrap");
-    if (mw) mw.style.display = TREND[mode] ? "" : "none";
-  }
-
-  /* 每种模式：数据源、聚合维度、取值函数、显示格式 */
-  var MODES = {
-    hero: {
-      list: function (d) {
-        return (d.heroes || []).slice().sort(function (a, b) { return b.games - a.games; }).slice(0, 90);
-      },
-      name: function (x) { return x.name; },
-      icon: function (x) { return x.icon; },
-      target: "hero.html?id=",
-      dims: [
-        { label: "胜率", get: function (x, d) { return x.wr * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "选用率", get: function (x, d) { return x.games / Math.max(1, d.totals.battles) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "禁用率", get: function (x, d) { return x.bans / Math.max(1, d.totals.battles) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "承伤", get: function (x) { return x.bh; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "KDA", get: function (x) { return x.kda; }, fmt: function (v) { return v.toFixed(2); } }
-      ]
-    },
-    player: {
-      list: function (d) {
-        return (d.players || []).filter(function (p) { return p.games >= 8; }).slice(0, 90);
-      },
-      name: function (x) { return x.name; },
-      icon: function (x) { return x.icon; },
-      target: "players.html?q=",
-      dims: [
-        { label: "KDA", get: function (x) { return x.kda; }, fmt: function (v) { return v.toFixed(2); } },
-        { label: "胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "MVP 率", get: function (x) { return x.mvp / Math.max(1, x.games) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "参团率", get: function (x) { return x.part; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return String(Math.round(v)); } }
-      ]
-    },
-    team: {
-      list: function (d) {
-        return (d.teams || []).filter(function (t) { return t.matches >= 10; })
-          .slice().sort(function (a, b) { return b.wr - a.wr; });
-      },
-      name: function (x) { return x.team; },
-      icon: function (x) { return x.icon; },
-      target: "teams.html",
-      dims: [
-        { label: "单局胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "大场胜率", get: function (x) { return x.mWin / Math.max(1, x.matches) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "场均金差", get: function (x) { return x.goldDiff; }, fmt: function (v) { return (v > 0 ? "+" : "") + Math.round(v); } },
-        { label: "场均击杀差", get: function (x) { return x.killDiff; }, fmt: function (v) { return (v > 0 ? "+" : "") + v.toFixed(1); } },
-        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return String(Math.round(v)); } }
-      ]
-    }
-  };
-
-  var picked = [null, null, null, null];
-
-  var TREND = {
-    "trend-team": {
-      list: function (d) {
-        return (d.teams || []).filter(function (t) { return t.by && t.by.length >= 3; })
-          .slice().sort(function (a, b) { return b.wr - a.wr; });
-      },
-      name: function (x) { return x.team; },
-      icon: function (x) { return x.icon; }
-    },
-    "trend-hero": {
-      list: function (d) {
-        return (d.heroes || []).filter(function (h) { return h.by && h.by.length >= 3; });
-      },
-      name: function (x) { return x.name; },
-      icon: function (x) { return x.icon; }
-    }
-  };
-
-  function currentList() {
-    var C = TREND[mode] || MODES[mode];
-    return C.list(K.scopeOf(curScope));
-  }
-  function curName(x) { return (TREND[mode] || MODES[mode]).name(x); }
-  function curIcon(x) { return (TREND[mode] || MODES[mode]).icon(x); }
-
-  function populatePickers(keep) {
-    var list = currentList();
-    var defaults = list.slice(0, 3).map(function (x) { return curName(x); });
-    $("#pickers").innerHTML = [0, 1, 2, 3].map(function (i) {
-      var opts = '<option value="">— 不参与 —</option>' + list.map(function (x) {
-        return '<option>' + K.esc(curName(x)) + "</option>";
-      }).join("");
-      return '<label class="fld"><span>对象 ' + (i + 1) + '</span><select id="sel' + i + '">' + opts + "</select></label>";
-    }).join("");
-    [0, 1, 2, 3].forEach(function (i) {
-      var sel = $("#sel" + i);
-      var want = picked[i] || (i < 3 ? defaults[i] || "" : "");
-      if ([].slice.call(sel.options).some(function (o) { return o.value === want; })) sel.value = want;
-      sel.addEventListener("change", function () {
-        picked = [0, 1, 2, 3].map(function (j) { return $("#sel" + j).value; });
-        render();
-      });
-    });
-    picked = [0, 1, 2, 3].map(function (j) { return $("#sel" + j).value; });
-  }
-
-  function trendMetricIdx() {
-    var sel = document.getElementById("trendMetric");
-    return (sel && sel.value === "ban") ? 3 : 2;
-  }
-
-  function renderTrend(chosen) {
-    if (chosen.length < 1) {
-      $("#radar").innerHTML = '<div class="empty-tip" style="padding:80px 20px">请至少选择 1 个对象</div>';
-      $("#legend").innerHTML = "";
-      $("#cmpTable").innerHTML = "";
-      $("#cmpTip").textContent = "";
-      return;
-    }
-    var years = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
-    var n = years.length;
-    var W = 640, H = 470, PL = 46, PR = 16, PT = 26, PB = 40;
-    var mi = trendMetricIdx();
-    var vals = [];
-    chosen.forEach(function (o) { (o.by || []).forEach(function (b) { if (b[mi] != null) vals.push(b[mi] * 100); }); });
-    var lo = Math.max(0, Math.min.apply(null, vals.length ? vals : [40]) - 6);
-    var hi = Math.min(100, Math.max.apply(null, vals.length ? vals : [60]) + 6);
-    if (hi - lo < 20) { var mid = (hi + lo) / 2; lo = Math.max(0, mid - 12); hi = Math.min(100, mid + 12); }
-    var X = function (y) { return PL + (y - 2019) / (n - 1) * (W - PL - PR); };
-    var Y = function (p) { return PT + (1 - (p - lo) / (hi - lo)) * (H - PT - PB); };
-    var svg = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="赛季趋势对比">';
-    [lo, (lo + hi) / 2, hi].forEach(function (g) {
-      svg += '<line x1="' + PL + '" y1="' + Y(g).toFixed(1) + '" x2="' + (W - PR) + '" y2="' + Y(g).toFixed(1) +
-        '" stroke="#1D2E47" stroke-dasharray="' + (Math.abs(g - (lo + hi) / 2) < 0.01 ? "0" : "4 6") + '"/>' +
-        '<text x="' + (PL - 8) + '" y="' + (Y(g) + 4).toFixed(1) + '" text-anchor="end" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' + Math.round(g) + "%</text>";
-    });
-    years.forEach(function (y) {
-      svg += '<text x="' + X(y).toFixed(1) + '" y="' + (H - 14) + '" text-anchor="middle" font-size="11" fill="#9FB3CE" font-family="Inter,monospace">' + y + "</text>";
-    });
-    chosen.forEach(function (o, ci) {
-      var color = COLORS[ci % COLORS.length];
-      var by = {};
-      (o.by || []).forEach(function (b) { by[b[0]] = b[mi]; });
-      var pts = [], dots = "";
-      years.forEach(function (y) {
-        if (by[y] != null) {
-          var x = X(y).toFixed(1), yy = Y(by[y] * 100).toFixed(1);
-          pts.push(x + "," + yy);
-          dots += '<circle cx="' + x + '" cy="' + yy + '" r="3.4" fill="' + color + '"></circle>' +
-            '<text x="' + x + '" y="' + (parseFloat(yy) - 9).toFixed(1) + '" text-anchor="middle" font-size="10" fill="' + color + '" font-family="Inter,monospace">' + Math.round(by[y] * 100) + "%</text>";
-        }
-      });
-      svg += '<polyline points="' + pts.join(" ") + '" fill="none" stroke="' + color + '" stroke-width="2.2" stroke-linejoin="round"/>' + dots;
-    });
-    svg += "</svg>";
-    $("#radar").innerHTML = svg;
-    $("#legend").innerHTML = chosen.map(function (o, ci) {
-      var ic = curIcon(o);
-      return "<span><i style='background:" + COLORS[ci % COLORS.length] + "'></i>" +
-        (ic ? '<img src="' + K.esc(ic) + '" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover">' : "") +
-        K.esc(curName(o)) + "</span>";
-    }).join("");
-    var head = "<thead><tr><th>年份</th>" + chosen.map(function (o) {
-      var ic = curIcon(o);
-      return '<th><span class="cmp-head">' + (ic ? '<img src="' + K.esc(ic) + '" alt="">' : "") + K.esc(curName(o)) + "</span></th>";
-    }).join("") + "</tr></thead>";
-    var body = "<tbody>" + years.filter(function (y) {
-      return chosen.some(function (o) { return (o.by || []).some(function (b) { return b[0] === y; }); });
-    }).map(function (y) {
-      return "<tr><td>" + y + "</td>" + chosen.map(function (o) {
-        var row = (o.by || []).filter(function (b) { return b[0] === y; })[0];
-        return row && row[mi] != null ? "<td><b>" + Math.round(row[mi] * 100) + '%</b> <small style="color:var(--muted)">(' + row[1] + " 局)</small></td>"
-                   : '<td><span style="color:var(--muted)">—</span></td>';
-      }).join("") + "</tr>";
-    }).join("") + "</tbody>";
-    $("#cmpTable").innerHTML = head + body;
-    $("#cmpTip").textContent = "折线为该对象逐年的" + (mi === 3 ? "禁用率" : "胜率") +
-      "变化（括号内为当年局数）；空白年份表示当年出场不足 5 局。" + (mi === 3 && mode === "trend-team" ? "（战队无禁用率数据）" : "");
-  }
-
-  function render() {
-    var d = K.scopeOf(curScope);
-    var list = currentList();
-    var chosen = [];
-    var seen = {};
-    picked.forEach(function (name) {
-      if (!name || seen[name]) return;
-      var obj = list.filter(function (x) { return curName(x) === name; })[0];
-      if (obj) { chosen.push(obj); seen[name] = 1; }
-    });
-    if (TREND[mode]) { renderTrend(chosen); return; }
-    var M = MODES[mode];
-
-    if (chosen.length < 2) {
-      $("#radar").innerHTML = '<div class="empty-tip" style="padding:80px 20px">请至少选择 2 个对象</div>';
-      $("#legend").innerHTML = "";
-      $("#cmpTable").innerHTML = "";
-      $("#cmpTip").textContent = "";
-      return;
-    }
-
-    /* 分位归一化：每维取范围内全部对象的值，算被选对象所处的百分位 */
-    var series = chosen.map(function (obj, ci) {
-      return { name: M.name(obj), obj: obj, color: COLORS[ci] };
-    });
-    var dims = M.dims.map(function (dim) {
-      var all = list.map(function (x) { return dim.get(x, d); });
-      var sorted = all.slice().sort(function (a, b) { return a - b; });
-      return {
-        label: dim.label,
-        fmt: dim.fmt,
-        values: series.map(function (se) {
-          var v = dim.get(se.obj, d);
-          var below = 0;
-          for (var i = 0; i < sorted.length; i++) { if (sorted[i] < v) below++; else break; }
-          var rank = sorted.length > 1 ? below / (sorted.length - 1) * 100 : 50;
-          return { raw: v, score: Math.max(4, Math.min(100, rank)) };
-        })
-      };
-    });
-
-    /* 雷达图 */
-    var W = 560, H = 472, CX = 280, CY = 246, R = 168, n = dims.length;
-    function pt(i, r) {
-      var a = -Math.PI / 2 + i * 2 * Math.PI / n;
-      return [CX + Math.cos(a) * r, CY + Math.sin(a) * r];
-    }
-    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="对比雷达图">';
-    for (var ring = 1; ring <= 4; ring++) {
-      var rr = R * ring / 4;
-      var ringPts = dims.map(function (_, i) { return pt(i, rr).map(function (v) { return v.toFixed(1); }).join(","); }).join(" ");
-      s += '<polygon points="' + ringPts + '" fill="' + (ring === 4 ? "rgba(157,178,204,.03)" : "none") +
-        '" stroke="#1D2E47" stroke-width="1"/>';
-    }
-    dims.forEach(function (dim, i) {
-      var p = pt(i, R);
-      s += '<line x1="' + CX + '" y1="' + CY + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) + '" stroke="#1D2E47"/>';
-      var lp = pt(i, R + 36);
-      var anchor = lp[0] < CX - 12 ? "end" : lp[0] > CX + 12 ? "start" : "middle";
-      s += '<text x="' + lp[0].toFixed(1) + '" y="' + (lp[1] + 4).toFixed(1) + '" text-anchor="' + anchor +
-        '" font-size="12.5" fill="#9FB3CE" font-family="Inter,PingFang SC,sans-serif">' + K.esc(dim.label) + "</text>";
-    });
-    series.forEach(function (se, ci) {
-      var pts = dims.map(function (dim, i) {
-        return pt(i, R * dim.values[ci].score / 100).map(function (v) { return v.toFixed(1); }).join(",");
-      }).join(" ");
-      s += '<polygon points="' + pts + '" fill="' + se.color + '" fill-opacity=".12" stroke="' + se.color +
-        '" stroke-width="2" stroke-linejoin="round"/>';
-      dims.forEach(function (dim, i) {
-        var p = pt(i, R * dim.values[ci].score / 100);
-        s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill="' + se.color + '"/>';
-      });
-    });
-    s += "</svg>";
-    $("#radar").innerHTML = s;
-
-    $("#legend").innerHTML = series.map(function (se) {
-      var ic = M.icon(se.obj);
-      return "<span><i style=\"background:" + se.color + '"></i>' +
-        (ic ? '<img src="' + K.esc(ic) + '" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover">' : "") +
-        K.esc(se.name) + "</span>";
-    }).join("");
-
-    /* 对照表 */
-    var linkOf = function (se) {
-      if (!M.target) return null;
-      var key = M.targetKey ? se.obj[M.targetKey] : M.name(se.obj);
-      return M.target + encodeURIComponent(key);
-    };
-    var head = "<thead><tr><th>指标</th>" + series.map(function (se) {
-      var ic = M.icon(se.obj);
-      var href = linkOf(se);
-      var nameHTML = (ic ? '<img src="' + K.esc(ic) + '" alt="">' : "") + K.esc(se.name);
-      return '<th><span class="cmp-head">' +
-        (href ? '<a href="' + K.esc(href) + '" style="color:inherit;display:inline-flex;align-items:center;gap:6px">' + nameHTML + "</a>" : nameHTML) +
-        "</span></th>";
-    }).join("") + (series.length === 2 ? '<th class="num">差（1−2）</th>' : "") + "</tr></thead>";
-    var body = "<tbody>" + dims.map(function (dim) {
-      var raws = dim.values.map(function (v) { return v.raw; });
-      var best = Math.max.apply(null, raws), worst = Math.min.apply(null, raws);
-      var cells = dim.values.map(function (v) {
-        var color = v.raw === best ? "var(--gold)" : (v.raw === worst && best !== worst ? "var(--muted)" : "");
-        return "<td><b" + (color ? ' style="color:' + color + '"' : "") + ">" + dim.fmt(v.raw) + "</b></td>";
-      }).join("");
-      var diff = "";
-      if (series.length === 2) {
-        var dv = raws[0] - raws[1];
-        // 指标格式可能自带符号（如 +1289），这里先剥掉再统一加差值的正负号
-        var absTxt = String(dim.fmt(Math.abs(dv))).replace(/^[+＋\-−]/, "");
-        diff = '<td class="num mono" style="color:' + (dv >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
-          (dv >= 0 ? "+" : "−") + absTxt + "</td>";
-      }
-      return "<tr><td>" + K.esc(dim.label) + "</td>" + cells + diff + "</tr>";
-    }).join("") + "</tbody>";
-    $("#cmpTable").innerHTML = head + body;
-    $("#cmpTip").textContent = "雷达图上的位置 = 该指标在「" + K.scopeName(curScope) +
-      "」范围内的相对水平（外圈 = 更强）；表格每行最高值金色、最低值灰色；选 2 个对象时多一列差值，表头可点进详情页。";
-  }
-
-  $("#modeTabs").addEventListener("click", function (e) {
-    var b = e.target.closest("button"); if (!b) return;
-    Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle("on", x === b); });
-    baseMode = b.getAttribute("data-mode");
-    if (baseMode === "player") trendView = false;
-    syncMode();
-    picked = [null, null, null, null];
-    populatePickers();
-    render();
-    syncUrl();
-  });
-
-  document.getElementById("trendToggle").addEventListener("change", function () {
-    if (baseMode === "player") { this.checked = false; trendView = false; syncMode(); return; }
-    trendView = this.checked;
-    syncMode();
-    picked = [null, null, null, null];
-    populatePickers();
-    render();
-    syncUrl();
-  });
-
-  /* 结果可分享：把 模式 / 趋势 / 选中对象放进 URL */
-  function syncUrl() {
-    try {
-      var q = "?mode=" + baseMode + (trendView ? "&trend=1" : "") +
-        "&items=" + picked.filter(Boolean).map(encodeURIComponent).join(",");
-      history.replaceState(null, "", location.pathname + q + location.hash);
-    } catch (e) {}
-  }
-  function readUrl() {
-    var sp = new URLSearchParams(location.search);
-    var m = sp.get("mode");
-    if (["hero", "player", "team"].indexOf(m) >= 0) baseMode = m;
-    trendView = sp.get("trend") === "1" && baseMode !== "player";
-    var items = (sp.get("items") || "").split(",").filter(Boolean).map(decodeURIComponent);
-    if (items.length) picked = [0, 1, 2, 3].map(function (i) { return items[i] || ""; });
-    Array.prototype.forEach.call(document.getElementById("modeTabs").children, function (b) {
-      b.classList.toggle("on", b.getAttribute("data-mode") === baseMode);
-    });
-    syncMode();
-  }
-
-  document.getElementById("trendMetric").addEventListener("change", render);
-  curScope = K.scopeBar("#scopeBar", function (id) {
-    curScope = id;
-    picked = [null, null, null, null];
-    populatePickers();
-    render();
-  });
-  readUrl();
-  populatePickers();
-  render();
-  syncMode();
-})();
+KPL_COMPARE.init("hero");
+SHARE.mount(document.querySelector(".filterbar"), KPL_COMPARE.spec, "kpl-compare-hero.png");
 </script>
 </body>
 </html>

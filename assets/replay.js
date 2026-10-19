@@ -15,6 +15,8 @@ window.KPL_REPLAY = (function () {
     : function (n) { return Number(n || 0).toLocaleString("en-US"); };
   var signed = function (v, d) { var n = Number(v || 0); return (n >= 0 ? "+" : "") + n.toFixed(d == null ? 0 : d); };
   var cache = {};
+  // 与 build_replay_frames.py 的 PLAYER_LANE_ORDER 一致：frames[].g / names 恒按此序排列
+  var LANES = ["对抗路", "打野", "中路", "发育路", "游走"];
 
   function loadPackage(matchId, cb) {
     if (cache[matchId]) { cb(cache[matchId]); return; }
@@ -73,23 +75,105 @@ window.KPL_REPLAY = (function () {
   }
 
   /* ---------- 面板 ---------- */
-  function goldPanel(b, f, prev) {
+  /* 分层一：队伍总量。用一条按分路拆分的堆叠条替代直接铺 10 列，
+     色阶从亮到暗对应 对抗路→游走，先看"总量与结构"，再决定要不要展开到逐人。 */
+  function laneBars(g, total) {
+    var t = Math.max(1, total);
+    return '<div class="rp-lb">' + g.map(function (v, i) {
+      var w = Math.max(0, (v || 0) / t * 100);
+      return '<i class="ln' + i + '" style="width:' + w.toFixed(1) + '%" title="' +
+        LANES[i] + " " + fmtInt(v || 0) + '"></i>';
+    }).join("") + "</div>";
+  }
+
+  function goldPanel(b, f, prev, layer) {
     var gd = f.gd, d = prev ? gd - prev.gd : 0;
     var g1 = f.g[0] || [], g2 = f.g[1] || [];
+    var sum = function (a) { return a.reduce(function (x, v) { return x + (v || 0); }, 0); };
+    var t1 = sum(g1), t2 = sum(g2);
+    var head = '<div class="rp-pt">经济状态 <em class="mono">金差 ' + signed(gd) +
+      (prev ? " · 较上一帧 " + signed(d) : "") + "</em></div>";
+    if (layer !== "lane") {
+      return '<div class="rp-panel">' + head +
+        '<div class="rp-gd"><b class="' + (gd >= 0 ? "up" : "down") + '">' + signed(gd) + "</b>" +
+        '<span class="mono">' + esc(b.t1) + " 视角</span></div>" +
+        '<div class="rp-tot"><span>' + esc(b.t1) + ' 总经济</span><b class="mono">' + fmtInt(t1) + "</b>" +
+        '<span>' + esc(b.t2) + ' 总经济</span><b class="mono">' + fmtInt(t2) + "</b></div>" +
+        '<div class="rp-lbwrap"><div class="rp-lbrow"><span>' + esc(b.t1) + "</span>" + laneBars(g1, t1) + "</div>" +
+        '<div class="rp-lbrow"><span>' + esc(b.t2) + "</span>" + laneBars(g2, t2) + "</div>" +
+        '<div class="rp-lbaxis">' + LANES.map(function (n, i) {
+          return '<span class="ln' + i + '">' + n + "</span>";
+        }).join("") + "</div></div>" +
+        '<p class="rp-disc">五段色阶按分路拆分（亮→暗：' + LANES.join(" → ") +
+        '）。要看逐人同位置对位，切到「分路对位」。</p></div>';
+    }
     var rows = [];
     for (var i = 0; i < Math.max(g1.length, g2.length); i++) {
       var a = g1[i] || 0, c = g2[i] || 0;
       var n1 = (b.names || [])[i] || "?", n2 = (b.names || [])[i + 5] || "?";
-      rows.push('<tr><td class="n">' + esc(n1) + '</td><td class="num">' + fmtInt(a) + '</td>' +
+      rows.push('<tr><td class="ln">' + (LANES[i] || "—") + '</td>' +
+        '<td class="n">' + esc(n1) + '</td><td class="num">' + fmtInt(a) + '</td>' +
         '<td class="d ' + (a - c >= 0 ? "up" : "down") + '">' + signed(a - c) + "</td>" +
         '<td class="num">' + fmtInt(c) + '</td><td class="n r">' + esc(n2) + "</td></tr>");
     }
-    return '<div class="rp-panel"><div class="rp-pt">经济状态 <em class="mono">金差 ' + signed(gd) +
-      (prev ? " · 较上一帧 " + signed(d) : "") + '</em></div>' +
+    return '<div class="rp-panel">' + head +
       '<div class="rp-gd"><b class="' + (gd >= 0 ? "up" : "down") + '">' + signed(gd) + "</b>" +
       '<span class="mono">' + esc(b.t1) + " 视角</span></div>" +
-      '<table class="rp-tbl"><thead><tr><th>' + esc(b.t1) + '</th><th class="num">金币</th><th class="num">差值</th>' +
-      '<th class="num">金币</th><th class="r">' + esc(b.t2) + "</th></tr></thead><tbody>" + rows.join("") + "</tbody></table></div>";
+      '<div class="rp-tblwrap"><table class="rp-tbl"><thead><tr><th>分路</th><th>' + esc(b.t1) +
+      '</th><th class="num">金币</th><th class="num">差值</th><th class="num">金币</th><th class="r">' +
+      esc(b.t2) + "</th></tr></thead><tbody>" + rows.join("") + "</tbody></table></div>" +
+      '<p class="rp-disc">同一行 = 同一分路，两侧选手按官方对位行序对齐（对抗路→游走）。</p></div>';
+  }
+
+  /* 转折诊断：在模型胜率序列上找"方向一致且幅度最大"的摆动段（变点检测的轻量版）。
+     只陈述"这段时间里胜率方向明确变化"，不做因果归因；无直播胜率的局直接跳过。 */
+  function turningPoints(b) {
+    var fr = b.frames || [];
+    var withP = fr.filter(function (x) { return x.p != null; }).length;
+    if (withP < 3) return [];
+    var segs = [], cur = null;
+    for (var i = 1; i < fr.length; i++) {
+      var a = fr[i - 1].p, c = fr[i].p;
+      if (a == null || c == null) continue;
+      var d = c - a;
+      if (Math.abs(d) < 0.004) continue;
+      var dir = d > 0 ? 1 : -1;
+      if (cur && cur.dir === dir) {
+        cur.to = c; cur.endIdx = i; cur.mag = Math.abs(c - cur.from);
+      } else {
+        if (cur) segs.push(cur);
+        cur = { dir: dir, from: a, to: c, startIdx: i - 1, endIdx: i, mag: Math.abs(d) };
+      }
+    }
+    if (cur) segs.push(cur);
+    segs.sort(function (x, y) { return y.mag - x.mag; });
+    return segs.slice(0, 3);
+  }
+
+  function tpPanel(b) {
+    var head = '<div class="rp-pt">比赛转折 <em class="mono">模型胜率变点 · ' + b.frames.length + " 个采样点</em></div>";
+    var tps = turningPoints(b);
+    if (!tps.length) {
+      return '<div class="rp-panel rp-tp">' + head + '<p class="rp-disc">' +
+        (b.src === "replay"
+          ? "本局没有直播期模型胜率记录，赛后重放曲线波动大，不做转折判定。"
+          : "本局胜率曲线平稳，未检出显著转折段。") + "</p></div>";
+    }
+    var items = tps.map(function (t) {
+      var m0 = b.frames[t.startIdx].m, m1 = b.frames[t.endIdx].m;
+      var near = (b.events || []).filter(function (e) { return e.m >= m0 - 1 && e.m <= m1 + 1; });
+      return '<div class="rp-tp-item"><div class="rp-tp-hd">' +
+        '<span class="t mono">' + m0.toFixed(0) + "′ → " + m1.toFixed(0) + "′</span>" +
+        '<b>' + esc(t.dir > 0 ? b.t1 : b.t2) + " 占优</b>" +
+        '<span class="pp ' + (t.dir > 0 ? "up" : "down") + '">' + pct(t.from) + " → " + pct(t.to) +
+        "（" + signed((t.to - t.from) * 100) + "pp）</span></div>" +
+        '<div class="rp-tp-ev">' + (near.length
+          ? "同段事件：" + near.map(function (e) { return esc(e.l); }).join(" · ")
+          : "同段无结构性事件记录") + "</div></div>";
+    }).join("");
+    return '<div class="rp-panel rp-tp">' + head + items +
+      '<p class="rp-disc">口径：模型胜率曲线上方向一致、幅度最大的 3 个摆动段（相邻采样点变化 ≥0.4pp 才计入），' +
+      "只说明这段时间胜率方向明确变化，不构成因果归因。</p></div>";
   }
 
   function resourcePanel(b, f, prev) {
@@ -162,6 +246,7 @@ window.KPL_REPLAY = (function () {
         for (var i = 0; i < battles.length; i++) if (battles[i].battleId === opts.battleId) { bi = i; break; }
       }
       var frameIdx = 0;
+      var layerMode = "team";   // team = 队伍总量（默认答案）；lane = 同位置对位
       // 支持从链接直接回到某一分钟（?g=3&m=12）
       if (opts.initialMinute != null && !isNaN(Number(opts.initialMinute))) {
         var targetM = Number(opts.initialMinute);
@@ -199,7 +284,11 @@ window.KPL_REPLAY = (function () {
           '<div class="rp-tl"><input type="range" min="0" max="' + (b.frames.length - 1) + '" step="1" value="' + frameIdx + '" id="rpRange">' +
           '<div class="rp-tl-meta mono"><span id="rpTime"></span>' +
           "<span>拖动查看该时刻的经济、资源与选手表现</span></div></div>" +
+          '<div class="rp-layer seg" id="rpLayer">' +
+          '<button type="button" data-layer="team"' + (layerMode === "team" ? ' class="on"' : "") + ">队伍总量</button>" +
+          '<button type="button" data-layer="lane"' + (layerMode === "lane" ? ' class="on"' : "") + ">分路对位</button></div>" +
           '<div class="rp-grid" id="rpGrid"></div>' +
+          '<div class="rp-turn" id="rpTurn"></div>' +
           '<div class="rp-evs"><div class="rp-pt">关键事件 <em class="mono">点击跳到该分钟</em></div>' +
           '<div class="rp-events" id="rpEvents"></div></div>' +
           "</div>";
@@ -228,9 +317,12 @@ window.KPL_REPLAY = (function () {
 
         var grid = document.getElementById("rpGrid");
         if (grid) {
-          grid.innerHTML = goldPanel(b, f, prev) + resourcePanel(b, f, prev) +
+          grid.innerHTML = goldPanel(b, f, prev, layerMode) + resourcePanel(b, f, prev) +
             evidencePanel(b, f, prev, b.frames, frameIdx);
         }
+
+        var turn = document.getElementById("rpTurn");
+        if (turn) turn.innerHTML = tpPanel(b);
 
         var r = document.getElementById("rpRange");
         if (r) {
@@ -284,6 +376,15 @@ window.KPL_REPLAY = (function () {
             setFrame(best);
           });
         });
+        var layerBox = document.getElementById("rpLayer");
+        if (layerBox) {
+          layerBox.addEventListener("click", function (e) {
+            var btn = e.target.closest("button"); if (!btn) return;
+            layerMode = btn.getAttribute("data-layer") === "lane" ? "lane" : "team";
+            Array.prototype.forEach.call(layerBox.children, function (x) { x.classList.toggle("on", x === btn); });
+            paint();
+          });
+        }
         var share = document.getElementById("rpShare");
         if (share) {
           share.addEventListener("click", function () {

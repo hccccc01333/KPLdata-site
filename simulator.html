@@ -7,6 +7,25 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css?v=51">
 <link rel="stylesheet" href="assets/pages.css?v=51">
+<style>
+.param-row{display:grid;grid-template-columns:auto minmax(0,1fr) 52px;gap:10px;align-items:center;margin-top:4px}
+.param-row input[type=range]{width:100%;accent-color:var(--gold)}
+.param-row .pv{font-family:var(--mono);font-size:12.5px;color:var(--ink2);text-align:right}
+.param-row .ck{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink2);white-space:nowrap}
+.sum-badge{display:flex;align-items:center;gap:8px;margin:10px 0 2px;padding:8px 12px;border-radius:9px;
+  font-size:12.5px;font-family:var(--mono);border:1px solid var(--line);background:var(--inset)}
+.sum-badge.ok{border-color:rgba(123,216,143,.45)}
+.sum-badge.ok .s{color:#7BD88F;font-weight:800}
+.sum-badge .s{font-weight:800}
+.qa-list{display:flex;flex-direction:column;gap:9px}
+.qa-item{display:grid;grid-template-columns:22px minmax(0,1fr);gap:9px;align-items:start;font-size:13px;line-height:1.65}
+.qa-item .q{color:var(--gold);font-weight:800;font-family:var(--mono)}
+.qa-item b{color:var(--ink)}
+.tree-wrap{overflow-x:auto;padding:4px 0}
+.tree-wrap svg{display:block;min-width:520px}
+.tree-toggle{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink2);cursor:pointer}
+.tree-toggle input{accent-color:var(--gold)}
+</style>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="大场模拟 · KPL 数据中心">
@@ -22,7 +41,8 @@
     <div class="ph-kicker mono">SIMULATOR · 大场模拟</div>
     <h1>大场胜率模拟器</h1>
     <p>选择数据范围、两支战队与赛制，基于两队该范围战绩推算单局获胜概率，
-      再按 BO 系列赛解析给出<b>大场胜率与各局分概率</b>。纯赛前信息，不含任何未开赛对局数据。</p>
+      再按 BO 系列赛解析给出<b>大场胜率、各局分概率、概率树</b>。可手动设定单局胜率做敏感性分析；
+      全部比分概率之和恒定校验为 <b>100%</b>。纯赛前信息，不含任何未开赛对局数据。</p>
   </div>
 </header>
 
@@ -35,22 +55,41 @@
       <label class="fld"><span>赛制</span><select id="simBo">
         <option value="3">BO3</option><option value="5" selected>BO5</option><option value="7">BO7</option>
       </select></label>
-      <div class="panel-foot mono" style="margin-top:4px">数据范围：两队已打完的比赛</div>
+      <div>
+        <div class="param-row">
+          <label class="ck"><input type="checkbox" id="simManual"> 手动设定单局胜率</label>
+          <input type="range" id="simP" min="5" max="95" step="1" value="50" disabled>
+          <span class="pv" id="simPv">50%</span>
+        </div>
+        <div class="panel-foot mono" style="margin-top:6px" id="simSrc">单局胜率由两队战绩换算（平滑处理）</div>
+      </div>
     </div>
     <div class="panel sim-out">
       <div class="sim-kpis" id="simKpis"></div>
       <div class="sim-dist" id="simDist"></div>
+      <div class="sum-badge" id="sumCheck"></div>
       <div class="panel-foot mono">假设每局相互独立 · 结果仅供参考，非官方预测</div>
     </div>
   </div>
 
-  <div class="block-head sub-head"><h2><i></i>方法与口径</h2></div>
+  <div class="block-head sub-head" style="margin-top:26px"><h2><i></i>概率树</h2>
+    <label class="tree-toggle"><input type="checkbox" id="treeOn"> 展开逐局概率树</label></div>
+  <div class="panel" id="treePanel" style="display:none">
+    <div class="tree-wrap" id="treeBox"></div>
+    <div class="cmp-tip" id="treeTip" style="font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.7"></div>
+  </div>
+
+  <div class="block-head sub-head" style="margin-top:26px"><h2><i></i>可解释结论</h2>
+    <span class="block-note mono">每条结论都可由上方概率直接复算</span></div>
+  <div class="panel"><div class="qa-list" id="qaList"></div></div>
+
+  <div class="block-head sub-head" style="margin-top:26px"><h2><i></i>方法与口径</h2></div>
   <div class="model-grid">
     <div class="panel">
       <ul class="rules">
-        <li><b>单局胜率。</b>把两队赛季胜率换算成单局获胜概率；比赛少的队做平滑处理，避免极端值；不使用任何未开赛数据。</li>
-        <li><b>系列赛推算。</b>按「先赢到半数加一局获胜」逐局展开精确计算，结果可复现。</li>
-        <li><b>比分预测。</b>列出全部可能比分的出现概率（如 3-1、3-2）。</li>
+        <li><b>单局胜率。</b>把两队赛季胜率换算成单局获胜概率；比赛少的队做平滑处理，避免极端值；不使用任何未开赛数据。勾选「手动设定」可跳过换算直接给值。</li>
+        <li><b>系列赛推算。</b>按「先赢到半数加一局获胜」逐局展开精确计算，各局分概率之和恒为 1（页面实时校验）。</li>
+        <li><b>概率树。</b>每个节点是「A 已胜 i 局、B 已胜 j 局」的状态，边为该局谁获胜；节点数字是从开局走到该状态的概率之和，叶节点之和为 1。</li>
       </ul>
     </div>
     <div class="panel">
@@ -75,6 +114,7 @@
   var D = KPL.data, K = KPL, $ = function (s) { return document.querySelector(s); };
   K.init();
   var selA = $("#simA"), selB = $("#simB"), selBo = $("#simBo");
+  var ckManual = $("#simManual"), rngP = $("#simP"), lblPv = $("#simPv");
   var byName = {};
 
   function fillScope(id) {
@@ -95,46 +135,177 @@
   var logit = function (p) { p = Math.min(Math.max(p, 1e-4), 1 - 1e-4); return Math.log(p / (1 - p)); };
   var sig = function (x) { return 1 / (1 + Math.exp(-x)); };
   var comb = function (n, k) { var r = 1; for (var i = 0; i < k; i++) r = r * (n - i) / (i + 1); return Math.round(r * 1e6) / 1e6; };
-  function series(p, bo) {
-    var m = (bo + 1) / 2, s = 0;
-    for (var k = 0; k < m; k++) s += comb(m - 1 + k, k) * Math.pow(p, m) * Math.pow(1 - p, k);
+
+  /* 从状态「A 已胜 a 局、B 已胜 b 局」出发，A 拿下大场的概率（负二项展开） */
+  function seriesFrom(a, b, m, p) {
+    if (a >= m) return 1;
+    if (b >= m) return 0;
+    var need = m - a, bneed = m - b, s = 0;
+    for (var k = 0; k < bneed; k++) s += comb(need - 1 + k, k) * Math.pow(p, need) * Math.pow(1 - p, k);
     return s;
   }
+  function series(p, bo) { return seriesFrom(0, 0, (bo + 1) / 2, p); }
+
+  /* 全部局分概率（A 视角） */
+  function scoreLines(p, m) {
+    var q = 1 - p, rows = [];
+    for (var k = 0; k < m; k++) {
+      rows.push({ score: m + "-" + k, win: true, prob: comb(m - 1 + k, k) * Math.pow(p, m) * Math.pow(q, k) });
+      rows.push({ score: k + "-" + m, win: false, prob: comb(m - 1 + k, k) * Math.pow(q, m) * Math.pow(p, k) });
+    }
+    return rows;
+  }
+
+  /* 概率树：节点 = 状态(i,j)，边 = 该局谁获胜；节点值为到达该状态的概率之和 */
+  function treeSVG(p, m) {
+    var states = {};
+    (function walk(i, j, pr) {
+      var k = i + "-" + j;
+      if (!states[k]) states[k] = { i: i, j: j, prob: 0, lvl: i + j, term: i === m || j === m };
+      states[k].prob += pr;
+      if (i === m || j === m) return;
+      walk(i + 1, j, pr * p);
+      walk(i, j + 1, pr * (1 - p));
+    })(0, 0, 1);
+
+    var levels = {};
+    Object.keys(states).forEach(function (k) {
+      var st = states[k];
+      (levels[st.lvl] || (levels[st.lvl] = [])).push(k);
+    });
+    Object.keys(levels).forEach(function (L) {
+      levels[L].sort(function (a, b) { return states[a].i - states[b].i; });
+    });
+    var maxLvl = 2 * m - 1, maxN = 1;
+    Object.keys(levels).forEach(function (L) { maxN = Math.max(maxN, levels[L].length); });
+
+    var W = 760, H = Math.max(260, maxN * 54 + 40), PL = 34, PR = 34, PT = 22, PB = 30;
+    var colW = (W - PL - PR) / maxLvl;
+    var X = function (lvl) { return PL + lvl * colW; };
+    var Y = function (lvl, idx, cnt) {
+      var usable = H - PT - PB;
+      return PT + (idx + 0.5) * (usable / cnt);
+    };
+    function pos(k) {
+      var st = states[k];
+      var arr = levels[st.lvl];
+      return [X(st.lvl), Y(st.lvl, arr.indexOf(k), arr.length)];
+    }
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="大场概率树">';
+    // 边
+    Object.keys(states).forEach(function (k) {
+      var st = states[k];
+      if (st.term) return;
+      var from = pos(k);
+      [["p", st.i + 1, st.j], ["q", st.i, st.j + 1]].forEach(function (e) {
+        var ck = e[1] + "-" + e[2];
+        if (!states[ck]) return;
+        var to = pos(ck);
+        var col = e[0] === "p" ? "#F6C021" : "#9DB2CC";
+        var width = (0.8 + 3 * states[ck].prob).toFixed(2);
+        s += '<line x1="' + from[0].toFixed(1) + '" y1="' + from[1].toFixed(1) + '" x2="' + to[0].toFixed(1) +
+          '" y2="' + to[1].toFixed(1) + '" stroke="' + col + '" stroke-opacity=".42" stroke-width="' + width + '"/>';
+      });
+    });
+    // 节点
+    Object.keys(states).forEach(function (k) {
+      var st = states[k], xy = pos(k);
+      var r = st.term ? 15 : 11;
+      var fill = st.term ? (st.i === m ? "rgba(246,192,33,.22)" : "rgba(157,178,204,.18)") : "#0F1B2C";
+      var stroke = st.term ? (st.i === m ? "#F6C021" : "#9DB2CC") : "#2A3D5A";
+      s += '<circle cx="' + xy[0].toFixed(1) + '" cy="' + xy[1].toFixed(1) + '" r="' + r +
+        '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.4"/>';
+      s += '<text x="' + xy[0].toFixed(1) + '" y="' + (xy[1] + 3.4).toFixed(1) +
+        '" text-anchor="middle" font-size="10" fill="#CBD6E4" font-family="Inter,monospace">' + st.i + "-" + st.j + "</text>";
+      var pct = K.pct(st.prob);
+      s += '<text x="' + xy[0].toFixed(1) + '" y="' + (xy[1] - r - 4).toFixed(1) +
+        '" text-anchor="middle" font-size="9.5" fill="#7E93B3" font-family="Inter,monospace">' + pct + "</text>";
+    });
+    s += "</svg>";
+    return s;
+  }
+
   function run() {
-    var a = byName[selA.value], b = byName[selB.value], bo = parseInt(selBo.value, 10);
+    var a = byName[selA.value], b = byName[selB.value], bo = parseInt(selBo.value, 10), m = (bo + 1) / 2;
     if (!a || !b) return;
     if (a.team === b.team) {
       $("#simKpis").innerHTML = '<div class="sim-kpi"><div class="k">提示</div><div class="v" style="font-size:15px;color:#C0392B">战队 A 与 B 不能相同</div></div>';
-      $("#simDist").innerHTML = "";
+      $("#simDist").innerHTML = ""; $("#sumCheck").innerHTML = ""; $("#qaList").innerHTML = "";
+      $("#treeBox").innerHTML = ""; $("#simSrc").textContent = "";
       return;
     }
-    var wrA = (a.wins + 2) / (a.games + 4), wrB = (b.wins + 2) / (b.games + 4);
-    var p = sig(logit(wrA) - logit(wrB));
+
+    var manual = ckManual.checked;
+    rngP.disabled = !manual;
+    var pAuto = sig(logit((a.wins + 2) / (a.games + 4)) - logit((b.wins + 2) / (b.games + 4)));
+    var p = manual ? (parseInt(rngP.value, 10) / 100) : pAuto;
+    lblPv.textContent = Math.round(p * 100) + "%";
+    $("#simSrc").textContent = manual
+      ? "手动设定单局胜率（跳过战绩换算）"
+      : "单局胜率由两队战绩换算（平滑处理）· 自动值 " + K.pct(pAuto);
+
+    var rows = scoreLines(p, m);
+    var sum = rows.reduce(function (acc, r) { return acc + r.prob; }, 0);
     var ps = series(p, bo);
-    var m = (bo + 1) / 2, rows = [];
-    for (var k = 0; k < m; k++) {
-      rows.push([m + "-" + k, comb(m - 1 + k, k) * Math.pow(p, m) * Math.pow(1 - p, k)]);
-      rows.push([k + "-" + m, comb(m - 1 + k, k) * Math.pow(1 - p, m) * Math.pow(p, k)]);
-    }
-    rows.sort(function (x, y) { return y[1] - x[1]; });
-    var mx = rows[0][1];
+
     $("#simKpis").innerHTML =
       '<div class="sim-kpi"><div class="k">' + K.esc(a.team) + ' 单局 p</div><div class="v">' + K.pct(p) +
-      '</div><div class="s">按赛季战绩换算 · 已平滑</div></div>' +
+      '</div><div class="s">' + (manual ? "手动设定" : "按赛季战绩换算 · 已平滑") + '</div></div>' +
       '<div class="sim-kpi hl"><div class="k">' + K.esc(a.team) + ' 大场胜率</div><div class="v">' + K.pct(ps) +
       '</div><div class="s">BO' + bo + ' · 逐局精确推算</div></div>' +
       '<div class="sim-kpi"><div class="k">等效样本</div><div class="v">' + (a.games + b.games) +
       '</div><div class="s">' + a.games + " + " + b.games + " 局</div></div>";
-    $("#simDist").innerHTML = rows.map(function (r) {
-      var win = r[0].split("-")[0] === String(m);
-      return '<div class="sd-row ' + (win ? "win" : "lose") + '"><span class="lab">' + r[0] + '</span>' +
-        '<span class="bar"><i style="width:' + (r[1] / mx * 100).toFixed(1) + '%"></i></span>' +
-        '<span class="pct">' + K.pct(r[1]) + "</span></div>";
+
+    var srt = rows.slice().sort(function (x, y) { return y.prob - x.prob; });
+    var mx = srt[0].prob;
+    $("#simDist").innerHTML = srt.map(function (r) {
+      return '<div class="sd-row ' + (r.win ? "win" : "lose") + '"><span class="lab">' + r.score + '</span>' +
+        '<span class="bar"><i style="width:' + (r.prob / mx * 100).toFixed(1) + '%"></i></span>' +
+        '<span class="pct">' + K.pct(r.prob) + "</span></div>";
     }).join("");
+
+    var okSum = Math.abs(sum - 1) < 5e-4;
+    $("#sumCheck").className = "sum-badge" + (okSum ? " ok" : "");
+    $("#sumCheck").innerHTML = '<span class="s">' + (okSum ? "✓" : "!") + '</span>' +
+      '<span>全部比分概率合计 = <b style="font-family:var(--mono)">' + (sum * 100).toFixed(4) + '%</b>' +
+      ' · ' + (okSum ? "校验通过（= 100%）" : "校验异常") + "</span>" +
+      '<span style="margin-left:auto;color:var(--muted)">局分条数 ' + rows.length + '</span>';
+
+    /* 可解释结论 */
+    var top = srt[0];
+    var leftWin = seriesFrom(0, 1, m, p);  // 先丢一局后的夺冠概率
+    var firstWin = seriesFrom(1, 0, m, p); // 先赢一局后的夺冠概率
+    var full = m === 1 ? 0 : comb(m - 1 + m - 1, m - 1) * (Math.pow(p, m) * Math.pow(1 - p, m - 1) + Math.pow(1 - p, m) * Math.pow(p, m - 1));
+    var up = series(Math.min(0.95, p + 0.05), bo), down = series(Math.max(0.05, p - 0.05), bo);
+    var qa = [
+      ["01", "最可能的比分是 <b>" + top.score + "</b>（" + top.win + "），出现概率 <b>" + K.pct(top.prob) + "</b>；" + (srt[1] ? "次高为 " + srt[1].score + "（" + K.pct(srt[1].prob) + "）。" : "")],
+      ["02", K.esc(a.team) + " 拿下大场的总概率为 <b>" + K.pct(ps) + "</b>，" + K.esc(b.team) + " 为 <b>" + K.pct(1 - ps) + "</b>；两者之和 = " + ((ps + (1 - ps)) * 100).toFixed(1) + "%。"],
+      ["03", "打满决胜局的概率为 <b>" + K.pct(full) + "</b>（比分恰好为 " + m + "-" + (m - 1) + " 或 " + (m - 1) + "-" + m + "）。"],
+      ["04", "第 1 局若" + K.esc(a.team) + "获胜，夺冠概率升至 <b>" + K.pct(firstWin) + "</b>；若第 1 局失利，降至 <b>" + K.pct(leftWin) + "</b>（初值 " + K.pct(ps) + "）。"],
+      ["05", "灵敏度：单局胜率每变动 ±5 个百分点，大场胜率约在 <b>" + K.pct(down) + " ~ " + K.pct(up) + "</b> 之间变化。"]
+    ];
+    $("#qaList").innerHTML = qa.map(function (x) {
+      return '<div class="qa-item"><span class="q">' + x[0] + '</span><span>' + x[1] + "</span></div>";
+    }).join("");
+
+    /* 概率树 */
+    if ($("#treeOn").checked) {
+      $("#treeBox").innerHTML = treeSVG(p, m);
+      $("#treeTip").textContent = "节点「i-j」= " + a.team + " 已胜 i 局、" + b.team +
+        " 已胜 j 局；金色边 = " + a.team + " 拿下该局，蓝色边 = " + b.team + " 拿下该局，边越粗概率越大。" +
+        "节点上方百分比是从开局走到该状态的概率之和，右侧实心叶节点之和为 100%。";
+    }
   }
+
   selA.addEventListener("change", run);
   selB.addEventListener("change", run);
   selBo.addEventListener("change", run);
+  ckManual.addEventListener("change", run);
+  rngP.addEventListener("input", run);
+  $("#treeOn").addEventListener("change", function () {
+    $("#treePanel").style.display = this.checked ? "" : "none";
+    run();
+  });
   fillScope(K.scopeBar("#scopeBar", fillScope));
   K.refresh();
 })();
