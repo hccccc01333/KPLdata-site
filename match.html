@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>比赛详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=52">
-<link rel="stylesheet" href="assets/pages.css?v=52">
+<link rel="stylesheet" href="assets/style.css?v=53">
+<link rel="stylesheet" href="assets/pages.css?v=53">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="比赛详情 · KPL 数据中心">
@@ -20,16 +20,16 @@
 <main class="wrap" id="main" style="margin-top:26px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=52"></script>
-<script src="assets/details.js?v=52"></script>
-<script src="assets/schedule_all.js?v=52"></script>
-<script src="assets/games/index.js?v=52"></script>
-<script src="assets/seasons.js?v=52"></script>
-<script src="assets/replay/index.js?v=52"></script>
-<script src="assets/coverage.js?v=52"></script>
-<script src="assets/replay.js?v=52"></script>
-<script src="assets/common.js?v=52"></script>
-<script src="assets/share.js?v=52"></script>
+<script src="assets/data.js?v=53"></script>
+<script src="assets/details.js?v=53"></script>
+<script src="assets/schedule_all.js?v=53"></script>
+<script src="assets/games/index.js?v=53"></script>
+<script src="assets/seasons.js?v=53"></script>
+<script src="assets/replay/index.js?v=53"></script>
+<script src="assets/coverage.js?v=53"></script>
+<script src="assets/replay.js?v=53"></script>
+<script src="assets/common.js?v=53"></script>
+<script src="assets/share.js?v=53"></script>
 <script>
 (function () {
   "use strict";
@@ -154,6 +154,7 @@
     }
     mountReplay(sr.matchId, "");
     if (liveNow) initLive(sr.matchId);
+    else initHistoryOnly(sr.matchId);
     initTodayOverlay(sr.matchId);
     K.refresh();
   }
@@ -286,11 +287,49 @@
   }
 
   /* ---------- 预测复盘（已结束的局 · 保留当时的模型推算） ---------- */
+  function loadHistShard(matchId, cb) {
+    var cache = window._KPL_HIST_SHARD || (window._KPL_HIST_SHARD = {});
+    if (cache[matchId]) { cb(cache[matchId]); return; }
+    var sc = document.createElement("script");
+    sc.src = "assets/live_hist/" + encodeURIComponent(matchId) + ".js?v=53";
+    sc.onload = function () {
+      cache[matchId] = window.KPL_LIVE_HIST || [];
+      sc.remove(); cb(cache[matchId]);
+    };
+    sc.onerror = function () { sc.remove(); cb([]); };
+    document.head.appendChild(sc);
+  }
+
   function renderHistory(L, matchId) {
     var zone = document.getElementById("histZone");
     if (!zone) return;
-    var hs = ((L && L.history) || []).filter(function (x) { return x.matchId === matchId && (x.pts || []).length > 1; });
+    // 先看 live.js 内联的最近局；没有再去按场分片里取（早先的比赛）
+    var inline = ((L && L.history) || []).filter(function (x) { return x.matchId === matchId; });
+    if (inline.length) { drawHistory(inline, matchId); return; }
+    loadHistShard(matchId, function (rows) {
+      var hs = (rows || []).filter(function (x) { return x.matchId === matchId; });
+      if (!hs.length) { zone.style.display = "none"; return; }
+      drawHistory(hs, matchId);
+    });
+  }
+
+  /* 已结束的比赛：不走实时轮询，但复盘仍要能看 */
+  function initHistoryOnly(matchId) {
+    loadHistShard(matchId, function (rows) {
+      var hs = (rows || []).filter(function (x) { return x.matchId === matchId; });
+      if (hs.length) drawHistory(hs, matchId);
+    });
+  }
+
+  function drawHistory(raw, matchId) {
+    var zone = document.getElementById("histZone");
+    if (!zone) return;
+    var hs = raw.filter(function (x) { return (x.pts || []).length > 1; });
     if (!hs.length) { zone.style.display = "none"; return; }
+    // 30 秒轮询会重复进来；内容没变就不重建，否则用户展开的曲线会被合上
+    var sig = hs.map(function (h) { return h.seq + ":" + (h.pts || []).length + ":" + h.win; }).join("|");
+    if (zone.dataset.sig === sig) return;
+    zone.dataset.sig = sig;
     zone.style.display = "";
     hs.sort(function (a, b) { return a.seq - b.seq; });
     zone.innerHTML = '<div class="live-card">' +

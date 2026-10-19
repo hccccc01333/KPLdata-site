@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>选手详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=52">
-<link rel="stylesheet" href="assets/pages.css?v=52">
+<link rel="stylesheet" href="assets/style.css?v=53">
+<link rel="stylesheet" href="assets/pages.css?v=53">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="选手详情 · KPL 数据中心">
@@ -20,11 +20,11 @@
 <main class="wrap" id="main" style="margin-top:24px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=52"></script>
-<script src="assets/seasons.js?v=52"></script>
-<script src="assets/players_detail.js?v=52"></script>
-<script src="assets/common.js?v=52"></script>
-<script src="assets/share.js?v=52"></script>
+<script src="assets/data.js?v=53"></script>
+<script src="assets/seasons.js?v=53"></script>
+<script src="assets/players_detail.js?v=53"></script>
+<script src="assets/common.js?v=53"></script>
+<script src="assets/share.js?v=53"></script>
 <script>
 (function () {
   "use strict";
@@ -126,9 +126,11 @@
 
   /* ---------- 同位置对比（这个位置里他排第几） ---------- */
   var posHTML = (function () {
-    var all = ((K.scopeOf("all") || {}).players) || [];
-    var peers = all.filter(function (p) { return p.pos === P.pos && p.games >= 20; });
-    if (peers.length < 4) return "";
+    // 对比池用选手详情全量（约 485 人），而不是榜单前 100——否则中游选手连同位置样本都进不去
+    var pool = window.KPL_PLAYERS || {};
+    var peers = Object.keys(pool).map(function (k) { return pool[k]; })
+      .filter(function (p) { return p.pos === P.pos && p.games >= 20; });
+    if (!P.pos || peers.length < 4) return "";
     var METRICS = [
       { k: "wr", label: "胜率", fmt: function (v) { return K.pct(v, 1); }, get: function (p) { return p.wr; } },
       { k: "kda", label: "KDA", fmt: function (v) { return Number(v).toFixed(2); }, get: function (p) { return p.kda; } },
@@ -137,14 +139,14 @@
       { k: "part", label: "参团率", fmt: function (v) { return K.mpct(v, 1); }, get: function (p) { return p.part; } },
       { k: "dmg", label: "输出占比", fmt: function (v) { return K.mpct(v, 1); }, get: function (p) { return p.dmg; } }
     ];
-    var self = peers.filter(function (p) { return p.name === P.name; })[0];
+    var self = P;  // 详情数据自身带 part/dmg，直接用它，不再按姓名回榜单里找
     function pctRank(arr, v) {
       var below = arr.filter(function (x) { return x < v; }).length;
       return arr.length ? below / arr.length : 0;
     }
     var rows = METRICS.map(function (m) {
       var vals = peers.map(m.get).filter(function (v) { return typeof v === "number" && isFinite(v); });
-      var my = self ? m.get(self) : m.get({ games: P.games, wr: P.wr, kda: P.kda, mvp: P.mvp, part: P.part, dmg: P.dmg });
+      var my = m.get(self);
       var myN = K.mnum(my);
       var mid = vals.slice().sort(function (a, b) { return a - b; })[Math.floor(vals.length / 2)];
       var midTxt = (vals.length && mid != null) ? "位置中位 " + m.fmt(mid) : "位置中位 —";

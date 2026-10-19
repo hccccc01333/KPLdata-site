@@ -51,6 +51,7 @@ def main() -> None:
             acc[name] = {
                 "games": 0, "wins": 0, "k": 0, "d": 0, "a": 0, "mvp": 0,
                 "part_sum": 0.0, "part_n": 0, "gold": 0,
+                "dmg_sum": 0.0, "dmg_n": 0,
                 "icon": "", "team": "", "teamIcon": "", "pos_sum": defaultdict(int),
                 "heroes": defaultdict(lambda: [0, 0, 0, 0, 0]),
                 "years": defaultdict(lambda: [0, 0, 0, 0, 0]),
@@ -99,6 +100,11 @@ def main() -> None:
                     if pv is not None:
                         row["part_sum"] += pv
                         row["part_n"] += 1
+                    # 输出占比：接口给的是 0~1 小数，统一按百分数口径存；缺失的局不进分母
+                    dv = num_or_none(p.get("hurt_total_rate"))
+                    if dv is not None:
+                        row["dmg_sum"] += dv
+                        row["dmg_n"] += 1
                     row["gold"] += int(float(p.get("gold") or 0))
                     if p.get("player_icon"):
                         row["icon"] = str(p["player_icon"])
@@ -155,6 +161,8 @@ def main() -> None:
             "mvp": row["mvp"],
             "part": round(row["part_sum"] / row["part_n"], 1) if row["part_n"] else None,
             "partN": row["part_n"],
+            "dmg": round(row["dmg_sum"] / row["dmg_n"] * 100, 1) if row["dmg_n"] else None,
+            "dmgN": row["dmg_n"],
             "gold": round(row["gold"] / g),
             "pos": pos, "team": row["team"], "teamIcon": row["teamIcon"], "icon": row["icon"],
             "heroes": [[h, v[0], round(v[1] / v[0], 3) if v[0] else 0,
