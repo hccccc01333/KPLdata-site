@@ -183,8 +183,9 @@
     $("#" + side + "Bans").innerHTML = banHtml;
   }
   function setLogo(element, url) {
-    element.src = safeImage(url);
-    element.hidden = !element.src;
+    var src = safeImage(url);
+    if (src) { element.src = src; element.hidden = false; }
+    else { element.removeAttribute("src"); element.hidden = true; }
   }
   function renderHead() {
     var g = currentGame, row = byId[currentId] || {};
@@ -346,8 +347,8 @@
   $("#stepRange").addEventListener("input", function () { setStep(Number(this.value)); });
   $("#startBtn").addEventListener("click", function () { setStep(0); });
   $("#endBtn").addEventListener("click", function () { setMode("final"); });
-  $("#prevBtn").addEventListener("click", function () { setStep(mode === "final" ? currentGame.bp.length - 1 : step - 1); });
-  $("#nextBtn").addEventListener("click", function () { setStep(mode === "final" ? currentGame.bp.length : step + 1); });
+  $("#prevBtn").addEventListener("click", function () { if (currentGame) setStep(mode === "final" ? currentGame.bp.length - 1 : step - 1); });
+  $("#nextBtn").addEventListener("click", function () { if (currentGame) setStep(mode === "final" ? currentGame.bp.length : step + 1); });
   $("#playBtn").addEventListener("click", play);
   $("#speedSelect").addEventListener("change", function () { if (timer) { stop(); play(); } });
   $("#copyLink").addEventListener("click", function () {
