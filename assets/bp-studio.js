@@ -53,6 +53,7 @@
   var mode = qs.get("mode") === "draft" ? "draft" : "final";
   var step = Number(qs.get("step")), initialStep = Number.isFinite(step) && qs.has("step") ? step : null;
   var timer = null, loadingVersion = 0;
+  var revealedHero = "";
   var cache = Object.create(null);
   var prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -166,7 +167,7 @@
       var cardImage = src ? '<div class="studio-card-art"><img class="studio-card-bg" src="' + src +
         '" alt="" loading="lazy"><img class="studio-card-icon" src="' + src + '" alt="" loading="lazy"><div class="studio-card-gradient"></div></div>' :
         '<div class="studio-card-art"><div class="studio-card-gradient"></div></div>';
-      out.push('<div class="studio-card filled" title="' + esc(h) + (who ? " · " + esc(who.n) : "") + '">' +
+      out.push('<div class="studio-card filled' + (h === revealedHero ? " new" : "") + '" title="' + esc(h) + (who ? " · " + esc(who.n) : "") + '">' +
         cardImage + '<span class="studio-card-index">PICK 0' + (i + 1) + '</span>' +
         '<div class="studio-card-meta"><strong>' + esc(h || "未知英雄") + '</strong><span>' +
         esc(who && who.n ? who.n : "选手未记录") + "</span></div></div>");
@@ -286,7 +287,9 @@
     stop();
     mode = "draft";
     step = Math.max(0, Math.min(currentGame.bp.length, n));
+    revealedHero = step > 0 && currentGame.bp[step - 1] && Number(currentGame.bp[step - 1][1]) === 1 ? String(currentGame.bp[step - 1][2]) : "";
     render();
+    revealedHero = "";
   }
   function setMode(next) {
     if (!currentGame) return;
@@ -309,7 +312,9 @@
     timer = setInterval(function () {
       if (!currentGame || step >= currentGame.bp.length) { stop(); return; }
       step += 1;
+      revealedHero = Number(currentGame.bp[step - 1][1]) === 1 ? String(currentGame.bp[step - 1][2]) : "";
       render();
+      revealedHero = "";
       if (step >= currentGame.bp.length) stop();
     }, rate);
   }
