@@ -440,5 +440,42 @@ window.KPL_COMPARE = (function () {
     syncUrl();   // 打开页面即把「默认答案」写进 URL，便于直接分享当前对比
   }
 
-  return { init: init, MAX: MAX };
+  /* ---------- 分享图：把当前对比整理成一张 1080×1440 卡片的内容 ----------
+     卡片 stats 只支持 2–6 行，所以每个对象压成一行（取该模式 2 个招牌指标）。 */
+  var HEAD = { hero: ["胜率", "禁用率"], team: ["单局胜率", "大场胜率"],
+               player: ["KDA", "胜率"], lane: ["KDA", "参团率"] };
+  var KIND = { hero: "英雄对比", team: "战队对比", player: "选手对比", lane: "位置对比" };
+  function spec() {
+    if (!MODES[baseMode]) return null;
+    var d = K.scopeOf(curScope);
+    var list = currentList();
+    var chosen = [];
+    picked.forEach(function (name) {
+      if (!name) return;
+      var o = list.filter(function (x) { return curName(x) === name; })[0];
+      if (o && chosen.indexOf(o) < 0) chosen.push(o);
+    });
+    if (chosen.length < 2) return null;
+    var M = MODES[baseMode];
+    var hdims = (HEAD[baseMode] || []).map(function (lbl) {
+      return M.dims.filter(function (dm) { return dm.label === lbl; })[0];
+    }).filter(Boolean);
+    var stats = chosen.slice(0, 4).map(function (o) {
+      var lbl = curName(o) + (baseMode === "lane" ? "（" + o.n + " 人）" : "");
+      var val = hdims.map(function (dm) { return dm.label + " " + dm.fmt(dm.get(o, d)); }).join(" · ");
+      return [lbl, val];
+    });
+    return {
+      kind: KIND[baseMode],
+      title: KIND[baseMode] + " · " + chosen.length + " 个对象",
+      sub: K.scopeName(curScope) + " · 相对水平雷达口径",
+      stats: stats,
+      note: "卡片数值为各对象原始值；雷达位置是「" + K.scopeName(curScope) +
+        "」范围内的相对百分位（越外越强）。来源：KPL 官方赛事数据。" +
+        (baseMode === "lane" ? "分路按选手实际出场位置聚合、按局数加权。" : ""),
+      url: location.href
+    };
+  }
+
+  return { init: init, spec: spec, MAX: MAX };
 })();
