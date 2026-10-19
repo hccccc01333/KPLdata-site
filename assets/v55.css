@@ -445,3 +445,11 @@ html.v55 .pd-sim b{display:block;font-size:13px;color:var(--ink);white-space:now
 html.v55 .pd-sim span{display:block;font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 html.v55 .pd-sim em{font-style:normal;margin-left:auto;font-size:11.5px;color:var(--brand);font-variant-numeric:tabular-nums;flex:none}
 @media(max-width:860px){html.v55 .pd-grid{grid-template-columns:1fr}html.v55 .pd-sim{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* 五列关键局面板：窄屏收成两列（内联样式无法被媒体查询覆盖） */
+html.v55 .sr-grid.five{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:860px){
+  html.v55 .sr-grid.five{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html.v55 .sr-grid.five .sr-cell:nth-child(5){border-right:none}
+  html.v55 .sr-grid.five .sr-cell:nth-child(4){border-right:1px solid var(--line)}
+}
