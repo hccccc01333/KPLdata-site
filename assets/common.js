@@ -45,6 +45,16 @@ window.KPL = (function () {
     return (validN > 0 && totalN > 0 && validN < totalN) ? s + "（" + validN + "/" + totalN + " 局）" : s;
   }
 
+  /* ---------- 图表调色板：随页面主题切换（v55 浅底页面用深色网格/更深的数据色） ---------- */
+  function chartPalette() {
+    var light = document.documentElement.classList.contains("v55");
+    return light
+      ? { grid: "#E3E5EA", axis: "#D9DCE2", label: "#6E7480", band: "#2E6FD0",
+          line: "#2E6FD0", area: "#2E6FD0", mark: "#F02F55", onLine: "#191B23", dot: "#FFFFFF" }
+      : { grid: "#1D2E47", axis: "#2C4568", label: "#6F84A3", band: "#9DB2CC",
+          line: "#9DB2CC", area: "#9DB2CC", mark: "#FFFFFF", onLine: "#FFFFFF", dot: "#0A111C" };
+  }
+
   /* ---------- 全量赛程索引（assets/schedule_all.js）+ 赛段 / 赛制标签 ---------- */
   // 赛果行、赛程行、卡片都要显示「赛段 · 赛制」，统一从这里取，避免各页各算一套口径。
   var _ALL_IDX = null;
@@ -564,6 +574,7 @@ window.KPL = (function () {
     var tl = (F && F.key ? F.key.timeline : (F ? F.timeline : [])) || [];
     var phases = (F && F.key ? F.key.phases : (F ? F.phases : [])) || [];
     var events = (F && F.key ? F.key.events : (F ? F.events : [])) || [];
+    var CP = chartPalette();
     if (!el || tl.length < 2) { if (el) el.innerHTML = '<div class="empty-tip">该局无分钟级曲线</div>'; return; }
     var W = 1040, H = 300, P = { l: 48, r: 18, t: 22, b: 34 };
     var fc = (F && F.forecast) || [];
@@ -572,31 +583,31 @@ window.KPL = (function () {
     var Y = function (p) { return P.t + (1 - p) * (H - P.t - P.b); };
     var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-label="胜率曲线">';
     s += '<defs><linearGradient id="gdarea" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0" stop-color="#9DB2CC" stop-opacity=".34"/>' +
-      '<stop offset="1" stop-color="#9DB2CC" stop-opacity="0"/></linearGradient></defs>';
+      '<stop offset="0" stop-color=' + JSON.stringify(CP.area) + ' stop-opacity=".34"/>' +
+      '<stop offset="1" stop-color=' + JSON.stringify(CP.area) + ' stop-opacity="0"/></linearGradient></defs>';
     var phLabels = ["早期 ≤8′", "中期 9–15′", "后期 16′+"];
     phases.forEach(function (ph, i) {
       var lo = i === 0 ? 0 : phases[i - 1].last_minute;
       s += '<rect x="' + X(lo).toFixed(1) + '" y="' + P.t + '" width="' + (X(ph.last_minute) - X(lo)).toFixed(1) +
-        '" height="' + (H - P.t - P.b) + '" fill="#9DB2CC" opacity="0.05"/>' +
+        '" height="' + (H - P.t - P.b) + '" fill=' + JSON.stringify(CP.band) + ' opacity="0.05"/>' +
         '<text x="' + ((X(lo) + X(ph.last_minute)) / 2).toFixed(1) + '" y="' + (P.t + 13) +
-        '" text-anchor="middle" font-size="11" fill="#6F84A3" font-family="Roboto Mono,monospace">' + (phLabels[i] || "") + "</text>";
+        '" text-anchor="middle" font-size="11" fill=' + JSON.stringify(CP.label) + ' font-family="Roboto Mono,monospace">' + (phLabels[i] || "") + "</text>";
     });
     [0, 0.25, 0.5, 0.75, 1].forEach(function (p) {
       var y = Y(p);
       s += '<line class="gridline" x1="' + P.l + '" y1="' + y.toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + y.toFixed(1) +
-        '" stroke="#1D2E47" stroke-dasharray="' + (p === 0.5 ? "4 4" : "2 6") + '"/>' +
+        '" stroke=' + JSON.stringify(CP.grid) + ' stroke-dasharray="' + (p === 0.5 ? "4 4" : "2 6") + '"/>' +
         '<text x="' + (P.l - 9) + '" y="' + (y + 4).toFixed(1) +
-        '" text-anchor="end" font-size="11" fill="#6F84A3" font-family="Roboto Mono,monospace">' + Math.round(p * 100) + "%</text>";
+        '" text-anchor="end" font-size="11" fill=' + JSON.stringify(CP.label) + ' font-family="Roboto Mono,monospace">' + Math.round(p * 100) + "%</text>";
     });
     for (var m = 5; m <= maxM; m += 5) {
       s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="11" ' +
-        'fill="#6F84A3" font-family="Roboto Mono,monospace">' + m + "′</text>";
+        'fill=' + JSON.stringify(CP.label) + ' font-family="Roboto Mono,monospace">' + m + "′</text>";
     }
     var line = tl.map(function (pt, i) { return (i ? "L" : "M") + X(pt.m).toFixed(1) + "," + Y(pt.p).toFixed(1); }).join(" ");
     s += '<path d="' + line + " L" + X(tl[tl.length - 1].m).toFixed(1) + "," + (H - P.b) +
       " L" + X(tl[0].m).toFixed(1) + "," + (H - P.b) + ' Z" fill="url(#gdarea)"/>';
-    s += '<path id="wrLine" d="' + line + '" fill="none" stroke="#9DB2CC" stroke-width="2.8" ' +
+    s += '<path id="wrLine" d="' + line + '" fill="none" stroke=' + JSON.stringify(CP.line) + ' stroke-width="2.8" ' +
       'stroke-linejoin="round" stroke-linecap="round"/>';
     var EV_COLOR = { first_blood: "#C08A8D", tyrant: "#8FB3AE", dark_tyrant: "#8FB3AE", lord: "#FFFFFF", storm: "#FFFFFF", big_dragon: "#FFFFFF" };
     var shown = 0;
@@ -766,6 +777,7 @@ window.KPL = (function () {
 
   /* ---------- 多系列折线图（指标曲线） ---------- */
   function lineChart(el, opts) {
+    var CP2 = chartPalette();
     if (!el) return;
     var series = (opts.series || []).filter(function (se) { return se.pts && se.pts.length > 1; });
     if (!series.length) { el.innerHTML = '<div class="empty-tip">暂无可展示的曲线</div>'; return; }
@@ -790,15 +802,15 @@ window.KPL = (function () {
       var gv = yMin + (yMax - yMin) * gi / 3;
       var gy = Y(gv).toFixed(1);
       s += '<line x1="' + P.l + '" y1="' + gy + '" x2="' + (W - P.r) + '" y2="' + gy +
-        '" stroke="#1D2E47" stroke-dasharray="4 6"/>' +
-        '<text x="' + (P.l - 8) + '" y="' + (parseFloat(gy) + 4) + '" text-anchor="end" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' + yFmt(gv) + "</text>";
+        '" stroke=' + JSON.stringify(CP2.grid) + ' stroke-dasharray="4 6"/>' +
+        '<text x="' + (P.l - 8) + '" y="' + (parseFloat(gy) + 4) + '" text-anchor="end" font-size="10.5" fill=' + JSON.stringify(CP2.label) + ' font-family="Inter,monospace">' + yFmt(gv) + "</text>";
     }
     if (yMin < 0 && yMax > 0) {
-      s += '<line x1="' + P.l + '" y1="' + Y(0).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0).toFixed(1) + '" stroke="#2C4568"/>';
+      s += '<line x1="' + P.l + '" y1="' + Y(0).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0).toFixed(1) + '" stroke=' + JSON.stringify(CP2.axis) + '/>';
     }
     /* x 轴刻度（每 5 分钟） */
     for (var m = Math.ceil(xMin / 5) * 5; m <= xMax; m += 5) {
-      s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' + m + "′</text>";
+      s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10.5" fill=' + JSON.stringify(CP2.label) + ' font-family="Inter,monospace">' + m + "′</text>";
     }
     /* 折线 */
     series.forEach(function (se) {
@@ -943,7 +955,7 @@ window.KPL = (function () {
   return {
     data: D, details: DT,
     esc: esc, fmtInt: fmtInt, pct: pct, signed: signed,
-    mnum: mnum, mpct: mpct, mnumText: mnumText, mfrac: mfrac,
+    mnum: mnum, mpct: mpct, mnumText: mnumText, mfrac: mfrac, chartPalette: chartPalette,
     dateCN: dateCN, weekdayCN: weekdayCN, tierOf: tierOf, icon: icon,
     scheduleIndex: scheduleIndex, matchMeta: matchMeta, stageLabel: stageLabel, stageTags: stageTags,
     leagueRows: leagueRows, leagueInfo: leagueInfo, leagueStandings: leagueStandings,

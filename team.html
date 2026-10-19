@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="v55">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>战队详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=54">
-<link rel="stylesheet" href="assets/pages.css?v=54">
+<link rel="stylesheet" href="assets/style.css?v=55">
+<link rel="stylesheet" href="assets/pages.css?v=55">
+<link rel="stylesheet" href="assets/v55.css?v=55">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="战队详情 · KPL 数据中心">
@@ -19,15 +20,15 @@
 <main class="wrap" id="main" style="margin-top:6px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=54"></script>
-<script src="assets/details.js?v=54"></script>
-<script src="assets/schedule_all.js?v=54"></script>
-<script src="assets/seasons.js?v=54"></script>
-<script src="assets/players_detail.js?v=54"></script>
-<script src="assets/team_data.js?v=54"></script>
-<script src="assets/power.js?v=54"></script>
-<script src="assets/common.js?v=54"></script>
-<script src="assets/share.js?v=54"></script>
+<script src="assets/data.js?v=55"></script>
+<script src="assets/details.js?v=55"></script>
+<script src="assets/schedule_all.js?v=55"></script>
+<script src="assets/seasons.js?v=55"></script>
+<script src="assets/players_detail.js?v=55"></script>
+<script src="assets/team_data.js?v=55"></script>
+<script src="assets/power.js?v=55"></script>
+<script src="assets/common.js?v=55"></script>
+<script src="assets/share.js?v=55"></script>
 <script>
 (function () {
   "use strict";
@@ -120,6 +121,7 @@
 
   /* 雷达图（六维百分位；与 compare.html 同一渲染） */
   function radarSVG(scores) {
+    var CP = K.chartPalette();
     var W = 560, H = 472, CX = 280, CY = 246, R = 168, n = DIMS.length;
     function pt(i, r) {
       var a = -Math.PI / 2 + i * 2 * Math.PI / n;
@@ -130,21 +132,21 @@
       var rr = R * ring / 4;
       var rp = DIMS.map(function (_, i) { return pt(i, rr).map(function (v) { return v.toFixed(1); }).join(","); }).join(" ");
       s += '<polygon points="' + rp + '" fill="' + (ring === 4 ? "rgba(157,178,204,.03)" : "none") +
-        '" stroke="#1D2E47" stroke-width="1"/>';
+        '" stroke=' + JSON.stringify(CP.grid) + ' stroke-width="1"/>';
     }
     DIMS.forEach(function (d, i) {
       var p = pt(i, R);
-      s += '<line x1="' + CX + '" y1="' + CY + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) + '" stroke="#1D2E47"/>';
+      s += '<line x1="' + CX + '" y1="' + CY + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) + '" stroke=' + JSON.stringify(CP.grid) + '/>';
       var lp = pt(i, R + 36);
       var anchor = lp[0] < CX - 12 ? "end" : lp[0] > CX + 12 ? "start" : "middle";
       s += '<text x="' + lp[0].toFixed(1) + '" y="' + (lp[1] + 4).toFixed(1) + '" text-anchor="' + anchor +
-        '" font-size="12.5" fill="#9FB3CE" font-family="Inter,PingFang SC,sans-serif">' + K.esc(d[1]) + "</text>";
+        '" font-size="12.5" fill=' + JSON.stringify(CP.label) + ' font-family="Inter,PingFang SC,sans-serif">' + K.esc(d[1]) + "</text>";
     });
     var pts = DIMS.map(function (d, i) { return pt(i, R * scores[i] / 100).map(function (v) { return v.toFixed(1); }).join(","); }).join(" ");
-    s += '<polygon points="' + pts + '" fill="#F6C021" fill-opacity=".14" stroke="#F6C021" stroke-width="2" stroke-linejoin="round"/>';
+    s += '<polygon points="' + pts + '" fill=' + JSON.stringify(CP.mark) + ' fill-opacity=".12" stroke=' + JSON.stringify(CP.mark) + ' stroke-width="2" stroke-linejoin="round"/>';
     DIMS.forEach(function (d, i) {
       var p = pt(i, R * scores[i] / 100);
-      s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill="#F6C021"/>';
+      s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill=' + JSON.stringify(CP.mark) + '/>';
     });
     return s + "</svg>";
   }
