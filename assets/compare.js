@@ -1,3 +1,4 @@
+var CP = (window.KPL && KPL.chartPalette) ? KPL.chartPalette() : {grid:'#E3E5EA',axis:'#D9DCE2',label:'#6E7480',line:'#2E6FD0',mark:'#F02F55',onLine:'#191B23'};
 /* KPL 数据中心 · 对比引擎（V5 阶段四「对比工具拆分」）
    ------------------------------------------------------------------
    原 compare.html 的三模式内联脚本抽成公共引擎，并新增「位置」模式。
@@ -15,7 +16,7 @@
 window.KPL_COMPARE = (function () {
   "use strict";
 
-  var COLORS = ["#FFFFFF", "#9DB2CC", "#C08A8D", "#8FB3AE"];
+  var COLORS = [CP.mark, CP.line, "#8A6A3B", "#0F8A78"];
   var MAX = 4;
   var LANES = ["对抗路", "打野", "中路", "发育路", "游走"];
   var TRENDABLE = { hero: 1, team: 1 };   // 只有英雄 / 战队有逐年 by 数据，选手 / 位置无趋势
@@ -216,11 +217,11 @@ window.KPL_COMPARE = (function () {
     var svg = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="赛季趋势对比">';
     [lo, (lo + hi) / 2, hi].forEach(function (g) {
       svg += '<line x1="' + PL + '" y1="' + Y(g).toFixed(1) + '" x2="' + (W - PR) + '" y2="' + Y(g).toFixed(1) +
-        '" stroke="#1D2E47" stroke-dasharray="' + (Math.abs(g - (lo + hi) / 2) < 0.01 ? "0" : "4 6") + '"/>' +
-        '<text x="' + (PL - 8) + '" y="' + (Y(g) + 4).toFixed(1) + '" text-anchor="end" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' + Math.round(g) + "%</text>";
+        '" stroke=' + CP.grid + ' stroke-dasharray="' + (Math.abs(g - (lo + hi) / 2) < 0.01 ? "0" : "4 6") + '"/>' +
+        '<text x="' + (PL - 8) + '" y="' + (Y(g) + 4).toFixed(1) + '" text-anchor="end" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' + Math.round(g) + "%</text>";
     });
     years.forEach(function (y) {
-      svg += '<text x="' + X(y).toFixed(1) + '" y="' + (H - 14) + '" text-anchor="middle" font-size="11" fill="#9FB3CE" font-family="Inter,monospace">' + y + "</text>";
+      svg += '<text x="' + X(y).toFixed(1) + '" y="' + (H - 14) + '" text-anchor="middle" font-size="11" fill=' + CP.label + ' font-family="Inter,monospace">' + y + "</text>";
     });
     chosen.forEach(function (o, ci) {
       var color = COLORS[ci % COLORS.length];
@@ -313,15 +314,15 @@ window.KPL_COMPARE = (function () {
       var rr = R * ring / 4;
       var ringPts = dims.map(function (_, i) { return pt(i, rr).map(function (v) { return v.toFixed(1); }).join(","); }).join(" ");
       s += '<polygon points="' + ringPts + '" fill="' + (ring === 4 ? "rgba(157,178,204,.03)" : "none") +
-        '" stroke="#1D2E47" stroke-width="1"/>';
+        '" stroke=' + CP.grid + ' stroke-width="1"/>';
     }
     dims.forEach(function (dim, i) {
       var p = pt(i, R);
-      s += '<line x1="' + CX + '" y1="' + CY + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) + '" stroke="#1D2E47"/>';
+      s += '<line x1="' + CX + '" y1="' + CY + '" x2="' + p[0].toFixed(1) + '" y2="' + p[1].toFixed(1) + '" stroke=' + CP.grid + '/>';
       var lp = pt(i, R + 36);
       var anchor = lp[0] < CX - 12 ? "end" : lp[0] > CX + 12 ? "start" : "middle";
       s += '<text x="' + lp[0].toFixed(1) + '" y="' + (lp[1] + 4).toFixed(1) + '" text-anchor="' + anchor +
-        '" font-size="12.5" fill="#9FB3CE" font-family="Inter,PingFang SC,sans-serif">' + K.esc(dim.label) + "</text>";
+        '" font-size="12.5" fill=' + CP.label + ' font-family="Inter,PingFang SC,sans-serif">' + K.esc(dim.label) + "</text>";
     });
     series.forEach(function (se, ci) {
       var pts = dims.map(function (dim, i) {
@@ -376,7 +377,7 @@ window.KPL_COMPARE = (function () {
           var dv = raws[0] - raws[1];
           // 指标格式可能自带符号（如 +1289），这里先剥掉再统一加差值的正负号
           var absTxt = String(dim.fmt(Math.abs(dv))).replace(/^[+＋\-−]/, "");
-          diff = '<td class="num mono" style="color:' + (dv >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
+          diff = '<td class="num mono" style="color:' + (dv >= 0 ? "#1F8A53" : "#D5374B") + '">' +
             (dv >= 0 ? "+" : "−") + absTxt + "</td>";
         }
       }
