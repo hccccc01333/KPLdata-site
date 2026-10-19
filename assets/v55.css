@@ -485,3 +485,6 @@ html.v55 .chem-row.chem-lineup{display:grid;grid-template-columns:minmax(0,1fr) 
 html.v55 .chem-lineup .nm{grid-area:nm}
 html.v55 .chem-lineup .d{grid-area:d;align-self:center}
 html.v55 .chem-lineup .nums{grid-area:nums;white-space:normal}
+
+html.v55 .chem-row.chem-lineup{grid-template-areas:"nm d" "nums nums" "heroes heroes"}
+html.v55 .chem-lineup .heroes{grid-area:heroes;font-size:10.5px;color:var(--faint);line-height:1.6;white-space:normal}
