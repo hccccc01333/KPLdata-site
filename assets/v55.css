@@ -453,3 +453,29 @@ html.v55 .sr-grid.five{grid-template-columns:repeat(5,minmax(0,1fr))}
   html.v55 .sr-grid.five .sr-cell:nth-child(5){border-right:none}
   html.v55 .sr-grid.five .sr-cell:nth-child(4){border-right:1px solid var(--line)}
 }
+
+/* ---------------- 选手：赛季漂移 / 搭档对手 / 对位网 ---------------- */
+html.v55 .pd-drift-sum{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0 4px;font-size:12.5px;color:var(--muted)}
+html.v55 .pd-drift-sum b{font-variant-numeric:tabular-nums}
+html.v55 .pd-drift-sum .up{color:#0F8A78}
+html.v55 .pd-drift-sum .down{color:#D5374B}
+html.v55 .chem-grid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:0 26px}
+html.v55 .chem-col{min-width:0}
+html.v55 .chem-col h4{font-size:12px;color:var(--muted);font-weight:600;margin:0 0 6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+html.v55 .chem-row{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid rgba(25,27,35,.06);font-size:12.5px;min-width:0}
+html.v55 .chem-row:last-child{border-bottom:none}
+html.v55 .chem-row .nm{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+html.v55 .chem-row .nums{font-family:var(--mono);color:var(--muted);font-size:11px;white-space:nowrap;flex:none}
+html.v55 .chem-row .d{font-family:var(--mono);font-weight:700;font-size:11.5px;white-space:nowrap;flex:none}
+html.v55 .chem-row .d.up{color:#0F8A78}
+html.v55 .chem-row .d.down{color:#D5374B}
+html.v55 .chem-lineup .nm{font-weight:500;color:var(--ink2)}
+html.v55 .rival-wrap{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:24px;align-items:start}
+html.v55 .rival-net svg{width:100%;height:auto;display:block}
+html.v55 .rival-list .chem-row .nm{flex:1}
+html.v55 .rival-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:8px}
+html.v55 .rival-legend i{display:inline-block;width:16px;height:2px;vertical-align:middle;margin-right:5px}
+@media(max-width:960px){
+  html.v55 .chem-grid{grid-template-columns:1fr;gap:18px}
+  html.v55 .rival-wrap{grid-template-columns:1fr}
+}
