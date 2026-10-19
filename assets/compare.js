@@ -71,12 +71,12 @@ window.KPL_COMPARE = (function () {
       icon: function (x) { return x.icon; },
       target: "hero.html?id=",
       dims: [
-        { label: "胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "选用率", get: function (x, d) { return x.games / Math.max(1, d.totals.battles) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "禁用率", get: function (x, d) { return x.bans / Math.max(1, d.totals.battles) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "承伤", get: function (x) { return x.bh; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "KDA", get: function (x) { return x.kda; }, fmt: function (v) { return v.toFixed(2); } }
+        { label: "胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "选用率", get: function (x, d) { return x.games / Math.max(1, d.totals.battles) * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "禁用率", get: function (x, d) { return x.bans / Math.max(1, d.totals.battles) * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "承伤", get: function (x) { return x.bh; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "KDA", get: function (x) { return x.kda; }, fmt: function (v) { return K.mnumText(v, 2); } }
       ]
     },
     player: {
@@ -87,12 +87,12 @@ window.KPL_COMPARE = (function () {
       icon: function (x) { return x.icon; },
       target: "players.html?q=",
       dims: [
-        { label: "KDA", get: function (x) { return x.kda; }, fmt: function (v) { return v.toFixed(2); } },
-        { label: "胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "MVP 率", get: function (x) { return x.mvp / Math.max(1, x.games) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "参团率", get: function (x) { return x.part; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return String(Math.round(v)); } }
+        { label: "KDA", get: function (x) { return x.kda; }, fmt: function (v) { return K.mnumText(v, 2); } },
+        { label: "胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "MVP 率", get: function (x) { return x.mvp / Math.max(1, x.games) * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "参团率", get: function (x) { return x.part; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return K.mnumText(v, 0); } }
       ]
     },
     team: {
@@ -104,11 +104,11 @@ window.KPL_COMPARE = (function () {
       icon: function (x) { return x.icon; },
       target: "teams.html",
       dims: [
-        { label: "单局胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "大场胜率", get: function (x) { return x.mWin / Math.max(1, x.matches) * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "场均金差", get: function (x) { return x.goldDiff; }, fmt: function (v) { return (v > 0 ? "+" : "") + Math.round(v); } },
-        { label: "场均击杀差", get: function (x) { return x.killDiff; }, fmt: function (v) { return (v > 0 ? "+" : "") + v.toFixed(1); } },
-        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return String(Math.round(v)); } }
+        { label: "单局胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "大场胜率", get: function (x) { return x.mWin / Math.max(1, x.matches) * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "场均金差", get: function (x) { return x.goldDiff; }, fmt: function (v) { var n = K.mnum(v); return n === null ? "—" : (n > 0 ? "+" : "") + Math.round(n); } },
+        { label: "场均击杀差", get: function (x) { return x.killDiff; }, fmt: function (v) { var n = K.mnum(v); return n === null ? "—" : (n > 0 ? "+" : "") + n.toFixed(1); } },
+        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return K.mnumText(v, 0); } }
       ]
     },
     lane: {
@@ -117,12 +117,12 @@ window.KPL_COMPARE = (function () {
       icon: function () { return ""; },
       target: null,
       dims: [
-        { label: "KDA", get: function (x) { return x.kda; }, fmt: function (v) { return v.toFixed(2); } },
-        { label: "胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "MVP 率", get: function (x) { return x.mvpRate; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "参团率", get: function (x) { return x.part; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return v.toFixed(1) + "%"; } },
-        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return String(Math.round(v)); } }
+        { label: "KDA", get: function (x) { return x.kda; }, fmt: function (v) { return K.mnumText(v, 2); } },
+        { label: "胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "MVP 率", get: function (x) { return x.mvpRate; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "参团率", get: function (x) { return x.part; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return K.mnumText(v, 0); } }
       ]
     }
   };
@@ -284,13 +284,16 @@ window.KPL_COMPARE = (function () {
       return { name: M.name(obj), obj: obj, color: COLORS[ci] };
     });
     var dims = M.dims.map(function (dim) {
-      var all = list.map(function (x) { return dim.get(x, d); });
-      var sorted = all.slice().sort(function (a, b) { return a - b; });
+      // 只有「有有效样本」的对象参与分位归一化，缺失值不当作 0 拉低别人的排名
+      var sorted = list.map(function (x) { return K.mnum(dim.get(x, d)); })
+        .filter(function (v) { return v !== null; })
+        .sort(function (a, b) { return a - b; });
       return {
         label: dim.label,
         fmt: dim.fmt,
         values: series.map(function (se) {
-          var v = dim.get(se.obj, d);
+          var v = K.mnum(dim.get(se.obj, d));
+          if (v === null) return { raw: null, score: 0 };   // 无有效样本 → 雷达顶点落圆心、表格显示 —
           var below = 0;
           for (var i = 0; i < sorted.length; i++) { if (sorted[i] < v) below++; else break; }
           var rank = sorted.length > 1 ? below / (sorted.length - 1) * 100 : 50;
@@ -357,25 +360,36 @@ window.KPL_COMPARE = (function () {
     }).join("") + (series.length === 2 ? '<th class="num">差（1−2）</th>' : "") + "</tr></thead>";
     var body = "<tbody>" + dims.map(function (dim) {
       var raws = dim.values.map(function (v) { return v.raw; });
-      var best = Math.max.apply(null, raws), worst = Math.min.apply(null, raws);
+      var nums = raws.filter(function (v) { return v !== null; });   // 缺失值既不评最高/最低，也不参与差值
+      var best = nums.length ? Math.max.apply(null, nums) : null;
+      var worst = nums.length ? Math.min.apply(null, nums) : null;
       var cells = dim.values.map(function (v) {
+        if (v.raw === null) return '<td><b style="color:var(--muted)">—</b></td>';
         var color = v.raw === best ? "var(--gold)" : (v.raw === worst && best !== worst ? "var(--muted)" : "");
         return "<td><b" + (color ? ' style="color:' + color + '"' : "") + ">" + dim.fmt(v.raw) + "</b></td>";
       }).join("");
       var diff = "";
       if (series.length === 2) {
-        var dv = raws[0] - raws[1];
-        // 指标格式可能自带符号（如 +1289），这里先剥掉再统一加差值的正负号
-        var absTxt = String(dim.fmt(Math.abs(dv))).replace(/^[+＋\-−]/, "");
-        diff = '<td class="num mono" style="color:' + (dv >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
-          (dv >= 0 ? "+" : "−") + absTxt + "</td>";
+        if (raws[0] === null || raws[1] === null) {
+          diff = '<td class="num mono" style="color:var(--muted)">—</td>';
+        } else {
+          var dv = raws[0] - raws[1];
+          // 指标格式可能自带符号（如 +1289），这里先剥掉再统一加差值的正负号
+          var absTxt = String(dim.fmt(Math.abs(dv))).replace(/^[+＋\-−]/, "");
+          diff = '<td class="num mono" style="color:' + (dv >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
+            (dv >= 0 ? "+" : "−") + absTxt + "</td>";
+        }
       }
       return "<tr><td>" + K.esc(dim.label) + "</td>" + cells + diff + "</tr>";
     }).join("") + "</tbody>";
     $("#cmpTable").innerHTML = head + body;
 
+    var hasNull = dims.some(function (dim) {
+      return dim.values.some(function (v) { return v.raw === null; });
+    });
     var tip = "雷达图上的位置 = 该指标在「" + K.scopeName(curScope) +
       "」范围内的相对水平（外圈 = 更强）；表格每行最高值金色、最低值灰色；选 2 个对象时多一列差值，表头可点进详情页。";
+    if (hasNull) tip += " 表格里的「—」表示该对象在这一指标上没有有效样本，不参与最高/最低与差值计算，雷达图对应顶点落在圆心。";
     if (mode === "lane") {
       var cov = chosen.map(function (o) { return o.name + " " + o.n + " 人 / " + K.fmtInt(o.games) + " 局"; }).join("；");
       tip += " 分路按选手实际出场位置聚合、按局数加权（" + cov +
