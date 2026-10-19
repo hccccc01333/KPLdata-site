@@ -79,6 +79,84 @@ window.KPL = (function () {
     return t.length ? '<span class="mtags">' + t.join("") + "</span>" : "";
   }
 
+  /* ---------- 赛事视图（当前届赛事 / 赛段进度 / 赛事积分榜） ----------
+     首页头图、赛程页赛事条、赛事进程页共用同一套口径，避免各页各算一套。 */
+  function _whenKey(r) { return String(r.date || "") + "T" + String(r.time || "00:00"); }
+  function leagueRows(lid) {
+    return (window.KPL_SCHEDULE_ALL || []).filter(function (r) { return r && String(r.leagueId) === String(lid); });
+  }
+  function leagueShortName(name) {
+    return String(name || "").replace(/^\d{4}\s*年?\s*(KPL|王者荣耀)?\s*/, "");
+  }
+  function currentLeagueId() {
+    var all = window.KPL_SCHEDULE_ALL || [];
+    if (!all.length) return "";
+    var pending = all.filter(function (r) { return !r.done; });
+    var r = pending.length
+      ? pending.slice().sort(function (a, b) { return _whenKey(a).localeCompare(_whenKey(b)); })[0]
+      : all.slice().sort(function (a, b) { return _whenKey(a).localeCompare(_whenKey(b)); }).pop();
+    return r ? String(r.leagueId || "") : "";
+  }
+  function leagueInfo(lid) {
+    var rows = leagueRows(lid);
+    if (!rows.length) return null;
+    function span(list) {
+      var ds = list.map(function (r) { return String(r.date || ""); }).sort();
+      return { from: ds[0] || "", to: ds[ds.length - 1] || "" };
+    }
+    var stages = {}, order = [];
+    rows.forEach(function (r) {
+      var s = String(r.stage || "");
+      if (!stages[s]) { stages[s] = []; order.push(s); }
+      stages[s].push(r);
+    });
+    order.sort(function (a, b) { return span(stages[a]).from.localeCompare(span(stages[b]).from); });
+    var list = order.map(function (s) {
+      var st = stages[s], sp = span(st);
+      var doneN = st.filter(function (r) { return r.done; }).length;
+      return { key: s, label: stageLabel(s), rows: st, n: st.length, doneN: doneN,
+               from: sp.from, to: sp.to, done: doneN === st.length };
+    });
+    var nowIdx = -1;
+    for (var i = 0; i < list.length; i++) { if (!list[i].done) { nowIdx = i; break; } }
+    var pending = rows.filter(function (r) { return !r.done; })
+      .sort(function (a, b) { return _whenKey(a).localeCompare(_whenKey(b)); });
+    var sp2 = span(rows);
+    var last = rows.slice().sort(function (a, b) { return _whenKey(a).localeCompare(_whenKey(b)); }).pop();
+    var s1 = last ? Number(last.score1 || 0) : 0, s2 = last ? Number(last.score2 || 0) : 0;
+    var teams = {};
+    rows.forEach(function (r) {
+      if (r.team1 && r.team1 !== "待定") teams[r.team1] = 1;
+      if (r.team2 && r.team2 !== "待定") teams[r.team2] = 1;
+    });
+    return {
+      id: String(lid), name: String(rows[0].leagueName || lid), short: leagueShortName(rows[0].leagueName),
+      year: String(rows[0].year || (sp2.from || "").slice(0, 4)),
+      rows: rows, stages: list, nowIdx: nowIdx, total: rows.length,
+      doneN: rows.filter(function (r) { return r.done; }).length,
+      pending: pending, next: pending[0] || null,
+      from: sp2.from, to: sp2.to, teamN: Object.keys(teams).length,
+      champion: (nowIdx === -1 && last && last.done && (s1 || s2)) ? (s1 > s2 ? last.team1 : last.team2) : "",
+    };
+  }
+  function leagueStandings(lid) {
+    var st = {};
+    function row(t) { return st[t] || (st[t] = { team: t, w: 0, l: 0, gw: 0, gl: 0, m: 0, icon: "" }); }
+    leagueRows(lid).forEach(function (r) {
+      if (!r.done || !r.team1 || !r.team2 || r.team1 === "待定" || r.team2 === "待定") return;
+      var a = row(r.team1), b = row(r.team2);
+      a.m++; b.m++;
+      a.gw += Number(r.score1 || 0); a.gl += Number(r.score2 || 0);
+      b.gw += Number(r.score2 || 0); b.gl += Number(r.score1 || 0);
+      if (Number(r.score1) > Number(r.score2)) { a.w++; b.l++; } else { b.w++; a.l++; }
+      if (r.icon1) a.icon = r.icon1;
+      if (r.icon2) b.icon = r.icon2;
+    });
+    return Object.keys(st).map(function (t) { return st[t]; })
+      .map(function (x) { x.diff = x.gw - x.gl; x.wr = x.gw / Math.max(1, x.gw + x.gl); return x; })
+      .sort(function (x, y) { return (y.w - x.w) || (y.diff - x.diff) || (y.wr - x.wr); });
+  }
+
   /* ---------- 图标（内联 SVG，stroke 现行色） ---------- */
   var ICONS = {
     home: '<path d="M4 11l8-7 8 7v9a1 1 0 01-1 1h-5v-6h-4v6H5a1 1 0 01-1-1z"/>',
@@ -112,8 +190,8 @@ window.KPL = (function () {
      detail 页（match/game/picks）沿用各自分组代表的 data-page，因此天然归组。 */
   var NAV = [
     { ic: "calendar", label: "赛事", href: "schedule.html",
-      pages: ["index.html", "schedule.html"],
-      sub: [["精选对局", "picks.html"]] },
+      pages: ["index.html", "schedule.html", "bracket.html"],
+      sub: [["赛事进程", "bracket.html"], ["精选对局", "picks.html"]] },
     { ic: "shield", label: "战队", href: "teams.html",
       pages: ["teams.html", "h2h.html"],
       sub: [["交手记录", "h2h.html"]] },
@@ -868,6 +946,8 @@ window.KPL = (function () {
     mnum: mnum, mpct: mpct, mnumText: mnumText, mfrac: mfrac,
     dateCN: dateCN, weekdayCN: weekdayCN, tierOf: tierOf, icon: icon,
     scheduleIndex: scheduleIndex, matchMeta: matchMeta, stageLabel: stageLabel, stageTags: stageTags,
+    leagueRows: leagueRows, leagueInfo: leagueInfo, leagueStandings: leagueStandings,
+    currentLeagueId: currentLeagueId, leagueShortName: leagueShortName,
     side: side, resultRow: resultRow, muBody: muBody,
     heroCard: heroCard, playerCard: playerCard, wrChart: wrChart,
     countdown: countdown, scopeBar: scopeBar, scopeOf: scopeOf, scopeName: scopeName,

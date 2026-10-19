@@ -6,8 +6,8 @@
 <title>KPL 数据中心 · 2026 赛事数据 · 赛程 / 战队 / 选手 / 英雄</title>
 <meta name="description" content="KPL 赛事数据产品：按比赛日看赛程比分、战队与选手数据、英雄梯度、比赛复盘与胜负模拟。数据来自腾讯 KPL 公开赛事接口。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=53">
-<link rel="stylesheet" href="assets/pages.css?v=53">
+<link rel="stylesheet" href="assets/style.css?v=54">
+<link rel="stylesheet" href="assets/pages.css?v=54">
 <style>
 /* 我的 KPL：仅在存在收藏时出现，无收藏整块隐藏（不留空壳） */
 .myk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:12px}
@@ -37,9 +37,13 @@
 
   <div id="favStrip" style="display:none;margin-top:14px"></div>
 
-  <!-- ① 首屏：赛事焦点（直播 > 今日/下一场 > 最近一场结果） -->
+  <!-- ① 首屏：赛事身份 + 焦点对阵 + 赛段进程（谁是主角 / 打到哪一步 / 现在看什么） -->
   <section class="block" id="focusBlock" style="margin-top:18px">
-    <div class="focus-hero" id="focusHero"></div>
+    <div class="tm-hero">
+      <div class="tm-id" id="tourneyId"></div>
+      <div class="tm-focus" id="focusHero"></div>
+    </div>
+    <div class="tm-rail" id="stageRail"></div>
   </section>
 
   <!-- 我的 KPL：按收藏优先展示。无收藏时整块不出现（默认 display:none） -->
@@ -162,14 +166,14 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=53"></script>
-<script src="assets/details.js?v=53"></script>
-<script src="assets/seasons.js?v=53"></script>
-<script src="assets/schedule_all.js?v=53"></script>
-<script src="assets/coverage.js?v=53"></script>
-<script src="assets/replay/index.js?v=53"></script>
-<script src="assets/common.js?v=53"></script>
-<script src="assets/share.js?v=53"></script>
+<script src="assets/data.js?v=54"></script>
+<script src="assets/details.js?v=54"></script>
+<script src="assets/seasons.js?v=54"></script>
+<script src="assets/schedule_all.js?v=54"></script>
+<script src="assets/coverage.js?v=54"></script>
+<script src="assets/replay/index.js?v=54"></script>
+<script src="assets/common.js?v=54"></script>
+<script src="assets/share.js?v=54"></script>
 <script>
 (function () {
   "use strict";
@@ -321,6 +325,49 @@
     wrap.style.display = "";
   })();
 
+  /* ---------- ① 赛事身份：当前届赛事 + 打到哪一步（先立赛事，再进数据） ---------- */
+  (function renderTourney() {
+    var idEl = document.getElementById("tourneyId");
+    var railEl = document.getElementById("stageRail");
+    if (!idEl || !railEl) return;
+    var lid = K.currentLeagueId();
+    var L = lid ? K.leagueInfo(lid) : null;
+    if (!L) { idEl.innerHTML = ""; railEl.innerHTML = ""; railEl.style.display = "none"; return; }
+
+    function md(d) { return String(d || "").slice(5).replace("-", "."); }
+    var nowStage = L.nowIdx >= 0 ? L.stages[L.nowIdx] : null;
+    var nowTxt = nowStage
+      ? "当前赛段：<b>" + K.esc(nowStage.label) + "</b> · 还剩 " + (nowStage.n - nowStage.doneN) + " 场"
+      : (L.champion ? "已收官 · 冠军 <b>" + K.esc(L.champion) + "</b>" : "全部赛程已完成");
+
+    idEl.innerHTML =
+      '<div class="tm-kicker mono">KING PRO LEAGUE · ' + K.esc(L.year) + "</div>" +
+      '<h1 class="tm-title">' + K.esc(L.short) + " <em>" + K.esc(L.year) + "</em></h1>" +
+      '<div class="tm-meta">' +
+        "<span>" + K.esc(md(L.from)) + " — " + K.esc(md(L.to)) + "</span>" +
+        "<span><b>" + L.teamN + "</b> 支战队</span>" +
+        "<span>已完赛 <b>" + L.doneN + "</b> / " + L.total + " 场</span>" +
+        "<span>" + nowTxt + "</span>" +
+      "</div>" +
+      '<div class="tm-acts">' +
+        '<a class="btn primary sm" href="bracket.html?id=' + encodeURIComponent(L.id) + '">赛事进程与对阵</a>' +
+        '<a class="btn ghost sm" href="schedule.html">完整赛程</a>' +
+        (L.next ? '<span class="block-note mono">下一场 ' +
+          K.esc(md(L.next.date) + " " + (L.next.time || "")) + " " +
+          K.esc(L.next.team1) + " vs " + K.esc(L.next.team2) + "</span>" : "") +
+      "</div>";
+
+    railEl.innerHTML = L.stages.map(function (s, i) {
+      var cls = "tm-seg" + (s.done ? " done" : (i === L.nowIdx ? " now" : ""));
+      var st = s.done ? "已结束 · " + s.n + " 场"
+             : (i === L.nowIdx ? "进行中 · " + s.doneN + "/" + s.n + " 场已完成" : "未开始 · " + s.n + " 场");
+      return '<a class="' + cls + '" href="bracket.html?id=' + encodeURIComponent(L.id) + "#stage-" + i + '">' +
+        '<span class="sg-n">' + K.esc(s.label) + "</span>" +
+        '<span class="sg-d">' + K.esc(md(s.from) + (s.to !== s.from ? " — " + md(s.to) : "")) + "</span>" +
+        '<span class="sg-s">' + K.esc(st) + "</span></a>";
+    }).join("");
+  })();
+
   /* ---------- ① 首屏：赛事焦点（直播 > 今日/下一场 > 最近一场结果） ---------- */
   (function renderFocus() {
     var ALL = window.KPL_SCHEDULE_ALL || [];
@@ -412,6 +459,17 @@
     }
     el.innerHTML = '<div class="fh"><div class="fh-kicker mono">赛事焦点</div>' +
       '<p style="color:var(--muted);font-size:13.5px">暂无赛程数据。</p></div>';
+  })();
+
+  /* ---------- 焦点对阵的深入口：两队确定时补「交手记录」（赛前分析在这里接上） ---------- */
+  (function focusDeepLink() {
+    var r = window.__KPL_FOCUS;
+    if (!r || !r.team1 || !r.team2 || r.team1 === "待定" || r.team2 === "待定") return;
+    var box = document.querySelector("#focusHero .fh-actions");
+    if (!box) return;
+    box.insertAdjacentHTML("beforeend",
+      '<a class="btn ghost sm" href="h2h.html?a=' + encodeURIComponent(r.team1) +
+      "&b=" + encodeURIComponent(r.team2) + '">交手记录</a>');
   })();
 
   /* ---------- 分享图：把首屏焦点场次导成固定尺寸卡片（口径与比赛页一致） ---------- */
