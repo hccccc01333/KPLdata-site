@@ -479,3 +479,9 @@ html.v55 .rival-legend i{display:inline-block;width:16px;height:2px;vertical-ali
   html.v55 .chem-grid{grid-template-columns:1fr;gap:18px}
   html.v55 .rival-wrap{grid-template-columns:1fr}
 }
+
+/* 阵容协同行：名字一行、样本与期望一行 */
+html.v55 .chem-row.chem-lineup{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"nm d" "nums nums";row-gap:1px}
+html.v55 .chem-lineup .nm{grid-area:nm}
+html.v55 .chem-lineup .d{grid-area:d;align-self:center}
+html.v55 .chem-lineup .nums{grid-area:nums;white-space:normal}
