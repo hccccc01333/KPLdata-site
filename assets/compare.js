@@ -33,16 +33,29 @@ window.KPL_COMPARE = (function () {
       var g = ps.reduce(function (a, p) { return a + (p.games || 0); }, 0);
       if (!g) return;
       function wavg(f) {
-        return ps.reduce(function (a, p) { return a + (f(p) || 0) * (p.games || 0); }, 0) / g;
+        // 缺失值不参与加权：只累计「该指标有有效样本」的选手局数作为分母，
+        // 绝不用 (f(p) || 0) 把「没有数据」当成 0 混进平均值。
+        var sum = 0, w = 0;
+        ps.forEach(function (p) {
+          var v = K.mnum(f(p)), gg = p.games || 0;
+          if (v === null || !gg) return;
+          sum += v * gg; w += gg;
+        });
+        return w ? sum / w : null;
       }
-      var mvp = ps.reduce(function (a, p) { return a + (p.mvp || 0); }, 0);
+      var mV = 0, mW = 0;
+      ps.forEach(function (p) {
+        var mv = K.mnum(p.mvp), gg = p.games || 0;
+        if (mv === null || !gg) return;
+        mV += mv; mW += gg;
+      });
       out.push({
         name: ln, lane: ln, games: g, n: ps.length,
         wr: wavg(function (p) { return p.wr; }),
         kda: wavg(function (p) { return p.kda; }),
         part: wavg(function (p) { return p.part; }),
         dmg: wavg(function (p) { return p.dmg; }),
-        mvpRate: mvp / g * 100
+        mvpRate: mW ? mV / mW * 100 : null
       });
     });
     return out;
