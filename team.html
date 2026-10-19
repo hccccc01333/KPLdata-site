@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>战队详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=55">
-<link rel="stylesheet" href="assets/pages.css?v=55">
-<link rel="stylesheet" href="assets/v55.css?v=55">
+<link rel="stylesheet" href="assets/style.css?v=56">
+<link rel="stylesheet" href="assets/pages.css?v=56">
+<link rel="stylesheet" href="assets/v55.css?v=56">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="战队详情 · KPL 数据中心">
@@ -20,15 +20,16 @@
 <main class="wrap" id="main" style="margin-top:6px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=55"></script>
-<script src="assets/details.js?v=55"></script>
-<script src="assets/schedule_all.js?v=55"></script>
-<script src="assets/seasons.js?v=55"></script>
-<script src="assets/players_detail.js?v=55"></script>
-<script src="assets/team_data.js?v=55"></script>
-<script src="assets/power.js?v=55"></script>
-<script src="assets/common.js?v=55"></script>
-<script src="assets/share.js?v=55"></script>
+<script src="assets/data.js?v=56"></script>
+<script src="assets/details.js?v=56"></script>
+<script src="assets/schedule_all.js?v=56"></script>
+<script src="assets/seasons.js?v=56"></script>
+<script src="assets/players_detail.js?v=56"></script>
+<script src="assets/team_data.js?v=56"></script>
+<script src="assets/power.js?v=56"></script>
+<script src="assets/deep.js?v=56"></script>
+<script src="assets/common.js?v=56"></script>
+<script src="assets/share.js?v=56"></script>
 <script>
 (function () {
   "use strict";
@@ -309,6 +310,44 @@
           '<td class="num">' + K.pct(h.w / Math.max(1, h.n)) + '</td><td class="num mono">' + K.esc(String(h.last).slice(5)) + "</td></tr>";
       }).join("") + "</tbody></table>" : '<div class="empty-tip">暂无交手记录</div>';
 
+    /* ---------- 系列赛画像（deep.js：官方逐局结果聚合） ---------- */
+    var seriesPanel = (function () {
+      var DD = window.KPL_DEEP;
+      var d = DD && DD.teams && DD.teams[team.team];
+      if (!d) {
+        return '<div class="panel" style="grid-column:1/-1"><div class="panel-title">系列赛画像 ' +
+          '<em class="mono">逐局结果 · 官方口径</em></div><div class="empty-tip">该战队暂无足够的系列赛数据</div></div>';
+      }
+      function pct(v, n) { return n ? (v / n * 100).toFixed(1) + "%" : "—"; }
+      function cell(k, v, s, hl) {
+        return '<div class="sr-cell' + (hl ? " hl" : "") + '"><div class="k">' + k + "</div>" +
+          '<div class="v">' + v + '</div><div class="s">' + (s || "") + "</div></div>";
+      }
+      var fgRate = pct(d.fgN, d.seriesN);
+      var fgConv = pct(d.fgW, d.fgN);
+      var form = String(d.form || "").split("").map(function (c) {
+        return '<i class="' + (c === "W" ? "w" : "l") + '">' + c + "</i>";
+      }).join("");
+      return '<div class="panel" style="grid-column:1/-1"><div class="panel-title">系列赛画像 ' +
+        '<em class="mono">逐局结果 · 官方口径 · 共 ' + d.seriesN + ' 个系列赛</em></div>' +
+        '<div class="sr-grid">' +
+        cell("实力分 · 全站第 " + d.rank, d.elo, "对手平均 " + d.sos) +
+        cell("系列赛战绩", d.seriesW + "-" + (d.seriesN - d.seriesW), "胜率 " + pct(d.seriesW, d.seriesN), true) +
+        cell("首局胜率", fgRate, "先赢首局的系列赛 " + d.fgN + " 场") +
+        cell("首局拿下后", fgConv, "转化为系列赛胜利", true) +
+        cell("决胜局", d.decW + "-" + (d.decN - d.decW), "胜率 " + pct(d.decW, d.decN)) +
+        cell("先丢一局翻盘", pct(d.cbW, d.cbN), "机会 " + d.cbN + " 次") +
+        cell("让二追三/四", (d.rsW || 0) + "-" + ((d.rsN || 0) - (d.rsW || 0)), "0:2 落后 " + (d.rsN || 0) + " 次") +
+        cell("BO5 战绩", (d.bo5.w || 0) + "-" + ((d.bo5.n || 0) - (d.bo5.w || 0)),
+          "BO7 " + (d.bo7.w || 0) + "-" + ((d.bo7.n || 0) - (d.bo7.w || 0)) + " · 共 " +
+          ((d.bo5.n || 0) + (d.bo7.n || 0)) + " 场") +
+        '</div>' +
+        '<div class="sr-form"><span class="block-note mono">近 10 场</span>' +
+        '<span class="form-str">' + form + "</span></div>" +
+        '<div class="block-note mono" style="margin-top:10px">实力分 = 赢强队加分更多、输弱队扣分更多；' +
+        "决胜局与翻盘率只统计有逐局结果的系列赛。</div></div>";
+    })();
+
     var roster = (TD[team.team] || {}).p || [];
     var rosterHTML = roster.length ? '<div class="usage">' + roster.map(function (p) {
       return '<a href="player.html?id=' + encodeURIComponent(p[0]) + '">' +
@@ -331,6 +370,7 @@
     $("#main").innerHTML = kpis +
       '<div class="hd-grid" style="margin-top:18px">' +
       radarPanel() +
+      seriesPanel +
       '<div class="panel" style="grid-column:1/-1"><div class="panel-title">赛季时间轴 <em class="mono">' +
       "该战队出战过的全部赛季 · 按时间</em></div>" + timeline() + "</div>" +
       '<div class="panel" style="grid-column:1/-1"><div class="panel-title">冠军墙 <em class="mono">决赛真实结果</em></div>' +

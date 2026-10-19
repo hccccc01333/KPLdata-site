@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="v55">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>比赛详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=55">
-<link rel="stylesheet" href="assets/pages.css?v=55">
+<link rel="stylesheet" href="assets/style.css?v=56">
+<link rel="stylesheet" href="assets/pages.css?v=56">
+<link rel="stylesheet" href="assets/v55.css?v=56">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="比赛详情 · KPL 数据中心">
@@ -20,16 +21,16 @@
 <main class="wrap" id="main" style="margin-top:26px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=55"></script>
-<script src="assets/details.js?v=55"></script>
-<script src="assets/schedule_all.js?v=55"></script>
-<script src="assets/games/index.js?v=55"></script>
-<script src="assets/seasons.js?v=55"></script>
-<script src="assets/replay/index.js?v=55"></script>
-<script src="assets/coverage.js?v=55"></script>
-<script src="assets/replay.js?v=55"></script>
-<script src="assets/common.js?v=55"></script>
-<script src="assets/share.js?v=55"></script>
+<script src="assets/data.js?v=56"></script>
+<script src="assets/details.js?v=56"></script>
+<script src="assets/schedule_all.js?v=56"></script>
+<script src="assets/games/index.js?v=56"></script>
+<script src="assets/seasons.js?v=56"></script>
+<script src="assets/replay/index.js?v=56"></script>
+<script src="assets/coverage.js?v=56"></script>
+<script src="assets/replay.js?v=56"></script>
+<script src="assets/common.js?v=56"></script>
+<script src="assets/share.js?v=56"></script>
 <script>
 (function () {
   "use strict";
@@ -121,12 +122,12 @@
       '<div class="mh-grid" style="margin-top:14px">' +
       '<div class="mh-team">' + (sr.icon1 ? '<img src="' + K.esc(sr.icon1) + '" alt="">' : "") +
       '<a class="n" href="team.html?id=' + encodeURIComponent(sr.team1) + '">' + K.esc(sr.team1) + "</a>" +
-      '<span class="mono" style="color:#9FBBD0;font-size:12px">' + sr.score1 + " 局胜</span></div>" +
+      '<span class="mono" style="color:var(--muted);font-size:12px">' + sr.score1 + " 局胜</span></div>" +
       '<div class="mh-score">' + sr.score1 + " : " + sr.score2 + "<small>大场比分 · BO" + sr.bo +
-      (liveNow ? " · <span style='color:#FF7A7E'>正在进行</span>" : "") + "</small></div>" +
+      (liveNow ? " · <span style='color:var(--red)'>正在进行</span>" : "") + "</small></div>" +
       '<div class="mh-team">' + (sr.icon2 ? '<img src="' + K.esc(sr.icon2) + '" alt="">' : "") +
       '<a class="n" href="team.html?id=' + encodeURIComponent(sr.team2) + '">' + K.esc(sr.team2) + "</a>" +
-      '<span class="mono" style="color:#9FBBD0;font-size:12px">' + sr.score2 + " 局胜</span></div></div>" +
+      '<span class="mono" style="color:var(--muted);font-size:12px">' + sr.score2 + " 局胜</span></div></div>" +
       '<div class="mh-sub mono">' + K.dateCN(sr.date) + " " + K.weekdayCN(sr.date) + " · 胜方：" + K.esc(winName) +
       " " + K.favBtn({ kind: "match", id: sr.matchId, label: sr.date + " " + sr.team1 + " vs " + sr.team2,
                         icon: sr.icon1, href: "match.html?id=" + encodeURIComponent(sr.matchId) }) + "</div>" +
@@ -189,7 +190,7 @@
         if (!t || t.score1 == null) return;
         var scEl = document.querySelector(".mh-score");
         if (scEl) {
-          var tail = t.st === 1 ? " · <span style='color:#FF7A7E'>正在进行</span>"
+          var tail = t.st === 1 ? " · <span style='color:var(--red)'>正在进行</span>"
                    : (t.st === 2 ? " · 已结束" : "");
           scEl.innerHTML = t.score1 + " : " + t.score2 + "<small>大场比分 · BO" + (t.bo || 5) + tail + "</small>";
         }
@@ -291,7 +292,7 @@
     var cache = window._KPL_HIST_SHARD || (window._KPL_HIST_SHARD = {});
     if (cache[matchId]) { cb(cache[matchId]); return; }
     var sc = document.createElement("script");
-    sc.src = "assets/live_hist/" + encodeURIComponent(matchId) + ".js?v=55";
+    sc.src = "assets/live_hist/" + encodeURIComponent(matchId) + ".js?v=56";
     sc.onload = function () {
       cache[matchId] = window.KPL_LIVE_HIST || [];
       sc.remove(); cb(cache[matchId]);
@@ -420,11 +421,11 @@
     '<div class="mh-grid" style="margin-top:14px">' +
     '<div class="mh-team">' + (M.icon1 ? '<img src="' + K.esc(M.icon1) + '" alt="">' : "") +
     '<a class="n" href="team.html?id=' + encodeURIComponent(M.team1) + '">' + K.esc(M.team1) + "</a>" +
-    '<span class="mono" style="color:#9FBBD0;font-size:12px">' + M.score1 + " 局胜</span></div>" +
+    '<span class="mono" style="color:var(--muted);font-size:12px">' + M.score1 + " 局胜</span></div>" +
     '<div class="mh-score">' + M.score1 + " : " + M.score2 + "<small>大场比分" + (KEY.comeback ? " · 含翻盘局" : "") + "</small></div>" +
     '<div class="mh-team">' + (M.icon2 ? '<img src="' + K.esc(M.icon2) + '" alt="">' : "") +
     '<a class="n" href="team.html?id=' + encodeURIComponent(M.team2) + '">' + K.esc(M.team2) + "</a>" +
-    '<span class="mono" style="color:#9FBBD0;font-size:12px">' + M.score2 + " 局胜</span></div></div>" +
+    '<span class="mono" style="color:var(--muted);font-size:12px">' + M.score2 + " 局胜</span></div></div>" +
     '<div class="mh-sub mono">' + K.dateCN(M.date) + " " + K.weekdayCN(M.date) +
     " · 胜方：" + K.esc(M.score1 > M.score2 ? M.team1 : M.team2) +
     " " + K.favBtn({ kind: "match", id: M.matchId, label: M.date + " " + M.team1 + " vs " + M.team2,

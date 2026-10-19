@@ -211,9 +211,9 @@ window.KPL = (function () {
       pages: ["heroes.html", "combos.html"],
       sub: [["英雄组合", "combos.html"]] },
     { ic: "target", label: "分析", href: "bp.html",
-      pages: ["bp.html", "predict.html", "stage.html", "compare.html", "compare-team.html",
+      pages: ["bp.html", "predict.html", "stage.html", "series.html", "compare.html", "compare-team.html",
              "compare-player.html", "compare-lane.html", "comeback.html", "query.html", "simulator.html"],
-      sub: [["实时预测", "predict.html"],
+      sub: [["系列赛研究", "series.html"], ["实时预测", "predict.html"],
             ["英雄对比", "compare.html"], ["战队对比", "compare-team.html"],
             ["选手对比", "compare-player.html"], ["位置对比", "compare-lane.html"],
             ["赛段对比", "stage.html"], ["翻盘研究所", "comeback.html"],
@@ -806,7 +806,7 @@ window.KPL = (function () {
         '<text x="' + (P.l - 8) + '" y="' + (parseFloat(gy) + 4) + '" text-anchor="end" font-size="10.5" fill=' + JSON.stringify(CP2.label) + ' font-family="Inter,monospace">' + yFmt(gv) + "</text>";
     }
     if (yMin < 0 && yMax > 0) {
-      s += '<line x1="' + P.l + '" y1="' + Y(0).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0).toFixed(1) + '" stroke=' + JSON.stringify(CP2.axis) + '/>';
+      s += '<line x1="' + P.l + '" y1="' + Y(0).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0).toFixed(1) + '" stroke=' + JSON.stringify(CP2.axis) + ' />';
     }
     /* x 轴刻度（每 5 分钟） */
     for (var m = Math.ceil(xMin / 5) * 5; m <= xMax; m += 5) {

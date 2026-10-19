@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="v55">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>赛段对比 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A111C'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=55">
-<link rel="stylesheet" href="assets/pages.css?v=55">
+<link rel="stylesheet" href="assets/style.css?v=56">
+<link rel="stylesheet" href="assets/pages.css?v=56">
+<link rel="stylesheet" href="assets/v55.css?v=56">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="赛段对比 · KPL 数据中心">
@@ -77,9 +78,9 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=55"></script>
-<script src="assets/seasons.js?v=55"></script>
-<script src="assets/common.js?v=55"></script>
+<script src="assets/data.js?v=56"></script>
+<script src="assets/seasons.js?v=56"></script>
+<script src="assets/common.js?v=56"></script>
 <script>
 (function () {
   "use strict";
@@ -101,7 +102,7 @@
   function label(id) { var o = OPTS.filter(function (x) { return x.id === id; })[0]; return o ? o.label : id; }
   function pct(v) { return (v * 100).toFixed(1) + "%"; }
   function signedPct(v) { return (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "pp"; }
-  function colorFor(v) { return v >= 0 ? "#7BD88F" : "#FF7A7E"; }
+  function colorFor(v) { return v >= 0 ? "#1F8A53" : "#D5374B"; }
 
   function render() {
     var A = $("#scopeA").value, B = $("#scopeB").value;
@@ -164,7 +165,7 @@
         '<td class="num mono" style="color:' + colorFor(d) + '">' + signedPct(d) + "</td>" +
         '<td class="num mono">' + pct(r.awr) + '</td><td class="num mono">' + pct(r.bwr) + "</td>" +
         '<td class="num mono" style="color:' + colorFor(db) + '">' + signedPct(db) + "</td></tr>";
-    }).join("") : "<tr><td colspan='7' style='color:#6F84A3'>两边都达到门槛的英雄不足</td></tr>";
+    }).join("") : "<tr><td colspan='7' style='color:var(--muted)'>两边都达到门槛的英雄不足</td></tr>";
 
     syncUrl(A, B, minG);
   }
@@ -176,8 +177,9 @@
   }
 
   var sp = new URLSearchParams(location.search);
-  var initA = sp.get("a") || (S.years || []).slice().sort().reverse()[1] || "all";
-  var initB = sp.get("b") || (S.years || []).slice().sort().reverse()[0] || "all";
+  var ys = (S.years || []).slice().sort();
+  var initA = sp.get("a") || String(ys[ys.length - 2] || "all");   // 默认对比最近两年，避免一进来全是 +0.0pp
+  var initB = sp.get("b") || String(ys[ys.length - 1] || "all");
   fill($("#scopeA"), initA);
   fill($("#scopeB"), initB);
   if (sp.get("min")) $("#minGames").value = sp.get("min");

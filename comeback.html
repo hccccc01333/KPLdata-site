@@ -1,18 +1,19 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="v55">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>翻盘路径研究所 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A111C'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=55">
-<link rel="stylesheet" href="assets/pages.css?v=55">
+<link rel="stylesheet" href="assets/style.css?v=56">
+<link rel="stylesheet" href="assets/pages.css?v=56">
+<link rel="stylesheet" href="assets/v55.css?v=56">
 <style>
 /* 只在本页使用的分布条：label + 条 + 计数 */
 .cb-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12.5px}
 .cb-row > .k{flex:none;width:74px;color:var(--muted)}
-.cb-bar{flex:1;height:12px;border-radius:4px;background:rgba(255,255,255,.05);overflow:hidden}
-.cb-bar i{display:block;height:100%;background:linear-gradient(90deg,#F6C021,#E8A33D)}
+.cb-bar{flex:1;height:12px;border-radius:4px;background:var(--inset);overflow:hidden}
+.cb-bar i{display:block;height:100%;background:var(--brand)}
 .cb-row > .v{flex:none;width:74px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2)}
 .cb-two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
 </style>
@@ -78,10 +79,10 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=55"></script>
-<script src="assets/common.js?v=55"></script>
-<script src="assets/comeback.js?v=55"></script>
-<script src="assets/share.js?v=55"></script>
+<script src="assets/data.js?v=56"></script>
+<script src="assets/common.js?v=56"></script>
+<script src="assets/comeback.js?v=56"></script>
+<script src="assets/share.js?v=56"></script>
 <script>
 (function () {
   "use strict";
@@ -121,7 +122,7 @@
     return "<tr><td class='mono'>" + K.esc(c.date) + "</td>" +
       "<td>" + K.esc(c.t1) + " vs " + K.esc(c.t2) + " <span class='mono' style='color:var(--muted)'>G" + c.seq + "</span></td>" +
       "<td><span class='team-cell'>" + K.esc(c.winner) + "</span></td>" +
-      '<td class="num mono" style="color:#FF7A7E">' + pct1(c.lowP * 100) + "</td>" +
+      '<td class="num mono" style="color:var(--red)">' + pct1(c.lowP * 100) + "</td>" +
       '<td class="num mono">' + c.lowMin + "′</td>" +
       '<td class="num mono">' + c.dur + "′</td>" +
       '<td class="num"><a class="go" href="' + href + '" style="color:var(--gold);font-weight:700">复盘 →</a></td></tr>';

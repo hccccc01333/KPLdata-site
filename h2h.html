@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="v55">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>交手记录 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=55">
-<link rel="stylesheet" href="assets/pages.css?v=55">
+<link rel="stylesheet" href="assets/style.css?v=56">
+<link rel="stylesheet" href="assets/pages.css?v=56">
+<link rel="stylesheet" href="assets/v55.css?v=56">
 <style>
 .h2h-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:14px;align-items:start}
 @media(max-width:1000px){.h2h-grid{grid-template-columns:1fr}}
@@ -79,10 +80,10 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=55"></script>
-<script src="assets/seasons.js?v=55"></script>
-<script src="assets/schedule_all.js?v=55"></script>
-<script src="assets/common.js?v=55"></script>
+<script src="assets/data.js?v=56"></script>
+<script src="assets/seasons.js?v=56"></script>
+<script src="assets/schedule_all.js?v=56"></script>
+<script src="assets/common.js?v=56"></script>
 <script>
 (function () {
   "use strict";
@@ -162,27 +163,28 @@
     var trendHTML = "";
     if (yKeys.length >= 2) {
       var T = 640, TH = 170, PL = 40, PR = 16, PT = 22, PB = 30;
+      var CP = K.chartPalette();
       var n = yKeys.length;
       var X = function (i) { return PL + (n === 1 ? 0 : i * (T - PL - PR) / (n - 1)); };
       var Y = function (p) { return PT + (1 - p) * (TH - PT - PB); };
       var s = '<svg viewBox="0 0 ' + T + " " + TH + '" aria-label="逐年交手走势">';
       [0.25, 0.5, 0.75].forEach(function (g) {
         s += '<line x1="' + PL + '" y1="' + Y(g).toFixed(1) + '" x2="' + (T - PR) + '" y2="' + Y(g).toFixed(1) +
-          '" stroke="#1D2E47" stroke-dasharray="4 6"/>';
+          '" stroke=' + CP.grid + ' stroke-dasharray="4 6"/>';
       });
-      s += '<text x="' + (PL - 7) + '" y="' + (Y(0.5) + 4) + '" text-anchor="end" font-size="10" fill="#6F84A3" font-family="Inter,monospace">50%</text>';
+      s += '<text x="' + (PL - 7) + '" y="' + (Y(0.5) + 4) + '" text-anchor="end" font-size="10" fill=' + CP.label + ' font-family="Inter,monospace">50%</text>';
       var pts = yKeys.map(function (y, i) {
         var row = yearRows[y];
         var wr = row[0] ? row[1] / row[0] : 0;
         return X(i).toFixed(1) + "," + Y(wr).toFixed(1);
       }).join(" ");
-      s += '<polyline points="' + pts + '" fill="none" stroke="#FFFFFF" stroke-width="2.2"/>';
+      s += '<polyline points="' + pts + '" fill="none" stroke=' + CP.line + ' stroke-width="2.2"/>';
       yKeys.forEach(function (y, i) {
         var row = yearRows[y];
         var wr = row[0] ? row[1] / row[0] : 0;
-        s += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(wr).toFixed(1) + '" r="3.5" fill="#FFFFFF"/>' +
-          '<text x="' + X(i).toFixed(1) + '" y="' + (TH - 10) + '" text-anchor="middle" font-size="10.5" fill="#9FB3CE" font-family="Inter,monospace">' + y + "</text>" +
-          '<text x="' + X(i).toFixed(1) + '" y="' + (Y(wr) - 9).toFixed(1) + '" text-anchor="middle" font-size="10" fill="#EAF1FA" font-family="Inter,monospace">' + Math.round(wr * 100) + "%</text>";
+        s += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(wr).toFixed(1) + '" r="3.5" fill=' + CP.line + ' />' +
+          '<text x="' + X(i).toFixed(1) + '" y="' + (TH - 10) + '" text-anchor="middle" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' + y + "</text>" +
+          '<text x="' + X(i).toFixed(1) + '" y="' + (Y(wr) - 9).toFixed(1) + '" text-anchor="middle" font-size="10" fill=' + CP.onLine + ' font-family="Inter,monospace">' + Math.round(wr * 100) + "%</text>";
       });
       s += "</svg>";
       trendHTML = '<div class="block-note mono" style="margin-top:12px">' + K.esc(a) + " 的大场胜率逐年走势</div>" +

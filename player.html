@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="v55">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>选手详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=55">
-<link rel="stylesheet" href="assets/pages.css?v=55">
+<link rel="stylesheet" href="assets/style.css?v=56">
+<link rel="stylesheet" href="assets/pages.css?v=56">
+<link rel="stylesheet" href="assets/v55.css?v=56">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="选手详情 · KPL 数据中心">
@@ -20,11 +21,12 @@
 <main class="wrap" id="main" style="margin-top:24px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=55"></script>
-<script src="assets/seasons.js?v=55"></script>
-<script src="assets/players_detail.js?v=55"></script>
-<script src="assets/common.js?v=55"></script>
-<script src="assets/share.js?v=55"></script>
+<script src="assets/data.js?v=56"></script>
+<script src="assets/seasons.js?v=56"></script>
+<script src="assets/players_detail.js?v=56"></script>
+<script src="assets/deep.js?v=56"></script>
+<script src="assets/common.js?v=56"></script>
+<script src="assets/share.js?v=56"></script>
 <script>
 (function () {
   "use strict";
@@ -88,20 +90,21 @@
   var trendHTML = "";
   if (years.length >= 2) {
     var W = 1040, H = 210, PL = 46, PR = 20, PT = 22, PB = 34;
+    var CP = K.chartPalette();
     var n = years.length;
     var X = function (i) { return PL + (n === 1 ? 0 : i * (W - PL - PR) / (n - 1)); };
     var Y = function (p) { return PT + (1 - p) * (H - PT - PB); };
     var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" aria-label="赛季胜率趋势">';
     [0.3, 0.5, 0.7].forEach(function (g) {
-      s += '<line x1="' + PL + '" y1="' + Y(g).toFixed(1) + '" x2="' + (W - PR) + '" y2="' + Y(g).toFixed(1) + '" stroke="#1D2E47" stroke-dasharray="' + (g === 0.5 ? "0" : "4 6") + '"/>' +
-        '<text x="' + (PL - 8) + '" y="' + (Y(g) + 4).toFixed(1) + '" text-anchor="end" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' + (g * 100) + "%</text>";
+      s += '<line x1="' + PL + '" y1="' + Y(g).toFixed(1) + '" x2="' + (W - PR) + '" y2="' + Y(g).toFixed(1) + '" stroke=' + CP.grid + ' stroke-dasharray="' + (g === 0.5 ? "0" : "4 6") + '"/>' +
+        '<text x="' + (PL - 8) + '" y="' + (Y(g) + 4).toFixed(1) + '" text-anchor="end" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' + (g * 100) + "%</text>";
     });
     var pts = years.map(function (y, i) { return X(i).toFixed(1) + "," + Y(y[2]).toFixed(1); }).join(" ");
-    s += '<polyline points="' + pts + '" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linejoin="round"/>';
+    s += '<polyline points="' + pts + '" fill="none" stroke=' + CP.line + ' stroke-width="2.4" stroke-linejoin="round"/>';
     years.forEach(function (y, i) {
-      s += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(y[2]).toFixed(1) + '" r="4" fill="#FFFFFF"/>' +
-        '<text x="' + X(i).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="11.5" fill="#9FB3CE" font-family="Inter,monospace">' + y[0] + "</text>" +
-        '<text x="' + X(i).toFixed(1) + '" y="' + (Y(y[2]) - 10).toFixed(1) + '" text-anchor="middle" font-size="11" fill="#EAF1FA" font-family="Inter,monospace">' + Math.round(y[2] * 100) + "%</text>";
+      s += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(y[2]).toFixed(1) + '" r="4" fill=' + CP.line + ' />' +
+        '<text x="' + X(i).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="11.5" fill=' + CP.label + ' font-family="Inter,monospace">' + y[0] + "</text>" +
+        '<text x="' + X(i).toFixed(1) + '" y="' + (Y(y[2]) - 10).toFixed(1) + '" text-anchor="middle" font-size="11" fill=' + CP.onLine + ' font-family="Inter,monospace">' + Math.round(y[2] * 100) + "%</text>";
     });
     s += "</svg>";
     trendHTML = '<div class="panel"><div class="panel-title">赛季胜率趋势 <em class="mono">逐年胜率 · 全赛事</em></div>' +
@@ -170,6 +173,40 @@
       '<div class="block-note mono">百分位 = 在该位置的所有选手中超过多少人；不做跨位置的横向比较（对位职责不同）。</div></div>';
   })();
 
+  /* ---------- 关键局与稳定性（deep.js：逐局结果聚合） ---------- */
+  var deepHTML = (function () {
+    var DD = window.KPL_DEEP;
+    var d = DD && DD.players && DD.players[NAME];
+    if (!d) return "";
+    function pct(v, n) { return n ? (v / n * 100).toFixed(1) + "%" : "—"; }
+    function cell(k, v, s, hl) {
+      return '<div class="sr-cell' + (hl ? " hl" : "") + '"><div class="k">' + k + "</div>" +
+        '<div class="v">' + v + '</div><div class="s">' + (s || "") + "</div></div>";
+    }
+    var decEnough = d.decN >= 8;
+    var decRate = pct(d.decW, d.decN);
+    var totalRate = pct(d.w, d.g);
+    var kdaDelta = (d.decKda != null && d.kda != null) ? d.decKda - d.kda : null;
+    var dmgDelta = (d.decDmg != null && d.dmg != null) ? d.decDmg - d.dmg : null;
+    function signed(v, dg) { return v == null ? "—" : (v >= 0 ? "+" : "") + v.toFixed(dg) + (dg === 1 ? "pp" : ""); }
+    var cells = [
+      cell("关键局出场", d.decN, decEnough ? "胜率 " + decRate + "（生涯 " + totalRate + "）" : "样本不足 8 局", false),
+      cell("关键局 KDA", d.decKda != null ? d.decKda.toFixed(2) : "—",
+        decEnough ? "生涯 " + d.kda.toFixed(2) + " · " + signed(kdaDelta, 2) : "关键局样本不足", true),
+      cell("关键局输出", d.decDmg != null ? d.decDmg.toFixed(1) + "%" : "—",
+        decEnough ? "生涯 " + (d.dmg != null ? d.dmg.toFixed(1) + "%" : "—") + " · " + signed(dmgDelta, 1) : "关键局样本不足"),
+      cell("KDA 稳定度", d.cvKda != null ? d.cvKda.toFixed(2) : "—",
+        "波动系数，越小越稳（全站同口径）"),
+      cell("输出稳定度", d.cvDmg != null ? d.cvDmg.toFixed(2) : "—",
+        "逐局输出占比的波动系数")
+    ];
+    return '<div class="panel" style="grid-column:1/-1"><div class="panel-title">关键局与稳定性 ' +
+      '<em class="mono">系列赛打满的最后一局 · 与生涯对比</em></div>' +
+      '<div class="sr-grid" style="grid-template-columns:repeat(5,minmax(0,1fr))">' + cells.join("") + "</div>" +
+      '<div class="block-note mono" style="margin-top:10px">关键局 = 系列赛打满时的最后一局。' +
+      "稳定度用逐局数据的变异系数（标准差 ÷ 均值）衡量，不比较不同位置的绝对高低。</div></div>";
+  })();
+
   /* ---------- 常用英雄 ---------- */
   var heroesHTML = (P.heroes || []).map(function (h) {
     var ic = heroIcon[h[0]];
@@ -192,7 +229,7 @@
       '<span class="kda mono">' + r[7] + "/" + r[8] + "/" + r[9] + "</span></a>";
   }).join("");
 
-  $("#main").innerHTML = kpi + trendHTML + posHTML + yearTable +
+  $("#main").innerHTML = kpi + trendHTML + posHTML + deepHTML + yearTable +
     '<div class="pl-grid">' +
     '<div class="panel"><div class="panel-title">英雄池 <em class="mono">共 ' + poolN + " 个英雄 · 按使用局数展示前 " + (P.heroes || []).length + "</em></div>" +
     '<div class="pl-heroes">' + (heroesHTML || '<div class="empty-tip">暂无数据</div>') + "</div></div>" +

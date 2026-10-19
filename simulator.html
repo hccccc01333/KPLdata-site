@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="v55">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>大场模拟 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=55">
-<link rel="stylesheet" href="assets/pages.css?v=55">
+<link rel="stylesheet" href="assets/style.css?v=56">
+<link rel="stylesheet" href="assets/pages.css?v=56">
+<link rel="stylesheet" href="assets/v55.css?v=56">
 <style>
 .param-row{display:grid;grid-template-columns:auto minmax(0,1fr) 52px;gap:10px;align-items:center;margin-top:4px}
 .param-row input[type=range]{width:100%;accent-color:var(--gold)}
@@ -104,10 +105,10 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=55"></script>
-<script src="assets/details.js?v=55"></script>
-<script src="assets/seasons.js?v=55"></script>
-<script src="assets/common.js?v=55"></script>
+<script src="assets/data.js?v=56"></script>
+<script src="assets/details.js?v=56"></script>
+<script src="assets/seasons.js?v=56"></script>
+<script src="assets/common.js?v=56"></script>
 <script>
 (function () {
   "use strict";
@@ -198,10 +199,11 @@
       if (st.term) return;
       var from = pos(k);
       [["p", st.i + 1, st.j], ["q", st.i, st.j + 1]].forEach(function (e) {
+    var CP = K.chartPalette();
         var ck = e[1] + "-" + e[2];
         if (!states[ck]) return;
         var to = pos(ck);
-        var col = e[0] === "p" ? "#F6C021" : "#9DB2CC";
+        var col = e[0] === "p" ? CP.mark : CP.line;
         var width = (0.8 + 3 * states[ck].prob).toFixed(2);
         s += '<line x1="' + from[0].toFixed(1) + '" y1="' + from[1].toFixed(1) + '" x2="' + to[0].toFixed(1) +
           '" y2="' + to[1].toFixed(1) + '" stroke="' + col + '" stroke-opacity=".42" stroke-width="' + width + '"/>';
@@ -211,15 +213,15 @@
     Object.keys(states).forEach(function (k) {
       var st = states[k], xy = pos(k);
       var r = st.term ? 15 : 11;
-      var fill = st.term ? (st.i === m ? "rgba(246,192,33,.22)" : "rgba(157,178,204,.18)") : "#0F1B2C";
-      var stroke = st.term ? (st.i === m ? "#F6C021" : "#9DB2CC") : "#2A3D5A";
+      var fill = st.term ? (st.i === m ? "rgba(240,47,85,.16)" : "rgba(46,111,208,.12)") : "#FFFFFF";
+      var stroke = st.term ? (st.i === m ? CP.mark : CP.line) : CP.grid;
       s += '<circle cx="' + xy[0].toFixed(1) + '" cy="' + xy[1].toFixed(1) + '" r="' + r +
         '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.4"/>';
       s += '<text x="' + xy[0].toFixed(1) + '" y="' + (xy[1] + 3.4).toFixed(1) +
-        '" text-anchor="middle" font-size="10" fill="#CBD6E4" font-family="Inter,monospace">' + st.i + "-" + st.j + "</text>";
+        '" text-anchor="middle" font-size="10" fill=' + CP.label + ' font-family="Inter,monospace">' + st.i + "-" + st.j + "</text>";
       var pct = K.pct(st.prob);
       s += '<text x="' + xy[0].toFixed(1) + '" y="' + (xy[1] - r - 4).toFixed(1) +
-        '" text-anchor="middle" font-size="9.5" fill="#7E93B3" font-family="Inter,monospace">' + pct + "</text>";
+        '" text-anchor="middle" font-size="9.5" fill=' + CP.label + ' font-family="Inter,monospace">' + pct + "</text>";
     });
     s += "</svg>";
     return s;
@@ -229,7 +231,7 @@
     var a = byName[selA.value], b = byName[selB.value], bo = parseInt(selBo.value, 10), m = (bo + 1) / 2;
     if (!a || !b) return;
     if (a.team === b.team) {
-      $("#simKpis").innerHTML = '<div class="sim-kpi"><div class="k">提示</div><div class="v" style="font-size:15px;color:#C0392B">战队 A 与 B 不能相同</div></div>';
+      $("#simKpis").innerHTML = '<div class="sim-kpi"><div class="k">提示</div><div class="v" style="font-size:15px;color:var(--red)">战队 A 与 B 不能相同</div></div>';
       $("#simDist").innerHTML = ""; $("#sumCheck").innerHTML = ""; $("#qaList").innerHTML = "";
       $("#treeBox").innerHTML = ""; $("#simSrc").textContent = "";
       return;

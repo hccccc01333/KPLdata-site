@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="v55">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>英雄 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=55">
-<link rel="stylesheet" href="assets/pages.css?v=55">
+<link rel="stylesheet" href="assets/style.css?v=56">
+<link rel="stylesheet" href="assets/pages.css?v=56">
+<link rel="stylesheet" href="assets/v55.css?v=56">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="英雄 · KPL 数据中心">
@@ -68,10 +69,10 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=55"></script>
-<script src="assets/details.js?v=55"></script>
-<script src="assets/seasons.js?v=55"></script>
-<script src="assets/common.js?v=55"></script>
+<script src="assets/data.js?v=56"></script>
+<script src="assets/details.js?v=56"></script>
+<script src="assets/seasons.js?v=56"></script>
+<script src="assets/common.js?v=56"></script>
 <script>
 (function () {
   "use strict";
@@ -113,7 +114,8 @@
   }
 
   /* 出场率 × 胜率 散点象限 */
-  var TIER_COLOR = { S: "#FFFFFF", A: "#9DB2CC", B: "#9FB3CE", C: "#6F84A3" };
+  var CP = K.chartPalette();
+  var TIER_COLOR = { S: CP.mark, A: CP.onLine, B: CP.label, C: CP.grid };
   function renderScatter(d) {
     var el = document.getElementById("scatter");
     if (!el) return;
@@ -136,17 +138,17 @@
     for (var i = 0; i <= 4; i++) {
       var gv = yLo + (yHi - yLo) * i / 4;
       s2 += '<line x1="' + P.l + '" y1="' + Y(gv).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(gv).toFixed(1) +
-        '" stroke="#1D2E47" stroke-dasharray="4 6"/>' +
-        '<text x="' + (P.l - 8) + '" y="' + (Y(gv) + 4).toFixed(1) + '" text-anchor="end" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' + Math.round(gv * 100) + "%</text>";
+        '" stroke=' + CP.grid + ' stroke-dasharray="4 6"/>' +
+        '<text x="' + (P.l - 8) + '" y="' + (Y(gv) + 4).toFixed(1) + '" text-anchor="end" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' + Math.round(gv * 100) + "%</text>";
     }
     for (var k = 0; k <= 4; k++) {
       var xv = xMax * k / 4;
-      s2 += '<text x="' + X(xv).toFixed(1) + '" y="' + (H - 16) + '" text-anchor="middle" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' + (xv * 100).toFixed(0) + "%</text>";
+      s2 += '<text x="' + X(xv).toFixed(1) + '" y="' + (H - 16) + '" text-anchor="middle" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' + (xv * 100).toFixed(0) + "%</text>";
     }
-    s2 += '<line x1="' + X(xMed).toFixed(1) + '" y1="' + P.t + '" x2="' + X(xMed).toFixed(1) + '" y2="' + (H - P.b) + '" stroke="#2C4568"/>' +
-      '<line x1="' + P.l + '" y1="' + Y(0.5).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0.5).toFixed(1) + '" stroke="#2C4568"/>' +
-      '<text x="' + (W - P.r - 6) + '" y="' + (Y(0.5) - 6) + '" text-anchor="end" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">50% 胜率线</text>' +
-      '<text x="' + (X(xMed) + 6) + '" y="' + (P.t + 14) + '" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">出场率中位</text>';
+    s2 += '<line x1="' + X(xMed).toFixed(1) + '" y1="' + P.t + '" x2="' + X(xMed).toFixed(1) + '" y2="' + (H - P.b) + '" stroke=' + CP.axis + ' />' +
+      '<line x1="' + P.l + '" y1="' + Y(0.5).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0.5).toFixed(1) + '" stroke=' + CP.axis + ' />' +
+      '<text x="' + (W - P.r - 6) + '" y="' + (Y(0.5) - 6) + '" text-anchor="end" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">50% 胜率线</text>' +
+      '<text x="' + (X(xMed) + 6) + '" y="' + (P.t + 14) + '" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">出场率中位</text>';
     /* 点（按 ban 排序绘制，避免小点被盖） */
     pts.sort(function (a, b) { return a.ban - b.ban; });
     var labeled = {};

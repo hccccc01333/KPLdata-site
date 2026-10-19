@@ -1,3 +1,4 @@
+var CP = (window.KPL && KPL.chartPalette) ? KPL.chartPalette() : {grid:'#E3E5EA',axis:'#D9DCE2',label:'#6E7480',line:'#2E6FD0',mark:'#F02F55',onLine:'#191B23',dot:'#FFFFFF'};
 /* KPL 数据中心 · 单局复盘工作台（V4 阶段二）
    一条时间轴同时驱动：模型胜率 / 经济 / 资源 / 选手 / 邻近事件。
    数据由 build_replay_frames.py 预生成（assets/replay/<matchId>.json），按需加载。 */
@@ -43,33 +44,33 @@ window.KPL_REPLAY = (function () {
     var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="胜率时间轴">';
     for (var gi = 0; gi <= 4; gi++) {
       var gv = gi / 4, gy = Y(gv).toFixed(1);
-      s += '<line x1="' + P.l + '" y1="' + gy + '" x2="' + (W - P.r) + '" y2="' + gy + '" stroke="#1D2E47" stroke-dasharray="4 6"/>' +
-        '<text x="' + (P.l - 8) + '" y="' + (parseFloat(gy) + 4) + '" text-anchor="end" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' +
+      s += '<line x1="' + P.l + '" y1="' + gy + '" x2="' + (W - P.r) + '" y2="' + gy + '" stroke=' + CP.grid + ' stroke-dasharray="4 6"/>' +
+        '<text x="' + (P.l - 8) + '" y="' + (parseFloat(gy) + 4) + '" text-anchor="end" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' +
         Math.round(gv * 100) + '%</text>';
     }
     for (var m = 0; m <= maxM; m += 5) {
-      s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="10.5" fill="#6F84A3" font-family="Inter,monospace">' + m + "′</text>";
+      s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' + m + "′</text>";
     }
     /* 50% 中线 + 金差右轴 */
-    s += '<line x1="' + P.l + '" y1="' + Y(0.5).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0.5).toFixed(1) + '" stroke="#2C4568"/>';
+    s += '<line x1="' + P.l + '" y1="' + Y(0.5).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0.5).toFixed(1) + '" stroke=' + CP.axis + ' />';
     [gMax, 0, -gMax].forEach(function (gv) {
       s += '<text x="' + (W - P.r + 8) + '" y="' + (YG(gv) + 4).toFixed(1) +
-        '" font-size="10.5" fill="#5C7FA8" font-family="Inter,monospace">' +
+        '" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' +
         (gv > 0 ? "+" : "") + (gv / 1000).toFixed(1) + "k</text>";
     });
     var gPts = frames.map(function (f) { return X(f.m).toFixed(1) + "," + YG(f.gd || 0).toFixed(1); }).join(" ");
-    s += '<polyline points="' + gPts + '" fill="none" stroke="#5C7FA8" stroke-width="1.6" stroke-dasharray="5 4" opacity=".85"/>';
+    s += '<polyline points="' + gPts + '" fill="none" stroke=' + CP.label + ' stroke-width="1.6" stroke-dasharray="5 4" opacity=".85"/>';
     var pts = frames.map(function (f) {
       return X(f.m).toFixed(1) + "," + Y(f.p == null ? 0.5 : f.p).toFixed(1);
     }).join(" ");
     var area = "M" + X(frames[0].m).toFixed(1) + "," + Y(0.5).toFixed(1) + " L" + pts.split(" ").join(" L") +
       " L" + X(frames[frames.length - 1].m).toFixed(1) + "," + Y(0.5).toFixed(1) + " Z";
-    s += '<path d="' + area + '" fill="#F6C021" fill-opacity=".10"/>';
-    s += '<polyline points="' + pts + '" fill="none" stroke="#F6C021" stroke-width="2.2" stroke-linejoin="round"/>';
+    s += '<path d="' + area + '" fill=' + CP.mark + ' fill-opacity=".10"/>';
+    s += '<polyline points="' + pts + '" fill="none" stroke=' + CP.mark + ' stroke-width="2.2" stroke-linejoin="round"/>';
     var cf = frames[curIdx] || frames[frames.length - 1];
     var cx = X(cf.m).toFixed(1), cy = Y(cf.p == null ? 0.5 : cf.p).toFixed(1);
-    s += '<line x1="' + cx + '" y1="' + P.t + '" x2="' + cx + '" y2="' + (H - P.b) + '" stroke="#9FB3CE" stroke-width="1" stroke-dasharray="3 4"/>';
-    s += '<circle cx="' + cx + '" cy="' + cy + '" r="4.5" fill="#0A111C" stroke="#F6C021" stroke-width="2.4"/>';
+    s += '<line x1="' + cx + '" y1="' + P.t + '" x2="' + cx + '" y2="' + (H - P.b) + '" stroke=' + CP.label + ' stroke-width="1" stroke-dasharray="3 4"/>';
+    s += '<circle cx="' + cx + '" cy="' + cy + '" r="4.5" fill=' + CP.dot + ' stroke=' + CP.mark + ' stroke-width="2.4"/>';
     s += "</svg>";
     return s;
   }

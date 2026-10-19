@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="v55">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BP 分析 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=55">
-<link rel="stylesheet" href="assets/pages.css?v=55">
+<link rel="stylesheet" href="assets/style.css?v=56">
+<link rel="stylesheet" href="assets/pages.css?v=56">
+<link rel="stylesheet" href="assets/v55.css?v=56">
 <style>
 .bp2-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;align-items:start}
 @media(max-width:1050px){.bp2-grid{grid-template-columns:1fr}}
@@ -201,11 +202,11 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=55"></script>
-<script src="assets/seasons.js?v=55"></script>
-<script src="assets/bp.js?v=55"></script>
-<script src="assets/team_data.js?v=55"></script>
-<script src="assets/common.js?v=55"></script>
+<script src="assets/data.js?v=56"></script>
+<script src="assets/seasons.js?v=56"></script>
+<script src="assets/bp.js?v=56"></script>
+<script src="assets/team_data.js?v=56"></script>
+<script src="assets/common.js?v=56"></script>
 <script>
 (function () {
   "use strict";
@@ -773,7 +774,7 @@
             "<td>" + (r.kind === "ban" ? "禁用对手" : "选用") + "</td>" +
             '<td class="num mono">' + r.n + " 局</td>" +
             '<td class="num mono">' + pct1(r.wr) + "</td>" +
-            '<td class="num mono" style="color:' + (pp >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
+            '<td class="num mono" style="color:' + (pp >= 0 ? "#1F8A53" : "#D5374B") + '">' +
             sign + pp.toFixed(1) + " pp</td></tr>";
         }).join("") + "</tbody></table>"
         : '<div class="empty-tip">还没有假设。选几个关键英雄，看看胜率会怎么走。</div>';
@@ -784,7 +785,7 @@
         ra.games + " 局 · 胜率 " + pct1(ra.wr) + "</div>" + bar(p1) + "</div>" +
         '<div class="wb-mid-col"><div class="wb-p0 mono">赛前基准 ' + pct1(p0) + "</div>" +
         '<div class="wb-p1">' + pct1(p1) + "</div>" +
-        '<div class="wb-d mono" style="color:' + (dpp >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
+        '<div class="wb-d mono" style="color:' + (dpp >= 0 ? "#1F8A53" : "#D5374B") + '">' +
         (dpp >= 0 ? "+" : "") + dpp.toFixed(1) + " pp</div></div>" +
         '<div class="wb-side r"><div class="wb-t">' + K.esc(B) + '</div><div class="wb-sub mono">' +
         rb.games + " 局 · 胜率 " + pct1(rb.wr) + "</div>" +
@@ -804,7 +805,7 @@
             '<span class="nm">' + K.esc(e.hero) + "</span>" +
             '<span class="n">' + e.n + " 局</span>" +
             '<span class="wr">' + pct1(e.p) + "</span>" +
-            '<span class="mono" style="font-size:11.5px;color:' + (pp >= 0 ? "#7BD88F" : "#FF7A7E") + '">' +
+            '<span class="mono" style="font-size:11.5px;color:' + (pp >= 0 ? "#1F8A53" : "#D5374B") + '">' +
             (pp >= 0 ? "+" : "") + pp.toFixed(1) + "pp</span></a>";
         }).join("") + "</div>"
           : '<div class="empty-tip">该队在所选范围内样本不足</div>';
