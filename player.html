@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>选手详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=56">
-<link rel="stylesheet" href="assets/pages.css?v=56">
-<link rel="stylesheet" href="assets/v55.css?v=56">
+<link rel="stylesheet" href="assets/style.css?v=57">
+<link rel="stylesheet" href="assets/pages.css?v=57">
+<link rel="stylesheet" href="assets/v55.css?v=57">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="选手详情 · KPL 数据中心">
@@ -21,12 +21,13 @@
 <main class="wrap" id="main" style="margin-top:24px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=56"></script>
-<script src="assets/seasons.js?v=56"></script>
-<script src="assets/players_detail.js?v=56"></script>
-<script src="assets/deep.js?v=56"></script>
-<script src="assets/common.js?v=56"></script>
-<script src="assets/share.js?v=56"></script>
+<script src="assets/data.js?v=57"></script>
+<script src="assets/seasons.js?v=57"></script>
+<script src="assets/players_detail.js?v=57"></script>
+<script src="assets/deep.js?v=57"></script>
+<script src="assets/player_deep.js?v=57"></script>
+<script src="assets/common.js?v=57"></script>
+<script src="assets/share.js?v=57"></script>
 <script>
 (function () {
   "use strict";
@@ -207,6 +208,59 @@
       "稳定度用逐局数据的变异系数（标准差 ÷ 均值）衡量，不比较不同位置的绝对高低。</div></div>";
   })();
 
+  /* ---------- 打法画像（player_deep.js：位置内标准化 + 多算法） ---------- */
+  var styleHTML = (function () {
+    var PD = window.KPL_PLAYER_DEEP;
+    var p = PD && PD.players && PD.players[NAME];
+    if (!p) return "";
+    var CP = K.chartPalette();
+    function bar(k, v) {
+      if (v == null) return "";
+      return '<div class="pd-row"><span class="k">' + k + "</span>" +
+        '<span class="bar"><i style="width:' + Math.max(2, Math.min(100, v)).toFixed(1) + '%"></i></span>' +
+        '<span class="v">' + Math.round(v) + "</span></div>";
+    }
+    var tags = (p.tags || []).map(function (t) { return '<span class="pd-tag">' + K.esc(t) + "</span>"; }).join("");
+    var spark = (function () {
+      var vals = p.spark || [];
+      if (vals.length < 5) return "";
+      var W = 560, H = 96, P = 10;
+      var mn = Math.min.apply(null, vals.concat([0])), mx = Math.max.apply(null, vals.concat([0]));
+      var pad = (mx - mn) * 0.15 || 0.2; mn -= pad; mx += pad;
+      var X = function (i) { return P + i * (W - 2 * P) / (vals.length - 1); };
+      var Y = function (v) { return P + (1 - (v - mn) / (mx - mn)) * (H - 2 * P); };
+      var pts = vals.map(function (v, i) { return X(i).toFixed(1) + "," + Y(v).toFixed(1); }).join(" ");
+      var sy = Y(0).toFixed(1);
+      return '<div class="pd-spark"><div class="block-note mono">近 ' + vals.length +
+        ' 局综合表现走势（同位置标准化，0 = 分路平均）</div>' +
+        '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="状态走势">' +
+        '<line x1="' + P + '" y1="' + sy + '" x2="' + (W - P) + '" y2="' + sy + '" stroke="' + CP.grid + '" stroke-dasharray="4 6"/>' +
+        '<polyline points="' + pts + '" fill="none" stroke="' + CP.mark + '" stroke-width="2" stroke-linejoin="round"/>' +
+        '<circle cx="' + X(vals.length - 1).toFixed(1) + '" cy="' + Y(vals[vals.length - 1]).toFixed(1) +
+        '" r="3.5" fill="' + CP.mark + '"/></svg></div>';
+    })();
+    var sims = (p.similar || []).map(function (x) {
+      var q = (PD.players || {})[x.name] || {};
+      return '<a href="player.html?id=' + encodeURIComponent(x.name) + '">' +
+        (q.icon ? '<img src="' + K.esc(q.icon) + '" alt="" loading="lazy">' : "") +
+        '<span class="n"><b>' + K.esc(x.name) + "</b><span>" + K.esc(q.team || "") + " · " + K.esc(q.pos || "") + "</span></span>" +
+        '<em>' + Math.round(x.sim * 100) + "%</em></a>";
+    }).join("");
+    return '<div class="panel" style="grid-column:1/-1"><div class="panel-title">打法画像 ' +
+      '<em class="mono">同位置分位 · 六项算法合成</em></div>' +
+      (tags ? '<div class="pd-tags">' + tags + "</div>" : "") +
+      '<div class="pd-grid">' +
+      bar("综合表现", p.perf) + bar("稳定性", p.stab) +
+      bar("关键局", p.clutch) + bar("英雄池", p.heroPct) +
+      bar("硬仗表现", p.oppPct) + bar("近期状态", p.formPct) +
+      "</div>" + spark +
+      (sims ? '<div class="block-note mono" style="margin-top:18px">打法相近的选手（同位置六维特征距离）</div>' +
+        '<div class="pd-sim">' + sims + "</div>" : "") +
+      '<div class="block-note mono" style="margin-top:12px">分位均在同位置内部计算（0-100，越高越靠前）。' +
+      "综合表现由 KDA、输出占比、经济占比、参团率、承伤占比、生存六项同位置 z-score 合成；" +
+      "稳定性按逐局波动反向计分；硬仗表现 = 实际胜率 − 按对手实力算出的期望胜率。</div></div>";
+  })();
+
   /* ---------- 常用英雄 ---------- */
   var heroesHTML = (P.heroes || []).map(function (h) {
     var ic = heroIcon[h[0]];
@@ -229,7 +283,7 @@
       '<span class="kda mono">' + r[7] + "/" + r[8] + "/" + r[9] + "</span></a>";
   }).join("");
 
-  $("#main").innerHTML = kpi + trendHTML + posHTML + deepHTML + yearTable +
+  $("#main").innerHTML = kpi + trendHTML + posHTML + deepHTML + styleHTML + yearTable +
     '<div class="pl-grid">' +
     '<div class="panel"><div class="panel-title">英雄池 <em class="mono">共 ' + poolN + " 个英雄 · 按使用局数展示前 " + (P.heroes || []).length + "</em></div>" +
     '<div class="pl-heroes">' + (heroesHTML || '<div class="empty-tip">暂无数据</div>') + "</div></div>" +
