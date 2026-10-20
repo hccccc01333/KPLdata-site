@@ -1,10 +1,11 @@
 # KPL 数据中心 · 官网
 
-KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / 英雄数据、BP 分析、逐局复盘、实时胜率、预测公开统计、精选对局索引。
+KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / 英雄数据、BP 分析、逐局复盘、实时胜率、预测公开统计、精选对局、系列赛研究、荣誉与纪录。
 
-- 数据来源：腾讯 KPL 官方公开接口（赛程 / 对局 / 局内快照），个人搭建的赛事数据产品，**非官方、与腾讯无关联**
+- 数据来源：腾讯 KPL 官方公开接口（赛程 / 对局 / 局内快照）；个人搭建的赛事数据产品，**非官方、与腾讯无关联**
 - 技术：纯静态 HTML + 原生 JS，无框架、无构建步骤；数据由 Python 脚本离线生成为 `assets/*.js`
 - 实时链路：比赛日 1 秒粒度采集快照，实时页 30 秒刷新（胜率曲线 / 指标 / 趋势外推预测），逐局自动归档
+- 当前视觉：V5.5「竞技媒体白」——浅色页面、白色卡片、深色赛事头图、品牌红强调
 - 部署：静态托管，推送到仓库即自动发布（见「发布」）
 
 ## 数据规模
@@ -24,60 +25,75 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 
 > 上面的数字由 `sync_readme_stats.py` 读 `assets/*.js` 索引自动生成（构建链最后一步调用），勿手工改。
 
-## 页面（20 个 + 404）
+## 当前状态
 
-| 页面 | 文件 | 能力 |
-|---|---|---|
-| 首页 | `index.html` | 赛程 / 焦点战 / 精选复盘入口 / 数据完整度徽标 |
-| 赛程中心 | `schedule.html` | 按赛事与赛段浏览、赛季之最画廊、复盘入口 |
-| 比赛详情 | `match.html` | 复盘工作台（统一时间轴）、BP、胜率曲线、分享深链 `?id=&g=&m=` |
-| 对局详情 | `game.html` | 单局战报、BP 看板、分路经济、选手面板 |
-| 精选对局 | `picks.html` | 4 条可复核规则筛出的翻盘 / 拉锯 / 波动 / 资源战，卡片直达关键分钟 |
-| 战队 / 战队详情 | `teams.html` `team.html` | 积分榜（Wilson CI）、风格雷达、英雄池、H2H、赛季走势 |
-| 选手 / 选手详情 | `players.html` `player.html` | 位置榜、能力雷达、常用英雄、同位置对比 |
-| 英雄 / 英雄详情 | `heroes.html` `hero.html` | 出场 × 胜率散点、出装铭文、克制关系 |
-| 英雄组合 | `combos.html` | 双人 / 三人组合胜率与样本量 |
-| BP 分析 | `bp.html` | 全维度 BP 交叉（战队 / 对手 / 赛段 / 阵营 / 局序） |
-| 交手记录 | `h2h.html` | 两队历史交手与分位对位 |
-| 预测与准确率 | `predict.html` | 直播预测逐局命中、分时点命中率（8′ / 12′ / 16′）、模型卡 |
-| 赛段对比 | `stage.html` | 任选两个赛段对比（如 `?a=2025&b=2026`） |
-| 数据查询 | `query.html` | 多维筛选与导出 |
-| 对比工具 | `compare.html` | 战队 / 选手同屏对比 |
-| 大场模拟 | `simulator.html` | 阵容假设 → 单局 p → BO 大场胜率（解析 · iid 假设） |
-| 数据说明 | `about.html` | 口径、来源分级、已知局限 |
-| 404 | `404.html` | 兜底页 |
+- 站点已从「多页面数据展示」收敛为 **V5.5 数据产品**：29 个页面 + 404，20 个离线构建脚本。
+- 数据正确性：系列赛 / 战队 Elo / 选手逐局胜负已按真实战队身份重算；`check_series_consistency.py` 作为发布门禁。
+- 仍在开发：BP 赛事演播室（草稿 PR，尚未合并上线）；选手深挖数据口径收尾；资源指标去重。
+- 已知限制：部分历史系列赛缺官方胜负或逐局不完整；分钟级复盘只覆盖 211 局；模型测试集只有 20 局，不能当作稳定预测服务。
 
-## 构建脚本（12 个）
+## 页面（29 个 + 404）
+
+| 模块 | 页面 |
+|---|---|
+| 首页与赛程 | `index.html`、`schedule.html`、`bracket.html`（赛事进程）、`updates.html`（更新日志） |
+| 比赛与复盘 | `match.html`（复盘工作台 / 分享深链）、`game.html`（单局战报）、`picks.html`（精选对局）、`comeback.html`（翻盘路径） |
+| 战队 | `teams.html`、`team.html`（能力雷达 / 系列赛画像 / 冠军墙）、`h2h.html` |
+| 选手 | `players.html`、`player.html`（能力雷达 / 关键局 / 打法画像 / 搭档对位） |
+| 英雄 | `heroes.html`、`hero.html`、`combos.html` |
+| 深度分析 | `bp.html`、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`、`simulator.html`、`query.html` |
+| 对比工具 | `compare.html`、`compare-team.html`、`compare-player.html`、`compare-lane.html` |
+| 说明 | `about.html`、`404.html` |
+
+## 构建脚本（20 个）
 
 数据全部离线生成，页面只读 `assets/*.js`。
 
-| 脚本 | 产物 | 说明 |
-|---|---|---|
-| `build_data.py` | `data.js` | 站点主数据（赛程 / 焦点战 / 榜单 / 覆盖率） |
-| `build_history_data.py` | `schedule_all.js` 等 | 2019–2026 全历史回补聚合 |
-| `build_game_details.py` | `games/*.json` `details.js` | 局级详情分片 + 全局索引 + 装备图标 |
-| `build_replay_frames.py` | `replay/*.json` | 单局复盘时间轴（只覆盖有分钟级快照的局） |
-| `build_picks.py` | `picks.js` | 精选对局索引（4 条规则，阈值取分位数） |
-| `build_predict_data.py` | `predict.js` | 预测档案 + 分时点命中率 + 回测指标 |
-| `build_team_data.py` | `team_data.js` | 战队详情页数据 |
-| `build_player_details.py` | `players_detail.js` | 选手常用英雄 / 赛季趋势 / 最近比赛 |
-| `build_bp_data.py` | `bp.js` | BP 全维度交叉明细 |
-| `build_equip_data.py` | `equips.js` | 英雄出装与召唤师技能聚合 |
-| `build_search_index.py` | `search.js` | 全站搜索索引（挂在 `build_game_details.py` 末尾自动刷新） |
-| `sync_readme_stats.py` | 改写 `README.md` | 把「数据规模」统计与 `assets/*.js` 索引对齐，构建链最后一步调用 |
+| 分组 | 脚本 |
+|---|---|
+| 主数据 | `build_data.py`、`build_history_data.py`、`build_game_details.py`、`build_replay_frames.py`、`build_search_index.py` |
+| 比赛与预测 | `build_picks.py`、`build_predict_data.py`、`build_comeback_data.py`、`build_prematch_backtest.py` |
+| 战队 / 选手 / 英雄 | `build_team_data.py`、`build_player_details.py`、`build_player_deep.py`、`build_power_data.py`、`build_pro_hero.py`、`build_hero_growth.py`、`build_equip_data.py` |
+| BP / 系列赛 / 荣誉 / 纪录 | `build_bp_data.py`、`build_deep_data.py`、`build_honors_data.py`、`build_records.py` |
+
+辅助脚本：`sync_readme_stats.py` 把上面的「数据规模」与 `assets/*.js` 索引对齐。
+
+## 质量门禁
+
+发布前必须通过：
+
+```bash
+python check_data_quality.py        # 缺失值/假零、跨页面同口径、荣誉字段
+python check_series_consistency.py  # deep.js 对原始逐局数据的独立复算 + players_detail 交叉校验
+python test_series_logic.py         # 换边/让二追三/官方兜底/重复局号/串场局回归
+```
+
+- `check_series_consistency.py` 发现严重不一致时返回退出码 1；比赛日快速链路可加 `--skip-cross-page`，避免 `players_detail.js` 尚未刷新导致误报。
+- `publish.bat` 在 git 提交 / 部署前强制执行前两项检查，`--deploy-only` 也不例外。
+- 核心仓库的 `scripts/watch_site_data.py` 负责自动重建：构建或门禁失败时不推进 state，保留旧状态并在 5 分钟后自动重试。
+
+浏览器验收：
+
+```bash
+python -m http.server 8777
+node _check_pages.js http://127.0.0.1:8777   # 全站异常 / 渲染 / 交互 / 响应式
+node _regress.js                             # 分层回归总入口
+```
 
 ## 目录
 
-```
-*.html                 20 个页面 + 404（纯静态，无构建步骤）
-assets/style.css       设计系统（配色 / 字体 / 动效）
+```text
+*.html                 29 个页面 + 404（纯静态，无构建步骤）
+assets/v55.css         V5.5 竞技媒体白主题（当前视觉）
+assets/style.css       基础样式与旧主题层
 assets/pages.css       页面级样式
 assets/common.js       导航 / 页脚 / 搜索 / 深链工具
 assets/data.js         站点主数据（各 build_*.py 产物同目录）
 assets/games/          逐局详情分片，按需加载
 assets/replay/         复盘时间轴数据包
-build_*.py             数据生成脚本（读 ../02-KPL实时胜率预测系统）
-.assetsignore          部署排除项（不发布 .git / .wrangler / 构建脚本）
+assets/live_hist/      实时预测归档分片
+build_*.py             20 个数据生成脚本（读 ../02-KPL实时胜率预测系统）
+check_*.py             数据质量门禁
 DESIGN.md              设计规范
 ```
 
@@ -86,5 +102,10 @@ DESIGN.md              设计规范
 ## 发布
 
 ```bat
-publish.bat "更新说明"    # 提交并推送，托管平台自动重新部署
+publish.bat "更新说明"    # 质量门禁 → 提交 → 推送 → 部署
+publish.bat --deploy-only # 只部署（仍先跑质量门禁）
 ```
+
+## 声明
+
+本项目为非官方个人项目，与腾讯 / KPL 官方无关联；赛事数据、商标与第三方资源归各自权利人所有。站内模型输出仅用于数据分析展示，不构成预测或投注建议。
