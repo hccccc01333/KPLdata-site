@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>赛事纪录 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2317181E'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='16' font-weight='bold' fill='%23F02F55' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=70">
-<link rel="stylesheet" href="assets/pages.css?v=70">
-<link rel="stylesheet" href="assets/v55.css?v=70">
+<link rel="stylesheet" href="assets/style.css?v=71">
+<link rel="stylesheet" href="assets/pages.css?v=71">
+<link rel="stylesheet" href="assets/v55.css?v=71">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="赛事纪录 · KPL 数据中心">
@@ -67,10 +67,11 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=70"></script>
-<script src="assets/seasons.js?v=70"></script>
-<script src="assets/records.js?v=70"></script>
-<script src="assets/common.js?v=70"></script>
+<script src="assets/data.js?v=71"></script>
+<script src="assets/seasons.js?v=71"></script>
+<script src="assets/records.js?v=71"></script>
+<script src="assets/share.js?v=71"></script>
+<script src="assets/common.js?v=71"></script>
 <script>
 (function () {
   "use strict";
@@ -310,9 +311,34 @@
         '<div class="rm-team">' + (g.i2 ? '<img src="' + K.esc(g.i2) + '" alt="">' : "") + K.esc(g.t2) + "</div>" +
         '<table class="rm-tbl"><thead><tr><th>选手 / 英雄</th><th>K/D/A</th><th>经济</th><th>输出</th><th>承伤</th><th>MVP</th></tr></thead><tbody>' +
         teamRows(2, g.players || [], r.p) + "</tbody></table></div>";
-      var foot = '<div class="rm-foot"><a class="btn primary sm" href="game.html?id=' +
-        encodeURIComponent(r.bid) + '">打开对局页 →</a></div>';
+      var foot = '<div class="rm-foot">' +
+        '<button class="btn ghost sm" id="recShare" type="button">生成分享图</button>' +
+        '<a class="btn primary sm" href="game.html?id=' + encodeURIComponent(r.bid) + '">打开对局页 →</a></div>';
       body.innerHTML = head + table + foot;
+      var sb = document.getElementById("recShare");
+      if (sb && window.SHARE) {
+        sb.addEventListener("click", function () {
+          var pName = r.p || "";
+          var pInfo = (g.players || []).filter(function (x) { return x.n === pName; })[0];
+          var icon = pInfo && pInfo.pi ? pInfo.pi : (r.team === g.t1 ? g.i1 : g.i2);
+          var gd = Math.abs(Number(g.g1 || 0) - Number(g.g2 || 0));
+          window.SHARE.open({
+            kind: "赛事纪录 · " + m.label,
+            title: pName ? (pName + (pInfo && pInfo.h ? " · " + pInfo.h : "")) : (r.team || (g.t1 + " vs " + g.t2)),
+            sub: (r.d || "") + " · " + g.t1 + " vs " + g.t2 + " · G" + (g.seq || r.g || ""),
+            icon: icon || "",
+            stats: [
+              [m.label, val + (m.unit || "")],
+              ["比赛结果", winner + " 胜"],
+              ["团队击杀", (g.k1 || 0) + " : " + (g.k2 || 0)],
+              ["比赛时长", (g.dur || 0) + " 分钟"],
+              ["经济差", K.fmtInt(gd)]
+            ],
+            note: "纪录口径：KPL 官方逐局数据；同场十人数据可在站内查看。",
+            url: location.origin + "/game.html?id=" + encodeURIComponent(r.bid)
+          }, "kpldata-record.png");
+        });
+      }
     }).catch(function () {
       body.innerHTML = '<div class="empty-tip">同场数据加载失败，请稍后重试</div>';
     });
