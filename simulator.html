@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>赛前模拟 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2317181E'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='16' font-weight='bold' fill='%23F02F55' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=73">
-<link rel="stylesheet" href="assets/pages.css?v=73">
-<link rel="stylesheet" href="assets/v55.css?v=73">
+<link rel="stylesheet" href="assets/style.css?v=74">
+<link rel="stylesheet" href="assets/pages.css?v=74">
+<link rel="stylesheet" href="assets/v55.css?v=74">
 <style>
 .sim-verdict{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:14px;align-items:center;padding:2px 0 12px}
 .sv-team{min-width:0}
@@ -50,6 +50,14 @@
 .ctx-line:last-child{border-bottom:none}
 .ctx-line span{color:var(--muted)}
 .ctx-line b{color:var(--ink);font-variant-numeric:tabular-nums}
+.bt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line)}
+.bt-cell{padding:14px 16px 12px 0;border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-width:0}
+.bt-cell:nth-child(4n){border-right:none}
+.bt-cell .k{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-cell .v{font-size:24px;font-weight:900;margin-top:3px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.bt-cell .s{font-size:11px;color:var(--faint);margin-top:4px}
+.bt-cell.hl .v{color:var(--brand)}
+@media(max-width:860px){.bt-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.bt-cell:nth-child(4n){border-right:1px solid var(--line)}.bt-cell:nth-child(2n){border-right:none}}
 @media(max-width:860px){
   .sim-verdict{grid-template-columns:1fr auto 1fr;gap:8px}
   .sv-p{font-size:27px}
@@ -62,7 +70,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="赛前模拟 · KPL 数据中心">
-<meta property="og:description" content="基于实力评级、当前范围战绩、近期状态、历史交手与赛制经验的 BO3/BO5/BO7 赛前胜负与比分推算。">
+<meta property="og:description" content="基于实力评级、范围战绩、近期状态、历史交手、赛制经验与首发强度的 BO3/BO5/BO7 赛前胜负与比分推算，经走步回测校准。">
 </head>
 <body data-page="simulator.html">
 <header id="siteHeader"></header>
@@ -71,7 +79,7 @@
   <div class="wrap">
     <div class="ph-kicker mono">PRE-MATCH · 赛前模拟</div>
     <h1>赛前胜负与比分模拟</h1>
-    <p>把两队放在同一张桌面上：<b>实力评级、当前范围战绩、近 10 场状态、历史交手、赛制经验</b>五项合成单局胜率，
+    <p>把两队放在同一张桌面上：<b>实力评级、当前范围战绩、近 10 场状态、历史交手、赛制经验、最近首发强度</b>六项合成单局胜率，
       再按 BO 系列赛逐局展开，给出大场胜率、最可能比分与完整比分分布。纯赛前信息，不含未开赛对局数据。</p>
   </div>
 </header>
@@ -121,10 +129,20 @@
 
   <div class="block-head sub-head" style="margin-top:26px">
     <h2><i></i>这个胜率怎么来的</h2>
-    <span class="block-note mono">五项因素各自的单局胜率与权重 · 缺失项自动重新分配权重</span>
+    <span class="block-note mono">六项因素各自的单局胜率与权重 · 缺失项自动重新分配权重</span>
   </div>
   <div class="panel"><div id="modelRows"></div>
-    <div class="model-total"><span>合成后的 <b id="mtA"></b> 单局胜率</span><b id="mtP">—</b></div>
+    <div class="model-total"><span>合成并校准后的 <b id="mtA"></b> 单局胜率</span><b id="mtP">—</b></div>
+    <div class="block-note mono" id="modelNote" style="margin-top:8px"></div>
+  </div>
+
+  <div class="block-head sub-head" style="margin-top:26px">
+    <h2><i></i>走步回测</h2>
+    <span class="block-note mono">按时间顺序逐场预测，只用该场之前的数据</span>
+  </div>
+  <div class="panel">
+    <div class="bt-grid" id="btGrid"></div>
+    <div class="block-note mono" id="btNote" style="margin-top:12px"></div>
   </div>
 
   <div class="sim-context">
@@ -153,7 +171,8 @@
   <div class="model-grid">
     <div class="panel">
       <ul class="rules">
-        <li><b>单局胜率。</b>实力评级（全历史 Elo，45%）、当前范围单局战绩（20%）、近 10 个系列赛状态（15%）、历史交手（10%）、所选赛制经验（10%）五项取对数胜率加权；某项样本不足时自动剔除并重新分配权重。</li>
+        <li><b>单局胜率。</b>实力评级（全历史 Elo）、当前范围单局战绩、近 10 个系列赛状态、历史交手、所选赛制经验、最近首发强度六项取对数胜率加权；权重与收缩系数来自走步回测，某项样本不足时自动剔除并重新分配权重。</li>
+        <li><b>概率校准。</b>回测显示原始模型在 80% 以上区间过于自信，因此对合成 logit 做收缩（λ 与截距由早期样本拟合），让概率更接近真实频率。校准参数只在 2025 年之前的比赛上估计，2025 年之后作为独立测试集。</li>
         <li><b>战绩平滑。</b>胜负场做拉普拉斯平滑（+2 胜 / +4 场），避免 3 局 3 胜直接推出 100%。</li>
         <li><b>系列赛推算。</b>按「先赢到半数加一局」逐局展开精确计算，比分概率之和恒为 1（页面实时校验）。</li>
       </ul>
@@ -170,11 +189,13 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=73"></script>
-<script src="assets/seasons.js?v=73"></script>
-<script src="assets/schedule_all.js?v=73"></script>
-<script src="assets/deep.js?v=73"></script>
-<script src="assets/common.js?v=73"></script>
+<script src="assets/data.js?v=74"></script>
+<script src="assets/seasons.js?v=74"></script>
+<script src="assets/schedule_all.js?v=74"></script>
+<script src="assets/deep.js?v=74"></script>
+<script src="assets/lineups.js?v=74"></script>
+<script src="assets/prematch_backtest.js?v=74"></script>
+<script src="assets/common.js?v=74"></script>
 <script>
 (function () {
   "use strict";
@@ -183,6 +204,13 @@
 
   var ALL = window.KPL_SCHEDULE_ALL || [];
   var DEEP = (window.KPL_DEEP && window.KPL_DEEP.teams) || {};
+  var LINEUPS = window.KPL_LINEUPS || {};
+  var BT = window.KPL_PRE_BACKTEST || null;
+  var TUNE = (BT && BT.tuned) || null;
+  var BASE_W = TUNE ? TUNE.weights : { elo: 0.4, scope: 0.2, form: 0.15, h2h: 0.1, bo: 0.1 };
+  var CAL_LAM = TUNE ? TUNE.lam : 1.0;
+  var CAL_BIAS = TUNE ? TUNE.bias : 0.0;
+  var LINEUP_W = 0.12;
   var selA = $("#simA"), selB = $("#simB"), selBo = $("#simBo");
   var ckManual = $("#simManual"), rngP = $("#simP"), lblPv = $("#simPv");
   var byName = {}, SCOPE = "all";
@@ -262,7 +290,7 @@
 
     if (da && db && da.elo && db.elo) {
       comps.push({
-        key: "elo", label: "实力评级", weight: 0.45,
+        key: "elo", label: "实力评级", weight: BASE_W.elo * (1 - LINEUP_W),
         p: 1 / (1 + Math.pow(10, (db.elo - da.elo) / 400)),
         note: "Elo " + da.elo + " vs " + db.elo + " · 全站第 " + da.rank + "/" + db.rank
       });
@@ -271,7 +299,7 @@
     var sa = teamSpec(a), sb = teamSpec(b);
     if (sa.games && sb.games) {
       comps.push({
-        key: "scope", label: "当前范围战绩", weight: 0.20,
+        key: "scope", label: "当前范围战绩", weight: BASE_W.scope * (1 - LINEUP_W),
         p: sig(logit(smooth(sa.wins, sa.games)) - logit(smooth(sb.wins, sb.games))),
         note: K.scopeName(SCOPE) + " · " + sa.wins + "-" + (sa.games - sa.wins) + " vs " +
           sb.wins + "-" + (sb.games - sb.wins)
@@ -281,7 +309,7 @@
     var fa = formStats(a), fb = formStats(b);
     if (fa.n >= 4 && fb.n >= 4) {
       comps.push({
-        key: "form", label: "近 10 场状态", weight: 0.15,
+        key: "form", label: "近 10 场状态", weight: BASE_W.form * (1 - LINEUP_W),
         p: sig(logit(smooth(fa.w, fa.n)) - logit(smooth(fb.w, fb.n))),
         note: fa.w + "/" + fa.n + " vs " + fb.w + "/" + fb.n
       });
@@ -290,7 +318,7 @@
     var h = h2h(a, b);
     if (h.n >= 3) {
       comps.push({
-        key: "h2h", label: "历史交手", weight: 0.10,
+        key: "h2h", label: "历史交手", weight: BASE_W.h2h * (1 - LINEUP_W),
         p: (h.wins + 2) / (h.n + 4),
         note: "共 " + h.n + " 次 · " + h.wins + " 胜"
       });
@@ -299,9 +327,21 @@
     var ba = boStats(a, bo), bb = boStats(b, bo);
     if (ba && bb) {
       comps.push({
-        key: "bo", label: "BO" + bo + " 经验", weight: 0.10,
+        key: "bo", label: "BO" + bo + " 经验", weight: BASE_W.bo * (1 - LINEUP_W),
         p: smooth(ba.w, ba.n) / (smooth(ba.w, ba.n) + smooth(bb.w, bb.n)),
         note: ba.w + "-" + (ba.n - ba.w) + " vs " + bb.w + "-" + (bb.n - bb.w)
+      });
+    }
+
+    // 最近首发五人强度（平均同位置分位）
+    var la = LINEUPS[a], lb = LINEUPS[b];
+    if (la && lb && la.strength != null && lb.strength != null) {
+      var va = Math.min(0.8, Math.max(0.2, la.strength / 100));
+      var vb = Math.min(0.8, Math.max(0.2, lb.strength / 100));
+      comps.push({
+        key: "lineup", label: "首发强度", weight: LINEUP_W,
+        p: sig(logit(va) - logit(vb)),
+        note: "最近首发 5 人 · 平均分位 " + la.strength + " vs " + lb.strength
       });
     }
 
@@ -309,7 +349,7 @@
     comps.forEach(function (c) { c.weight = c.weight / wsum; });
     var l = 0;
     comps.forEach(function (c) { l += c.weight * logit(c.p); });
-    return { comps: comps, p: sig(l) };
+    return { comps: comps, p: sig(CAL_LAM * l + CAL_BIAS) };
   }
 
   function formChips(s) {
@@ -338,7 +378,7 @@
     lblPv.textContent = Math.round(p * 100) + "%";
     $("#simSrc").textContent = manual
       ? "手动设定单局胜率（跳过模型合成）"
-      : "五项因素合成 · 自动值 " + K.pct(model.p) + (model.p !== p ? "（已收敛到 8%–92%）" : "");
+      : "六项因素合成 + 回测校准 · 自动值 " + K.pct(model.p) + (model.p !== p ? "（已收敛到 8%–92%）" : "");
 
     var rows = scoreLines(p, m);
     var sum = rows.reduce(function (acc, r) { return acc + r.prob; }, 0);
@@ -394,6 +434,28 @@
     }).join("") || '<div class="empty-tip">两队在该范围内缺少可用数据</div>';
     $("#mtA").textContent = a;
     $("#mtP").textContent = K.pct(model.p);
+    $("#modelNote").textContent = TUNE
+      ? "权重来自 2019–2024 走步回测；校准 λ=" + TUNE.lam + "、截距 " + TUNE.bias +
+        "。回测不含首发强度，首发因子按固定 12% 权重并入。"
+      : "权重为默认值；走步回测数据尚未生成。";
+
+    if (BT) {
+      var t = BT.tuned && BT.tuned.test, te = BT.tuned && BT.tuned.testElo;
+      $("#btGrid").innerHTML =
+        '<div class="bt-cell"><div class="k">回测样本</div><div class="v">' + BT.n + '</div><div class="s">' +
+          K.esc(BT.from) + " — " + K.esc(BT.to) + " · 完整系列赛</div></div>" +
+        '<div class="bt-cell"><div class="k">独立测试窗口</div><div class="v">' + (t ? t.n : "—") +
+          '</div><div class="s">2025 年之后 · 不参与调参</div></div>' +
+        '<div class="bt-cell hl"><div class="k">测试命中率</div><div class="v">' +
+          (t ? K.pct(t.acc, 1) : "—") + '</div><div class="s">纯 Elo ' +
+          (te ? K.pct(te.acc, 1) : "—") + "</div></div>" +
+        '<div class="bt-cell"><div class="k">测试 Brier</div><div class="v">' +
+          (t ? t.brier.toFixed(3) : "—") + '</div><div class="s">纯 Elo ' +
+          (te ? te.brier.toFixed(3) : "—") + " · 越低越好</div></div>";
+      $("#btNote").textContent = "走步回测只用该场之前的比赛估计实力分、范围战绩、状态、交手与赛制经验，" +
+        "再逐场预测并更新状态。权重与校准参数只在 2025 年之前拟合；测试窗口的命中率与 Brier 为独立评估。" +
+        "概率校准的目标是让「预测 60% 的场次真的赢约 60%」，而不是单纯追求更高的命中率。";
+    }
 
     var da = DEEP[a] || {}, db = DEEP[b] || {};
     var ba = boStats(a, bo), bb = boStats(b, bo);

@@ -69,6 +69,7 @@ def main() -> None:
     files = sorted(HIST.glob("*/matches/*.json"))
     matches = []      # (date, mid, t1, t2, win_camp, bo, battles)
     raw = []          # 每局每名选手的紧凑记录
+    team_latest = {}  # team -> 最近一场的首发五人
     skipped = 0
 
     for f in files:
@@ -115,6 +116,16 @@ def main() -> None:
                 dur_min = None
             is_dec = bool(dec_seq and int(b.get("battle_seq") or 0) == dec_seq)
             bid = str(b.get("battle_id") or (mid + "_" + str(b.get("battle_seq") or 0)))
+            for camp0, tname in ((1, bt1), (2, bt2)):
+                members = [x for x in plist if int(x.get("camp") or 0) == camp0]
+                if len(members) != 5:
+                    continue
+                cur = team_latest.get(tname)
+                if not cur or date >= cur["date"]:
+                    team_latest[tname] = {"date": date, "mid": mid, "players": [
+                        {"name": str(x.get("player_name") or x.get("actual_player_name") or "").strip(),
+                         "pos": str(x.get("position_desc") or ""), "icon": str(x.get("player_icon") or "")}
+                        for x in members]}
             for p in plist:
                 name = str(p.get("player_name") or p.get("actual_player_name") or "").strip()
                 if not name:
@@ -750,6 +761,27 @@ def main() -> None:
     path.write_text("KPL_PLAYER_DEEP = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n",
                     encoding="utf-8")
     print(f"player_deep.js: {path.stat().st_size/1024:.0f} KB | players {len(out)} | games {len(raw)}")
+
+    # 最近首发五人 + 平均同位置分位（供赛前模拟使用）
+    lineups = {}
+    for team, info in team_latest.items():
+        ps, names, pos, icons = [], [], [], []
+        for m0 in info["players"]:
+            rec = out.get(m0["name"])
+            names.append(m0["name"])
+            pos.append(m0["pos"])
+            icons.append((rec or {}).get("icon") or m0["icon"])
+            if rec and rec.get("perf") is not None:
+                ps.append(rec["perf"])
+        lineups[team] = {
+            "date": info["date"], "names": names, "pos": pos, "icons": icons,
+            "perf": [round(v, 1) for v in ps] if len(ps) == len(names) else [],
+            "strength": round(sum(ps) / len(ps), 1) if len(ps) >= 4 else None,
+        }
+    lp = SITE / "assets" / "lineups.js"
+    lp.write_text("KPL_LINEUPS = " + json.dumps(lineups, ensure_ascii=False, separators=(",", ":")) + ";",
+                  encoding="utf-8")
+    print(f"lineups.js: {lp.stat().st_size/1024:.1f} KB | teams {len(lineups)}")
 
 
 if __name__ == "__main__":
