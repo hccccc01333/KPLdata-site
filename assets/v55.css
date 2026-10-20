@@ -552,3 +552,10 @@ html.v55 .rec-row.top1 .rec-val{color:var(--brand)}
   html.v55 .rec-val{font-size:18px}
   html.v55 .rec-who b{font-size:13.5px}
 }
+
+/* 赛事纪录：主题筛选 */
+html.v55 .theme-chips{display:flex;gap:7px;flex-wrap:wrap}
+html.v55 .theme-chips button{font-family:inherit;font-size:12.5px;padding:6px 12px;border-radius:999px;
+  border:1px solid var(--line2);background:#fff;color:var(--ink2);cursor:pointer}
+html.v55 .theme-chips button:hover{border-color:var(--ink2);color:var(--ink)}
+html.v55 .theme-chips button.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
