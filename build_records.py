@@ -20,7 +20,7 @@ SITE = Path(__file__).resolve().parent
 PROJ = SITE.parent / "02-KPL实时胜率预测系统"
 HIST = PROJ / "data" / "history"
 CN = timezone(timedelta(hours=8))
-KEEP = 6
+KEEP = 5
 MIN_LEAGUE_MATCHES = 30
 
 
@@ -170,14 +170,43 @@ def main() -> None:
                 "opp": bt2 if k_camp == 1 else bt1,
                 "t1": bt1, "t2": bt2, "g": seq,
             })
-            gdiff = abs(gold[1] - gold[2])
-            g_camp = 1 if gold[1] >= gold[2] else 2
-            push(scope_ids, "game_gdiff", {
-                "v": int(gdiff), "d": date, "mid": mid, "bid": bid,
-                "team": bt1 if g_camp == 1 else bt2,
-                "opp": bt2 if g_camp == 1 else bt1,
+            deaths = {1: 0, 2: 0}
+            for p in plist:
+                camp = int(p.get("camp") or 0)
+                if camp in (1, 2):
+                    deaths[camp] += int(num(p.get("death_num")))
+            d_camp = 1 if deaths[1] >= deaths[2] else 2
+            push(scope_ids, "team_deaths", {
+                "v": deaths[d_camp], "d": date, "mid": mid, "bid": bid,
+                "team": bt1 if d_camp == 1 else bt2,
+                "opp": bt2 if d_camp == 1 else bt1,
                 "t1": bt1, "t2": bt2, "g": seq,
             })
+            km = abs(kills[1] - kills[2])
+            k_camp2 = 1 if kills[1] >= kills[2] else 2
+            push(scope_ids, "game_kill_margin", {
+                "v": km, "d": date, "mid": mid, "bid": bid,
+                "team": bt1 if k_camp2 == 1 else bt2,
+                "opp": bt2 if k_camp2 == 1 else bt1,
+                "t1": bt1, "t2": bt2, "g": seq,
+            })
+            gold_ok = gold[1] >= 20000 and gold[2] >= 20000
+            if gold_ok:
+                g_camp2 = 1 if gold[1] >= gold[2] else 2
+                push(scope_ids, "team_gold", {
+                    "v": int(gold[g_camp2]), "d": date, "mid": mid, "bid": bid,
+                    "team": bt1 if g_camp2 == 1 else bt2,
+                    "opp": bt2 if g_camp2 == 1 else bt1,
+                    "t1": bt1, "t2": bt2, "g": seq,
+                })
+                gdiff = abs(gold[1] - gold[2])
+                g_camp = 1 if gold[1] >= gold[2] else 2
+                push(scope_ids, "game_gdiff", {
+                    "v": int(gdiff), "d": date, "mid": mid, "bid": bid,
+                    "team": bt1 if g_camp == 1 else bt2,
+                    "opp": bt2 if g_camp == 1 else bt1,
+                    "t1": bt1, "t2": bt2, "g": seq,
+                })
 
             for p in plist:
                 name = str(p.get("player_name") or p.get("actual_player_name") or "").strip()
@@ -189,24 +218,45 @@ def main() -> None:
                 hero = str(p.get("hero_name") or "")
                 team = str(p.get("team_name") or (bt1 if camp == 1 else bt2))
                 opp = bt2 if camp == 1 else bt1
+                won = 1 if camp == win_camp else 0
                 base = {"d": date, "mid": mid, "bid": bid, "p": name, "h": hero,
-                        "team": team, "opp": opp, "g": seq}
+                        "team": team, "opp": opp, "g": seq, "w": won}
                 k = int(num(p.get("kill_num")))
                 d_ = int(num(p.get("death_num")))
                 a = int(num(p.get("assist_num")))
                 g = num(p.get("gold"))
+                hurt = num(p.get("hurt_total"))
                 push(scope_ids, "p_kills", dict(base, v=k))
                 push(scope_ids, "p_deaths", dict(base, v=d_))
                 push(scope_ids, "p_assists", dict(base, v=a))
-                push(scope_ids, "p_gold", dict(base, v=int(g)))
+                push(scope_ids, "p_ka", dict(base, v=k + a))
+                if 2000 <= g <= 60000:
+                    push(scope_ids, "p_gold", dict(base, v=int(g)))
+                push(scope_ids, "p_dmg_abs", dict(base, v=int(hurt)))
                 dv = p.get("hurt_total_rate")
                 if dv not in (None, ""):
                     push(scope_ids, "p_dmg", dict(base, v=round(num(dv) * 100, 1)))
                 pv = p.get("participation_rate")
                 if pv not in (None, ""):
                     push(scope_ids, "p_part", dict(base, v=round(num(pv), 1)))
-                if dur > 0:
-                    push(scope_ids, "p_gpm", dict(base, v=int(g / (dur / 60))))
+                bv = p.get("be_hurt_total_rate")
+                if bv not in (None, ""):
+                    push(scope_ids, "p_tank", dict(base, v=round(num(bv) * 100, 1)))
+                mv = p.get("mvp_score")
+                if mv not in (None, ""):
+                    push(scope_ids, "p_mvp", dict(base, v=round(num(mv), 1)))
+                gpm = int(g / (dur / 60)) if dur > 0 else 0
+                if 200 <= gpm <= 1200:
+                    push(scope_ids, "p_gpm", dict(base, v=gpm))
+                # 主题纪录：空砍 / 尽力 / 躺赢 / 零阵亡
+                if not won:
+                    push(scope_ids, "p_empty_star", dict(base, v=k))
+                    if dv not in (None, ""):
+                        push(scope_ids, "p_carry_loss", dict(base, v=round(num(dv) * 100, 1)))
+                else:
+                    push(scope_ids, "p_lucky_win", dict(base, v=d_))
+                if d_ == 0:
+                    push(scope_ids, "p_perfect", dict(base, v=k, d=0))
 
     # 输出
     out = {}
@@ -223,7 +273,7 @@ def main() -> None:
                     seen.add(key)
                     res.append(r)
                 return res
-            out[sid][metric] = {"max": clean(cell["max"])[:5], "min": clean(cell["min"])[:5]}
+            out[sid][metric] = {"max": clean(cell["max"])[:4], "min": clean(cell["min"])[:4]}
 
     data = {
         "generatedAt": datetime.now(CN).strftime("%Y-%m-%d %H:%M"),
