@@ -217,7 +217,7 @@ window.KPL = (function () {
             ["英雄对比", "compare.html"], ["战队对比", "compare-team.html"],
             ["选手对比", "compare-player.html"], ["位置对比", "compare-lane.html"],
             ["赛段对比", "stage.html"], ["翻盘研究所", "comeback.html"],
-            ["数据查询", "query.html"], ["赛事模拟器", "simulator.html"]] },
+            ["数据查询", "query.html"], ["赛前模拟", "simulator.html"]] },
     { ic: "layers", label: "荣誉", href: "honors.html",
       pages: ["honors.html", "records.html"],
       sub: [["赛事纪录", "records.html"]] }
