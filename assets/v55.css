@@ -559,3 +559,46 @@ html.v55 .theme-chips button{font-family:inherit;font-size:12.5px;padding:6px 12
   border:1px solid var(--line2);background:#fff;color:var(--ink2);cursor:pointer}
 html.v55 .theme-chips button:hover{border-color:var(--ink2);color:var(--ink)}
 html.v55 .theme-chips button.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+
+/* 赛事纪录：可点开条目 */
+html.v55 .rec-row.openable .rec-who b{border-bottom:1px dashed rgba(25,27,35,.28)}
+html.v55 .rec-row.openable:hover .rec-who b{border-bottom-color:var(--brand)}
+/* 同场十人抽屉 */
+.rec-modal{position:fixed;inset:0;z-index:130;display:none}
+.rec-modal.on{display:block}
+.rec-modal-bg{position:absolute;inset:0;background:rgba(23,24,30,.48);backdrop-filter:blur(2px)}
+.rec-modal-panel{position:relative;max-width:860px;margin:5vh auto;background:#fff;border-radius:14px;
+  box-shadow:0 30px 80px rgba(23,24,30,.28);max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.rec-modal-head{position:relative;padding:20px 24px 14px;border-bottom:1px solid var(--line)}
+.rec-modal-head h3{font-size:20px;font-weight:900;color:var(--ink);margin:5px 0 4px}
+.rec-modal-head h3 span{color:var(--faint);font-weight:600;margin:0 5px}
+.rec-modal-head .rm-kicker{font-size:10.5px;letter-spacing:.12em;color:var(--faint)}
+.rec-modal-head .rm-sub{font-size:12.5px;color:var(--muted)}
+.rec-modal-head .rm-sub b{color:var(--brand);font-variant-numeric:tabular-nums}
+.rm-close{position:absolute;right:16px;top:16px;width:32px;height:32px;border:none;background:transparent;
+  color:var(--muted);font-size:22px;line-height:1;cursor:pointer;border-radius:6px;z-index:3}
+.rm-close:hover{background:var(--inset);color:var(--ink)}
+.rm-body{padding:4px 24px 18px;overflow:auto}
+.rm-loading{padding:40px 24px;text-align:center;color:var(--muted);font-size:13px}
+.rm-team{display:flex;align-items:center;gap:8px;margin:16px 0 6px;font-size:13.5px;font-weight:800;color:var(--ink)}
+.rm-team img{width:20px;height:20px;object-fit:contain}
+.rm-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.rm-tbl th{color:var(--muted);font-weight:600;font-size:11px;text-align:right;padding:6px 8px;
+  border-bottom:1px solid var(--line2);white-space:nowrap}
+.rm-tbl th:first-child{text-align:left}
+.rm-tbl td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;
+  font-variant-numeric:tabular-nums;color:var(--ink2)}
+.rm-tbl td:first-child{text-align:left}
+.rm-tbl tr.hl td{background:rgba(240,47,85,.06);color:var(--ink);font-weight:700}
+.rm-player{display:flex;align-items:center;gap:8px;min-width:0}
+.rm-player img{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none}
+.rm-player span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rm-player small{color:var(--muted);font-size:11px}
+.rm-foot{padding:12px 24px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
+@media(max-width:720px){
+  .rec-modal-panel{margin:0;max-height:100vh;height:100vh;border-radius:0}
+  .rec-modal-head{padding:16px 16px 12px}
+  .rm-body{padding:4px 16px 16px}
+  .rm-tbl th,.rm-tbl td{padding:6px 4px}
+  .rm-tbl th:nth-child(5),.rm-tbl td:nth-child(5){display:none}
+}
