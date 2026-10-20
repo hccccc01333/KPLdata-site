@@ -490,21 +490,21 @@ html.v55 .chem-row.chem-lineup{grid-template-areas:"nm d" "nums nums" "heroes he
 html.v55 .chem-lineup .heroes{grid-area:heroes;font-size:10.5px;color:var(--faint);line-height:1.6;white-space:normal}
 
 /* ---------------- 首页更新公告 ---------------- */
-html.v55 .update-bar{display:flex;align-items:center;gap:12px;margin-top:18px;padding:10px 14px;
+html.v55 .release-bar{display:flex;align-items:center;gap:12px;margin-top:18px;padding:10px 14px;
   border:1px solid rgba(240,47,85,.22);background:rgba(240,47,85,.05);border-radius:10px;font-size:13px}
-html.v55 .update-bar .ub-badge{flex:none;font-size:10.5px;font-weight:800;letter-spacing:.06em;
+html.v55 .release-bar .ub-badge{flex:none;font-size:10.5px;font-weight:800;letter-spacing:.06em;
   color:#fff;background:var(--brand);border-radius:4px;padding:2px 7px}
-html.v55 .update-bar .ub-text{min-width:0;color:var(--ink2)}
-html.v55 .update-bar .ub-text b{color:var(--ink);font-weight:800;margin-right:8px}
-html.v55 .update-bar .ub-sum{color:var(--muted)}
-html.v55 .update-bar .ub-link{margin-left:auto;color:var(--brand);font-weight:700;white-space:nowrap;flex:none}
-html.v55 .update-bar .ub-close{flex:none;border:none;background:none;color:var(--faint);font-size:18px;
+html.v55 .release-bar .ub-text{min-width:0;color:var(--ink2)}
+html.v55 .release-bar .ub-text b{color:var(--ink);font-weight:800;margin-right:8px}
+html.v55 .release-bar .ub-sum{color:var(--muted)}
+html.v55 .release-bar .ub-link{margin-left:auto;color:var(--brand);font-weight:700;white-space:nowrap;flex:none}
+html.v55 .release-bar .ub-close{flex:none;border:none;background:none;color:var(--faint);font-size:18px;
   line-height:1;cursor:pointer;padding:0 2px}
-html.v55 .update-bar .ub-close:hover{color:var(--ink)}
+html.v55 .release-bar .ub-close:hover{color:var(--ink)}
 @media(max-width:720px){
-  html.v55 .update-bar{flex-wrap:wrap;gap:6px 10px}
-  html.v55 .update-bar .ub-text{flex:1 1 100%;order:3}
-  html.v55 .update-bar .ub-link{margin-left:auto}
+  html.v55 .release-bar{flex-wrap:wrap;gap:6px 10px}
+  html.v55 .release-bar .ub-text{flex:1 1 100%;order:3}
+  html.v55 .release-bar .ub-link{margin-left:auto}
 }
 
 /* ---------------- 更新日志 ---------------- */
