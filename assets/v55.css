@@ -529,3 +529,26 @@ html.v55 .up-list li::before{content:"";position:absolute;left:0;top:12px;width:
   html.v55 .up-item{padding-left:20px}
   html.v55 .up-title{font-size:18px}
 }
+
+/* ---------------- 赛事纪录 ---------------- */
+html.v55 .rec-list{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+html.v55 .rec-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;
+  padding:14px 18px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
+html.v55 .rec-row:last-child{border-bottom:none}
+html.v55 .rec-row:hover{background:var(--card2)}
+html.v55 .rec-row .rank{font-family:var(--mono);font-size:13px;font-weight:800;color:var(--faint);text-align:center}
+html.v55 .rec-row.top1 .rank{color:var(--brand)}
+html.v55 .rec-who{min-width:0}
+html.v55 .rec-who b{display:block;font-size:14.5px;font-weight:800;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.v55 .rec-who em{display:block;font-style:normal;font-size:11.5px;color:var(--muted);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.v55 .rec-val{font-family:var(--mono);font-size:22px;font-weight:900;color:var(--ink);
+  white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+html.v55 .rec-val small{font-size:11px;font-weight:600;color:var(--muted);margin-left:4px}
+html.v55 .rec-row.top1 .rec-val{color:var(--brand)}
+@media(max-width:640px){
+  html.v55 .rec-row{grid-template-columns:30px minmax(0,1fr) auto;gap:10px;padding:12px 14px}
+  html.v55 .rec-val{font-size:18px}
+  html.v55 .rec-who b{font-size:13.5px}
+}
