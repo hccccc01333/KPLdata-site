@@ -13,6 +13,8 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
+from kpl_series import battle_winner_team, team_name_of
+
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
 
@@ -113,18 +115,19 @@ def main() -> None:
         if lid in good_leagues:
             scope_ids.append(lid)
 
-        wins = Counter(int(b["win_camp"]) for b in bs)
+        team_wins = Counter()
+        for b in bs:
+            bw = battle_winner_team(b)
+            if bw in (t1, t2):
+                team_wins[bw] += 1
         bo = int(m.get("bo") or 0)
         need = bo // 2 + 1 if bo > 0 else 0
-        tie = wins[1] == wins[2]
+        tie = team_wins[t1] == team_wins[t2]
         # 只有「完整且官方赛制明确」的系列赛才参与系列纪录；对局纪录不受影响
-        series_ok = (not tie) and bo >= 3 and max(wins.values()) == need and len(bs) >= need
-        win_camp = 0
-        if not tie:
-            win_camp = 1 if wins[1] > wins[2] else 2
-        winner = (t1 if win_camp == 1 else t2) if win_camp else ""
-        loser = (t2 if win_camp == 1 else t1) if win_camp else ""
-        score = f"{wins[win_camp]}:{wins[3 - win_camp]}" if win_camp else f"{wins[1]}:{wins[2]}"
+        series_ok = (not tie) and bo >= 3 and max(team_wins.values()) == need and len(bs) >= need
+        winner = "" if tie else (t1 if team_wins[t1] > team_wins[t2] else t2)
+        loser = "" if tie else (t2 if winner == t1 else t1)
+        score = f"{team_wins[t1]}:{team_wins[t2]}"
 
         if series_ok:
             total_sec = 0.0
@@ -141,7 +144,7 @@ def main() -> None:
                     "t1": t1, "t2": t2, "w": winner, "score": score, "bo": bo,
                 })
             push(scope_ids, "series_margin", {
-                "v": abs(wins[1] - wins[2]), "d": date, "mid": mid, "lid": lid,
+                "v": abs(team_wins[t1] - team_wins[t2]), "d": date, "mid": mid, "lid": lid,
                 "t1": t1, "t2": t2, "w": winner, "score": score, "bo": bo,
             })
             push(scope_ids, "series_games", {
@@ -242,7 +245,7 @@ def main() -> None:
                 hero = str(p.get("hero_name") or "")
                 team = str(p.get("team_name") or (bt1 if camp == 1 else bt2))
                 opp = bt2 if camp == 1 else bt1
-                won = 1 if camp == win_camp else 0
+                won = 1 if team == battle_winner_team(b) else 0
                 base = {"d": date, "mid": mid, "bid": bid, "p": name, "h": hero,
                         "team": team, "opp": opp, "g": seq, "w": won, "lid": lid}
                 k = int(num(p.get("kill_num")))

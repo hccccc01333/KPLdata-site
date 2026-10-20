@@ -27,6 +27,8 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
+from kpl_series import summarize_match, battle_winner_team, team_name_of
+
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
 
@@ -70,6 +72,8 @@ def main() -> None:
     matches = []      # (date, mid, t1, t2, win_camp, bo, battles)
     raw = []          # 每局每名选手的紧凑记录
     team_latest = {}  # team -> 最近一场的首发五人
+    team_picks = defaultdict(list)   # team -> 最近 30 个英雄
+    hero_all = defaultdict(lambda: [0, 0])  # hero -> [wins, games]
     skipped = 0
 
     for f in files:
@@ -78,27 +82,39 @@ def main() -> None:
         except Exception:
             continue
         m = o.get("match") or {}
-        bs = [b for b in (o.get("battles") or []) if b.get("win_camp") in (1, 2)]
+        raw_bs = [b for b in (o.get("battles") or []) if b.get("win_camp") in (1, 2)]
+        if not raw_bs:
+            continue
+        by_seq = {}
+        for b in raw_bs:
+            seq = int(b.get("battle_seq") or 0)
+            if seq > 0 and seq not in by_seq:
+                by_seq[seq] = b
+        bs = [by_seq[k] for k in sorted(by_seq)]
         if not bs:
             continue
-        bs.sort(key=lambda b: int(b.get("battle_seq") or 0))
         t1, t2 = team_of(bs[0], 1), team_of(bs[0], 2)
         if not t1 or not t2:
             continue
-        wins = Counter(int(b["win_camp"]) for b in bs)
-        if wins[1] == wins[2]:
+        team_wins = Counter()
+        for b in bs:
+            bw = battle_winner_team(b)
+            if bw in (t1, t2):
+                team_wins[bw] += 1
+        if team_wins[t1] == team_wins[t2]:
             continue
-        win_camp = 1 if wins[1] > wins[2] else 2
+        winner = t1 if team_wins[t1] > team_wins[t2] else t2
+        loser = t2 if winner == t1 else t1
         bo = int(m.get("bo") or 0) or (len(bs) * 2 - 1)
         date = str(m.get("start_time") or "")
         mid = str(m.get("match_id") or f.stem)
         need = (bo // 2) + 1
-        complete = max(wins.values()) == need
+        complete = max(team_wins.values()) == need
         dec_seq = -1
-        if complete and bo >= 3 and wins[win_camp] == need and wins[3 - win_camp] == need - 1 and len(bs) == bo:
+        if complete and bo >= 3 and team_wins[winner] == need and team_wins[loser] == need - 1 and len(bs) == bo:
             dec_seq = int(bs[-1].get("battle_seq") or 0)
 
-        matches.append((date, mid, t1, t2, win_camp, bo))
+        matches.append((date, mid, t1, t2, winner, bo))
 
         for b in bs:
             bt1, bt2 = team_of(b, 1), team_of(b, 2)
@@ -126,6 +142,14 @@ def main() -> None:
                         {"name": str(x.get("player_name") or x.get("actual_player_name") or "").strip(),
                          "pos": str(x.get("position_desc") or ""), "icon": str(x.get("player_icon") or "")}
                         for x in members]}
+                heroes = [str(x.get("hero_name") or "") for x in members if x.get("hero_name")]
+                if heroes:
+                    won = 1 if battle_winner_team(b) == tname else 0
+                    for h in heroes:
+                        hero_all[h][0] += won
+                        hero_all[h][1] += 1
+                    team_picks[tname].extend(heroes)
+                    team_picks[tname] = team_picks[tname][-30:]
             for p in plist:
                 name = str(p.get("player_name") or p.get("actual_player_name") or "").strip()
                 if not name:
@@ -145,7 +169,8 @@ def main() -> None:
                 raw.append((
                     name, pos, str(p.get("team_name") or (bt1 if camp == 1 else bt2)),
                     str(p.get("player_icon") or ""), mid, date, is_dec,
-                    1 if camp == win_camp else 0, k, d, a, dmg, tank, part, gs, gpm, dpm,
+                    1 if str(p.get("team_name") or (bt1 if camp == 1 else bt2)) == winner else 0,
+                    k, d, a, dmg, tank, part, gs, gpm, dpm,
                     str(p.get("hero_name") or ""), bid, (bt2 if camp == 1 else bt1),
                 ))
 
@@ -153,11 +178,11 @@ def main() -> None:
     matches.sort(key=lambda x: (x[0], x[1]))
     elo = defaultdict(lambda: 1500.0)
     elo_at = {}
-    for date, mid, t1, t2, win_camp, bo in matches:
+    for date, mid, t1, t2, winner, bo in matches:
         ra, rb = elo[t1], elo[t2]
         elo_at[mid] = {t1: ra, t2: rb}
         ea = 1.0 / (1.0 + 10 ** ((rb - ra) / 400.0))
-        sa = 1.0 if win_camp == 1 else 0.0
+        sa = 1.0 if winner == t1 else 0.0
         margin = 1
         k = ELO_K * (1.0 + (0.25 if bo >= 7 else 0.0))
         elo[t1] = ra + k * (sa - ea)
@@ -703,6 +728,7 @@ def main() -> None:
             "name": name, "team": d["team"], "pos": d["pos"], "icon": d["icon"],
             "g": d["g"], "w": d["w"],
             "perf": round(perf_pct, 1),
+            "z": round(d["perf"], 3),
             "stab": round(stab_pct, 1),
             "clutch": round(clutch_pct, 1) if clutch_pct is not None else None,
             "heroPct": round(hero_pct, 1), "oppPct": round(opp_pct, 1) if opp_pct is not None else None,
@@ -773,10 +799,32 @@ def main() -> None:
             icons.append((rec or {}).get("icon") or m0["icon"])
             if rec and rec.get("perf") is not None:
                 ps.append(rec["perf"])
+        zs = []
+        for m0 in info["players"]:
+            rec = out.get(m0["name"])
+            if rec and rec.get("z") is not None:
+                zs.append(rec["z"])
+        picks = team_picks.get(team, [])
+        comfort = None
+        ent = None
+        if picks:
+            vals = []
+            for h in picks:
+                w, n = hero_all.get(h, (0, 0))
+                vals.append((w + 2) / (n + 4))
+            comfort = round(sum(vals) / len(vals) * 100, 1)
+            cnt = Counter(picks)
+            tot = len(picks)
+            ent = round(-sum((c / tot) * math.log(c / tot) for c in cnt.values()) / math.log(max(2, len(cnt))), 3)
         lineups[team] = {
             "date": info["date"], "names": names, "pos": pos, "icons": icons,
             "perf": [round(v, 1) for v in ps] if len(ps) == len(names) else [],
             "strength": round(sum(ps) / len(ps), 1) if len(ps) >= 4 else None,
+            "z": [round(v, 2) for v in zs] if len(zs) == len(names) else [],
+            "strengthZ": round(sum(zs) / len(zs), 3) if len(zs) >= 4 else None,
+            "heroComfort": comfort,
+            "heroEntropy": ent,
+            "picks": picks[-10:],
         }
     lp = SITE / "assets" / "lineups.js"
     lp.write_text("KPL_LINEUPS = " + json.dumps(lineups, ensure_ascii=False, separators=(",", ":")) + ";",
