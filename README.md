@@ -6,7 +6,8 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 - 技术：纯静态 HTML + 原生 JS，无框架、无构建步骤；数据由 Python 脚本离线生成为 `assets/*.js`
 - 实时链路：比赛日 1 秒粒度采集快照，实时页 30 秒刷新（胜率曲线 / 指标 / 趋势外推预测），逐局自动归档
 - 当前视觉：V5.5「竞技媒体白」——浅色页面、白色卡片、深色赛事头图、品牌红强调
-- 部署：静态托管，推送到仓库即自动发布（见「发布」）
+- 部署：Cloudflare Workers 主站，推送到仓库即自动发布（见「发布」）；GitHub Pages 国内镜像每 10 分钟同步
+- 在线地址：主站 <https://kpldata-site.hccccc01333.workers.dev> · 国内镜像 <https://hccccc01333.github.io/KPLdata-site/>（主站的 `workers.dev` 域名在国内被 DNS 污染，国内访问请用镜像）
 
 ## 数据规模
 
@@ -102,9 +103,11 @@ DESIGN.md              设计规范
 ## 发布
 
 ```bat
-publish.bat "更新说明"    # 质量门禁 → 提交 → 推送 → 部署
+publish.bat "更新说明"    # 质量门禁 → 提交 → 推送 → 部署（Cloudflare 主站）
 publish.bat --deploy-only # 只部署（仍先跑质量门禁）
 ```
+
+GitHub Pages 国内镜像由 `.github/workflows/pages.yml` 每 10 分钟从 `main` 自动发布，只发布 `*.html` 与 `assets/`。需要立即同步时，在 Actions 页手动运行该工作流。
 
 ## 声明
 
