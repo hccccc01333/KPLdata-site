@@ -617,6 +617,52 @@ async function main() {
   check("切换基准后基准说明更新为历史基准", segAfter && segAfter.note !== segBefore && /全部年份/.test(segAfter.note),
     segAfter && segAfter.note.slice(0, 40));
 
+  // 雷达默认基准必须跟随顶部数据范围：全部→历史、年度→年度、赛事→赛事；
+  // 所选赛事样本不足时应回退到年度，而不是直接空图。
+  const radarSnap = `JSON.stringify((function(){
+    function txt(s){ var e=document.querySelector(s); return e ? e.textContent.trim().replace(/\\s+/g,' ') : ''; }
+    return {
+      note: txt('#radarBaseNote'), fallback: txt('#radarFallbackNote'),
+      on: txt('#baseSeg button.on'), header: txt('.hd-sub'),
+      radar: !!document.querySelector('#main .cmp-radar svg')
+    };
+  })())`;
+  await evaluate("localStorage.setItem('kpl_scope_v1','all')");
+  await visit(BASE + "team.html?id=重庆狼队", 1500);
+  const radarAll = JSON.parse(await evaluate(radarSnap) || "{}");
+  check("全部范围下雷达默认历史基准",
+    radarAll.radar === true && /全部年份/.test(radarAll.note) && radarAll.on === "历史",
+    radarAll.note);
+
+  await evaluate(`(function(){ var y=document.getElementById('scopeYear'); y.value='2025'; y.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(650);
+  const radarYear = JSON.parse(await evaluate(radarSnap) || "{}");
+  check("年度范围下雷达默认年度基准",
+    radarYear.radar === true && /2025 年/.test(radarYear.note) && radarYear.on === "年度" && /2025 年/.test(radarYear.header),
+    radarYear.note + " / " + radarYear.header);
+
+  await evaluate(`(function(){ var s=document.getElementById('scopeLeague'); s.value='20250004'; s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(650);
+  const radarFallback = JSON.parse(await evaluate(radarSnap) || "{}");
+  check("赛事样本不足时雷达回退年度",
+    radarFallback.radar === true && /回退到「年度」/.test(radarFallback.fallback) && /2025 年/.test(radarFallback.note),
+    radarFallback.fallback || radarFallback.note);
+
+  await evaluate(`(function(){ var s=document.getElementById('scopeLeague'); s.value='20250001'; s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(650);
+  const radarLeague = JSON.parse(await evaluate(radarSnap) || "{}");
+  check("赛事范围下雷达默认赛事基准",
+    radarLeague.radar === true && /2025年KPL春季赛/.test(radarLeague.note) && radarLeague.on === "赛事",
+    radarLeague.note);
+
+  await evaluate(`(function(){ var b=document.querySelector('#baseSeg [data-base="history"]'); if(b) b.click(); })()`);
+  await sleep(450);
+  const radarHistory = JSON.parse(await evaluate(radarSnap) || "{}");
+  check("手动切到历史基准仍可用",
+    radarHistory.radar === true && /全部年份/.test(radarHistory.note) && radarHistory.on === "历史",
+    radarHistory.note);
+  await evaluate("localStorage.setItem('kpl_scope_v1','all')");
+
   console.log("\n=== V5 阶段四 大场模拟升级（概率校验 / 参数输入 / 概率树 / 可解释结论）===");
   await visit(BASE + "simulator.html", 1500);
   const p0 = await evaluate("(document.querySelector('#simKpis .sim-kpi .v')||{}).textContent || ''");

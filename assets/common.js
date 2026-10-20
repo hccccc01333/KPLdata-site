@@ -253,6 +253,7 @@ window.KPL = (function () {
       '了解数据口径与更新方式 → <a href="about.html" style="color:var(--gold)">数据说明</a></p></div>' +
       '<div class="foot-right mono"><div>数据更新 <b>' + esc(D ? D.generatedAt : "—") + "</b></div>" +
       '<a href="https://github.com/hccccc01333/KPLdata" target="_blank" rel="noopener">开源仓库 ↗</a>' +
+      '<a href="updates.html">更新日志</a>' +
       '<a href="about.html">数据说明 · 免责</a></div></div>';
   }
 
