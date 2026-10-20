@@ -1,0 +1,53 @@
+# GitHub Pages 国内镜像：workers.dev 在国内被 DNS 污染，此工作流把纯静态产物
+# 发布到 https://hccccc01333.github.io/KPLdata-site/，供国内网络直接访问。
+#
+# 只拷贝页面与 assets/，不发布 build_*.py、测试脚本、文档等仓库文件。
+# 数据每几分钟就更新一次，而 Pages 有每小时构建次数软限制，因此不用 push
+# 触发，改为每 10 分钟从 main 最新提交发布一次，并保留手动触发用于即时发布。
+name: Deploy mirror to GitHub Pages
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+
+      - name: Stage static files
+        run: |
+          mkdir -p _site
+          cp -r assets _site/
+          cp ./*.html _site/
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
