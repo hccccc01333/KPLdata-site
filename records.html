@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="v55">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>赛事纪录 · KPL 数据中心</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2317181E'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='16' font-weight='bold' fill='%23F02F55' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css?v=68">
+<link rel="stylesheet" href="assets/pages.css?v=68">
+<link rel="stylesheet" href="assets/v55.css?v=68">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="KPL 数据中心">
+<meta property="og:title" content="赛事纪录 · KPL 数据中心">
+<meta property="og:description" content="单局时长、选手击杀与死亡、团队经济差、系列赛时长与分差——按赛事与年份查看历史纪录。">
+</head>
+<body data-page="records.html">
+<header id="siteHeader"></header>
+
+<header class="page-hero">
+  <div class="wrap">
+    <div class="ph-kicker mono">RECORDS · 赛事纪录</div>
+    <h1>赛事纪录</h1>
+    <p>历史里的极值：一局打了多久、谁单场死得最多、哪场比赛的分差最大。按赛事与年份筛选，也能切换「最高 / 最低」看另一端。</p>
+  </div>
+</header>
+
+<main class="wrap" style="margin-top:24px">
+  <div class="scopebar" id="scopeBar"></div>
+
+  <div class="filterbar">
+    <div class="seg" id="recTabs">
+      <button data-g="game" class="on">对局</button>
+      <button data-g="player">选手</button>
+      <button data-g="team">战队</button>
+      <button data-g="series">系列赛</button>
+    </div>
+    <label class="fld grow"><span>纪录类型</span>
+      <select id="recMetric"></select>
+    </label>
+    <div class="seg" id="recDir">
+      <button data-d="max" class="on">最高</button>
+      <button data-d="min">最低</button>
+    </div>
+    <button class="btn ghost sm" id="recRandom" type="button">随机一条</button>
+  </div>
+
+  <div class="brief" id="recBrief"></div>
+  <div class="rec-list" id="recList"></div>
+
+  <div class="panel" style="margin-top:20px">
+    <div class="panel-title">口径说明</div>
+    <div class="block-note">
+      1. 纪录来自官方逐局结果，按单局或完整系列赛统计；<br>
+      2. 单局时长已排除 6 分钟以下、45 分钟以上的异常记录；<br>
+      3. 系列赛纪录只统计完整且赛制明确的 BO3 及以上系列赛；<br>
+      4. 同一类型的「最低」会包含 0 次击杀、0 次死亡这类真实极值，属于正常数据。
+    </div>
+  </div>
+</main>
+
+<footer id="siteFooter" class="footer"></footer>
+
+<script src="assets/data.js?v=68"></script>
+<script src="assets/seasons.js?v=68"></script>
+<script src="assets/records.js?v=68"></script>
+<script src="assets/common.js?v=68"></script>
+<script>
+(function () {
+  "use strict";
+  var K = KPL, $ = function (s) { return document.querySelector(s); };
+  K.init();
+
+  var R = window.KPL_RECORDS || null;
+  var GROUP = "game", DIR = "max", SCOPE = "all";
+
+  var GROUPS = {
+    game: {
+      label: "对局",
+      metrics: [
+        { k: "game_dur", label: "单局时长", unit: "分钟", fmt: function (v) { return Number(v).toFixed(1); } }
+      ]
+    },
+    player: {
+      label: "选手",
+      metrics: [
+        { k: "p_kills", label: "单局击杀", unit: "击杀" },
+        { k: "p_deaths", label: "单局死亡", unit: "死亡" },
+        { k: "p_assists", label: "单局助攻", unit: "助攻" },
+        { k: "p_dmg", label: "单局输出占比", unit: "%" },
+        { k: "p_gold", label: "单局经济", unit: "金" },
+        { k: "p_part", label: "单局参团率", unit: "%" },
+        { k: "p_gpm", label: "单局打钱速度", unit: "金/分" }
+      ]
+    },
+    team: {
+      label: "战队",
+      metrics: [
+        { k: "game_kills", label: "单局团队击杀", unit: "击杀" },
+        { k: "game_gdiff", label: "单局经济差", unit: "金" }
+      ]
+    },
+    series: {
+      label: "系列赛",
+      metrics: [
+        { k: "series_dur", label: "系列赛总时长", unit: "分钟" },
+        { k: "series_margin", label: "系列赛分差", unit: "小局" },
+        { k: "series_games", label: "系列赛局数", unit: "局" }
+      ]
+    }
+  };
+
+  function metricCfg() {
+    var key = $("#recMetric").value;
+    var list = GROUPS[GROUP].metrics;
+    return list.filter(function (m) { return m.k === key; })[0] || list[0];
+  }
+
+  function fillMetrics() {
+    $("#recMetric").innerHTML = GROUPS[GROUP].metrics.map(function (m) {
+      return '<option value="' + m.k + '">' + K.esc(m.label) + "</option>";
+    }).join("");
+  }
+
+  function fmtVal(m, v) {
+    if (m.fmt) return m.fmt(v);
+    var n = Number(v);
+    if (!isFinite(n)) return "—";
+    return (Math.round(n * 10) / 10).toString();
+  }
+
+  function md(d) { return String(d || "").slice(5); }
+
+  function rowHTML(r, m, i) {
+    var val = fmtVal(m, r.v);
+    var who = "", sub = "", href = "";
+    if (GROUP === "game") {
+      who = r.t1 + " vs " + r.t2;
+      sub = r.d + " · G" + r.g + (r.score ? " · 大场 " + r.score : "");
+      href = "game.html?id=" + encodeURIComponent(r.bid);
+    } else if (GROUP === "player") {
+      who = r.p + (r.h ? " · " + r.h : "");
+      sub = r.team + " vs " + r.opp + " · " + r.d;
+      href = "player.html?id=" + encodeURIComponent(r.p);
+    } else if (GROUP === "team") {
+      who = r.team;
+      sub = "vs " + r.opp + " · " + r.d + " · G" + r.g;
+      href = "team.html?id=" + encodeURIComponent(r.team);
+    } else {
+      who = r.t1 + " vs " + r.t2;
+      sub = r.d + " · BO" + (r.bo || "—") + " · " + r.score + "（" + r.w + " 胜）";
+      href = "match.html?id=" + encodeURIComponent(r.mid);
+    }
+    return '<a class="rec-row' + (i === 0 ? " top1" : "") + '" href="' + href + '">' +
+      '<span class="rank">' + (i + 1) + "</span>" +
+      '<span class="rec-who"><b>' + K.esc(who) + "</b><em>" + K.esc(sub) + "</em></span>" +
+      '<span class="rec-val">' + val + "<small>" + K.esc(m.unit || "") + "</small></span></a>";
+  }
+
+  function render() {
+    if (!R) {
+      $("#recList").innerHTML = '<div class="empty-tip">纪录数据尚未生成</div>';
+      return;
+    }
+    var m = metricCfg();
+    var scope = R.scopes[SCOPE] || R.scopes.all;
+    var cell = scope[m.k] || { max: [], min: [] };
+    var rows = (DIR === "max" ? cell.max : cell.min) || [];
+    $("#recBrief").innerHTML = '<span class="ico">▍</span><div>当前范围：<b>' +
+      K.esc(K.scopeName(SCOPE)) + "</b> · " + K.esc(GROUPS[GROUP].label) + " · " +
+      K.esc(m.label) + " · " + (DIR === "max" ? "最高" : "最低") + " · 前 " + rows.length + " 条</div>";
+    $("#recList").innerHTML = rows.length
+      ? rows.map(function (r, i) { return rowHTML(r, m, i); }).join("")
+      : '<div class="empty-tip">当前范围暂无该纪录（可能样本不足）</div>';
+    K.refresh();
+  }
+
+  /* 类型切换 */
+  $("#recTabs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-g]");
+    if (!b) return;
+    GROUP = b.getAttribute("data-g");
+    [].forEach.call(this.querySelectorAll("button"), function (x) { x.classList.toggle("on", x === b); });
+    fillMetrics();
+    DIR = "max";
+    [].forEach.call($("#recDir").querySelectorAll("button"), function (x) {
+      x.classList.toggle("on", x.getAttribute("data-d") === "max");
+    });
+    render();
+  });
+
+  /* 最高 / 最低 */
+  $("#recDir").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-d]");
+    if (!b) return;
+    DIR = b.getAttribute("data-d");
+    [].forEach.call(this.querySelectorAll("button"), function (x) { x.classList.toggle("on", x === b); });
+    render();
+  });
+
+  $("#recMetric").addEventListener("change", render);
+
+  /* 随机一条 */
+  $("#recRandom").addEventListener("click", function () {
+    var groups = Object.keys(GROUPS);
+    GROUP = groups[Math.floor(Math.random() * groups.length)];
+    [].forEach.call($("#recTabs").querySelectorAll("button"), function (x) {
+      x.classList.toggle("on", x.getAttribute("data-g") === GROUP);
+    });
+    fillMetrics();
+    var list = GROUPS[GROUP].metrics;
+    var m = list[Math.floor(Math.random() * list.length)];
+    $("#recMetric").value = m.k;
+    DIR = Math.random() < 0.5 ? "max" : "min";
+    [].forEach.call($("#recDir").querySelectorAll("button"), function (x) {
+      x.classList.toggle("on", x.getAttribute("data-d") === DIR);
+    });
+    render();
+  });
+
+  SCOPE = K.scopeBar("#scopeBar", function (id) { SCOPE = id; render(); });
+  fillMetrics();
+  render();
+})();
+</script>
+</body>
+</html>

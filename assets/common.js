@@ -219,7 +219,8 @@ window.KPL = (function () {
             ["赛段对比", "stage.html"], ["翻盘研究所", "comeback.html"],
             ["数据查询", "query.html"], ["赛事模拟器", "simulator.html"]] },
     { ic: "layers", label: "荣誉", href: "honors.html",
-      pages: ["honors.html"], sub: [] }
+      pages: ["honors.html", "records.html"],
+      sub: [["赛事纪录", "records.html"]] }
   ];
   function navGroupHtml(page, real) {
     return NAV.map(function (g) {

@@ -605,16 +605,20 @@ async function main() {
   check("详情页第三层时间轴/冠军墙有内容", tl && tl.rows > 0 && tl.wall > 0,
     tl && (tl.rows + " 行 / " + tl.wall + " 冠"));
 
-  // 行为断言：切换基准后雷达仍渲染，且基准说明随之变化
-  const segBefore = await evaluate("(document.querySelector('.radar-side .block-note')||{}).textContent || ''");
-  await evaluate(`(function(){ var b = document.querySelector('#baseSeg button[data-base="history"]'); if (b) b.click(); })()`);
+  // 行为断言：手动切换基准后雷达仍渲染，且基准说明随之变化。
+  // 注意：全部年份下默认基准已经是“历史”，所以这里改点“赛事”验证手动覆盖。
+  await evaluate("localStorage.setItem('kpl_scope_v1','all')");
+  await visit(BASE + "team.html?id=重庆狼队", 1500);
+  const segBefore = await evaluate("(document.querySelector('#radarBaseNote')||{}).textContent || ''");
+  await evaluate(`(function(){ var b = document.querySelector('#baseSeg button[data-base="league"]'); if (b) b.click(); })()`);
   await sleep(450);
   const segAfter = await evaluate(`(function(){
-    return { note: (document.querySelector('.radar-side .block-note')||{}).textContent || '',
+    return { note: (document.querySelector('#radarBaseNote')||{}).textContent || '',
              radar: !!(document.querySelector('#main .cmp-radar svg') || document.querySelector('#main .radar-wrap .empty-tip')) };
   })()`);
   check("切换基准后雷达仍渲染", segAfter && segAfter.radar === true, segAfter && segAfter.radar);
-  check("切换基准后基准说明更新为历史基准", segAfter && segAfter.note !== segBefore && /全部年份/.test(segAfter.note),
+  check("切换基准后基准说明更新为赛事基准",
+    segAfter && segAfter.note !== segBefore && /基准：/.test(segAfter.note) && !/全部年份/.test(segAfter.note),
     segAfter && segAfter.note.slice(0, 40));
 
   // 雷达默认基准必须跟随顶部数据范围：全部→历史、年度→年度、赛事→赛事；
