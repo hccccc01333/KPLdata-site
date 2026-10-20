@@ -59,6 +59,14 @@ def main() -> None:
     good_leagues = {k for k, v in league_matches.items() if v >= MIN_LEAGUE_MATCHES}
 
     scopes = defaultdict(lambda: defaultdict(lambda: {"max": [], "min": []}))
+    # 生涯 / 队史 / 赛季聚合
+    team_series = defaultdict(list)          # team -> [(date, won, mid)]
+    team_games_n = Counter()
+    team_wins_n = Counter()
+    player_total = defaultdict(lambda: {"g": 0, "mvp": 0, "k": 0, "a": 0, "team": "", "last": ""})
+    league_team = defaultdict(lambda: defaultdict(lambda: {"g": 0, "w": 0}))
+    league_player = defaultdict(lambda: defaultdict(lambda: {"g": 0, "mvp": 0, "team": ""}))
+    league_year = defaultdict(Counter)
 
     def push(scope_ids, metric, row):
         for sid in scope_ids:
@@ -100,6 +108,7 @@ def main() -> None:
         year = date[:4]
         if not year.isdigit():
             continue
+        league_year[lid][year] += 1
         scope_ids = ["all", year]
         if lid in good_leagues:
             scope_ids.append(lid)
@@ -114,6 +123,7 @@ def main() -> None:
         if not tie:
             win_camp = 1 if wins[1] > wins[2] else 2
         winner = (t1 if win_camp == 1 else t2) if win_camp else ""
+        loser = (t2 if win_camp == 1 else t1) if win_camp else ""
         score = f"{wins[win_camp]}:{wins[3 - win_camp]}" if win_camp else f"{wins[1]}:{wins[2]}"
 
         if series_ok:
@@ -127,17 +137,21 @@ def main() -> None:
                 total_sec += d_sec
             if dur_ok and total_sec > 0:
                 push(scope_ids, "series_dur", {
-                    "v": round(total_sec / 60, 1), "d": date, "mid": mid,
+                    "v": round(total_sec / 60, 1), "d": date, "mid": mid, "lid": lid,
                     "t1": t1, "t2": t2, "w": winner, "score": score, "bo": bo,
                 })
             push(scope_ids, "series_margin", {
-                "v": abs(wins[1] - wins[2]), "d": date, "mid": mid,
+                "v": abs(wins[1] - wins[2]), "d": date, "mid": mid, "lid": lid,
                 "t1": t1, "t2": t2, "w": winner, "score": score, "bo": bo,
             })
             push(scope_ids, "series_games", {
-                "v": len(bs), "d": date, "mid": mid,
+                "v": len(bs), "d": date, "mid": mid, "lid": lid,
                 "t1": t1, "t2": t2, "w": winner, "score": score, "bo": bo,
             })
+
+        if series_ok:
+            team_series[winner].append((date, 1, mid))
+            team_series[loser].append((date, 0, mid))
 
         for b in bs:
             games += 1
@@ -157,15 +171,25 @@ def main() -> None:
                 if camp in (1, 2):
                     kills[camp] += int(num(p.get("kill_num")))
                     gold[camp] += num(p.get("gold"))
+            bw = int(b.get("win_camp") or 0)
+            if bw in (1, 2):
+                bt_w = bt1 if bw == 1 else bt2
+                bt_l = bt2 if bw == 1 else bt1
+                team_games_n[bt_w] += 1
+                team_wins_n[bt_w] += 1
+                team_games_n[bt_l] += 1
+                league_team[lid][bt_w]["g"] += 1
+                league_team[lid][bt_w]["w"] += 1
+                league_team[lid][bt_l]["g"] += 1
 
             if 360 <= dur <= 2700:
                 push(scope_ids, "game_dur", {
-                    "v": round(dur / 60, 1), "d": date, "mid": mid, "bid": bid,
+                    "v": round(dur / 60, 1), "d": date, "mid": mid, "bid": bid, "lid": lid,
                     "t1": bt1, "t2": bt2, "score": score, "g": seq,
                 })
             k_camp = 1 if kills[1] >= kills[2] else 2
             push(scope_ids, "game_kills", {
-                "v": kills[k_camp], "d": date, "mid": mid, "bid": bid,
+                "v": kills[k_camp], "d": date, "mid": mid, "bid": bid, "lid": lid,
                 "team": bt1 if k_camp == 1 else bt2,
                 "opp": bt2 if k_camp == 1 else bt1,
                 "t1": bt1, "t2": bt2, "g": seq,
@@ -177,7 +201,7 @@ def main() -> None:
                     deaths[camp] += int(num(p.get("death_num")))
             d_camp = 1 if deaths[1] >= deaths[2] else 2
             push(scope_ids, "team_deaths", {
-                "v": deaths[d_camp], "d": date, "mid": mid, "bid": bid,
+                "v": deaths[d_camp], "d": date, "mid": mid, "bid": bid, "lid": lid,
                 "team": bt1 if d_camp == 1 else bt2,
                 "opp": bt2 if d_camp == 1 else bt1,
                 "t1": bt1, "t2": bt2, "g": seq,
@@ -185,7 +209,7 @@ def main() -> None:
             km = abs(kills[1] - kills[2])
             k_camp2 = 1 if kills[1] >= kills[2] else 2
             push(scope_ids, "game_kill_margin", {
-                "v": km, "d": date, "mid": mid, "bid": bid,
+                "v": km, "d": date, "mid": mid, "bid": bid, "lid": lid,
                 "team": bt1 if k_camp2 == 1 else bt2,
                 "opp": bt2 if k_camp2 == 1 else bt1,
                 "t1": bt1, "t2": bt2, "g": seq,
@@ -194,7 +218,7 @@ def main() -> None:
             if gold_ok:
                 g_camp2 = 1 if gold[1] >= gold[2] else 2
                 push(scope_ids, "team_gold", {
-                    "v": int(gold[g_camp2]), "d": date, "mid": mid, "bid": bid,
+                    "v": int(gold[g_camp2]), "d": date, "mid": mid, "bid": bid, "lid": lid,
                     "team": bt1 if g_camp2 == 1 else bt2,
                     "opp": bt2 if g_camp2 == 1 else bt1,
                     "t1": bt1, "t2": bt2, "g": seq,
@@ -202,7 +226,7 @@ def main() -> None:
                 gdiff = abs(gold[1] - gold[2])
                 g_camp = 1 if gold[1] >= gold[2] else 2
                 push(scope_ids, "game_gdiff", {
-                    "v": int(gdiff), "d": date, "mid": mid, "bid": bid,
+                    "v": int(gdiff), "d": date, "mid": mid, "bid": bid, "lid": lid,
                     "team": bt1 if g_camp == 1 else bt2,
                     "opp": bt2 if g_camp == 1 else bt1,
                     "t1": bt1, "t2": bt2, "g": seq,
@@ -220,7 +244,7 @@ def main() -> None:
                 opp = bt2 if camp == 1 else bt1
                 won = 1 if camp == win_camp else 0
                 base = {"d": date, "mid": mid, "bid": bid, "p": name, "h": hero,
-                        "team": team, "opp": opp, "g": seq, "w": won}
+                        "team": team, "opp": opp, "g": seq, "w": won, "lid": lid}
                 k = int(num(p.get("kill_num")))
                 d_ = int(num(p.get("death_num")))
                 a = int(num(p.get("assist_num")))
@@ -257,6 +281,87 @@ def main() -> None:
                     push(scope_ids, "p_lucky_win", dict(base, v=d_))
                 if d_ == 0:
                     push(scope_ids, "p_perfect", dict(base, v=k, d=0))
+                # 生涯 / 赛季累加
+                pt = player_total[name]
+                pt["g"] += 1
+                pt["k"] += k
+                pt["a"] += a
+                pt["mvp"] += 1 if str(p.get("is_mvp")) in ("1", "True", "true") else 0
+                if date >= pt["last"]:
+                    pt["last"] = date
+                    pt["team"] = team
+                if lid in good_leagues:
+                    lp = league_player[lid][name]
+                    lp["g"] += 1
+                    lp["mvp"] += 1 if str(p.get("is_mvp")) in ("1", "True", "true") else 0
+                    lp["team"] = team
+
+    # ---------------- 生涯 / 队史 / 赛季纪录 ----------------
+    def longest_streak(rows, want):
+        best = (0, "", "")
+        cur = 0
+        start = ""
+        for d_, won, _mid in rows:
+            if won == want:
+                if cur == 0:
+                    start = d_
+                cur += 1
+                if cur > best[0]:
+                    best = (cur, start, d_)
+            else:
+                cur = 0
+        return best
+
+    for team, rows_t in team_series.items():
+        rows_t.sort(key=lambda x: (x[0], x[2]))
+        sw = longest_streak(rows_t, 1)
+        sl = longest_streak(rows_t, 0)
+        wins_n = sum(1 for x in rows_t if x[1] == 1)
+        last_d = rows_t[-1][0] if rows_t else ""
+        if sw[0] >= 2:
+            push(["all"], "team_streak_win", {
+                "v": sw[0], "team": team, "d": sw[1], "d2": sw[2], "n": len(rows_t),
+            })
+        if sl[0] >= 2:
+            push(["all"], "team_streak_loss", {
+                "v": sl[0], "team": team, "d": sl[1], "d2": sl[2], "n": len(rows_t),
+            })
+        push(["all"], "team_series_wins", {
+            "v": wins_n, "team": team, "n": len(rows_t), "d": last_d,
+        })
+        if team_games_n.get(team):
+            push(["all"], "team_games", {
+                "v": team_games_n[team], "team": team, "n": wins_n, "d": last_d,
+            })
+
+    for name, pt in player_total.items():
+        if pt["g"] < 30:
+            continue
+        base = {"p": name, "team": pt["team"], "d": pt["last"], "g": pt["g"]}
+        push(["all"], "player_mvp", dict(base, v=pt["mvp"]))
+        push(["all"], "player_games", dict(base, v=pt["g"]))
+        push(["all"], "player_kills", dict(base, v=pt["k"]))
+        push(["all"], "player_assists", dict(base, v=pt["a"]))
+
+    for lid, teams in league_team.items():
+        if lid not in good_leagues:
+            continue
+        yc = league_year.get(lid)
+        year = yc.most_common(1)[0][0] if yc else ""
+        for team, st in teams.items():
+            if st["g"] < 30:
+                continue
+            row = {"v": round(st["w"] / st["g"] * 100, 1), "team": team,
+                   "w": st["w"], "g": st["g"], "lid": lid, "y": year}
+            for sid in ("all", year, lid):
+                push([sid], "season_team_wr", dict(row))
+        for name, st in league_player[lid].items():
+            if st["g"] < 20:
+                continue
+            row = {"v": st["mvp"], "p": name, "team": st["team"],
+                   "g": st["g"], "lid": lid, "y": year}
+            for sid in ("all", year, lid):
+                push([sid], "season_player_mvp", dict(row))
 
     # 输出
     out = {}
