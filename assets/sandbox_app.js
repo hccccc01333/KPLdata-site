@@ -471,7 +471,7 @@
           (s.obj > 0 ? "pos" : s.obj < 0 ? "neg" : "") + '">' + signed(s.obj) + "</div></div>" +
       "</div>" +
       '<div class="sb-hist">' +
-        '<div class="sb-hist-top"><span class="k">历史上类似局面，左边队伍赢的比例</span>' +
+        '<div class="sb-hist-top"><span class="k">历史上类似局面：左边赢的比例</span>' +
           '<span class="v">' + pct(a.rate) + ' <small>参考 ' + a.n + " 个时刻</small></span></div>" +
         '<div class="sb-hist-sub">大致范围 ' + pct(a.lo) + "–" + pct(a.hi) +
           " · 从 212 局里挑了 " + a.n + " 个最像的时刻</div>" +
@@ -500,14 +500,14 @@
     host.innerHTML =
       '<div class="panel-title">如果局面变一点 <em>拖动滑杆，看看历史胜率怎么变</em></div>' +
       '<div class="sb-whatif-grid">' +
-        '<label class="sb-wi"><span class="lab">经济领先变化 <b id="wiGdV">' + wiValue("gd") +
+        '<label class="sb-wi"><span class="lab">经济领先 <b id="wiGdV">' + wiValue("gd") +
           '</b></span><input id="wiGd" type="range" min="-5" max="5" step="0.25" value="' +
           (wi.gd / 1000) + '"></label>' +
-        '<label class="sb-wi"><span class="lab">多推几座塔 <b id="wiTdV">' + wiValue("td") +
+        '<label class="sb-wi"><span class="lab">推塔 <b id="wiTdV">' + wiValue("td") +
           '</b></span><input id="wiTd" type="range" min="-5" max="5" step="1" value="' + wi.td + '"></label>' +
-        '<label class="sb-wi"><span class="lab">多拿几个人头 <b id="wiKdV">' + wiValue("kd") +
+        '<label class="sb-wi"><span class="lab">击杀 <b id="wiKdV">' + wiValue("kd") +
           '</b></span><input id="wiKd" type="range" min="-10" max="10" step="1" value="' + wi.kd + '"></label>' +
-        '<label class="sb-wi"><span class="lab">多拿几条龙 <b id="wiObjV">' + wiValue("obj") +
+        '<label class="sb-wi"><span class="lab">龙/资源 <b id="wiObjV">' + wiValue("obj") +
           '</b></span><input id="wiObj" type="range" min="-10" max="10" step="1" value="' + wi.obj + '"></label>' +
       "</div>" +
       '<div class="sb-whatif-out" id="wiOut">—</div>' +
@@ -573,10 +573,10 @@
         chips.innerHTML = "";
       } else {
         var items = [
-          ["多 1 千经济", s, "gd", 1000],
-          ["多 1 座塔", s, "td", 1],
-          ["多 1 个人头", s, "kd", 1],
-          ["多 1 条龙", s, "obj", 1]
+          ["+1 千经济", s, "gd", 1000],
+          ["+1 座塔", s, "td", 1],
+          ["+1 个人头", s, "kd", 1],
+          ["+1 条龙", s, "obj", 1]
         ];
         chips.innerHTML = items.map(function (it) {
           var x = { m: it[1].m, gd: it[1].gd, kd: it[1].kd, td: it[1].td, obj: it[1].obj };
@@ -650,8 +650,8 @@
     var kpis = [
       ["预测误差（越小越好）", m.brier == null ? "—" : m.brier.toFixed(3),
         "在 " + m.testN + " 局没见过的比赛上考试"],
-      ["说 70% 时准不准", m.ece == null ? "—" : m.ece.toFixed(3),
-        "校准误差；越接近 0，概率越可信"],
+      ["概率偏差", m.ece == null ? "—" : pct(m.ece),
+        "越小越好；0 表示说 70% 时真的赢 70%"],
       ["胜负猜对率", pct(m.acc), m.testN + " 局考试 · " + num(m.testFrames) + " 个时刻"],
       ["翻盘局猜对率", pct(cbAll.acc), "最难的翻盘局 · " + (cbAll.n || 0) + " 个时刻"]
     ];
@@ -666,7 +666,7 @@
       var p = m.phases[k];
       return '<div class="sb-phase"><div class="k">' + labels[k] + '</div><div class="v">' +
         pct(p.acc) + '</div><div class="s">误差 ' + (p.brier == null ? "—" : p.brier.toFixed(3)) +
-        ' · 校准 ' + (p.ece == null ? "—" : p.ece.toFixed(3)) + ' · ' + p.n +
+        ' · 偏差 ' + pct(p.ece) + ' · ' + p.n +
         ' 个时刻</div><div class="bar"><i style="width:' + clamp((p.acc || 0) * 100, 0, 100) +
         '%"></i></div></div>';
     }).join("");
