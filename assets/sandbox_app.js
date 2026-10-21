@@ -631,7 +631,7 @@
     $("#sbMetaFrames").textContent = num(D.coverage.replayFrames);
     $("#sbMetaUpdated").textContent = D.updatedAt || "—";
     $("#sbKpiBrier").textContent = m.brier == null ? "—" : m.brier.toFixed(3);
-    $("#sbKpiBrierS").textContent = "在 " + m.testN + " 局没见过的比赛上考试 · 越小越好";
+    $("#sbKpiBrierS").textContent = "在 " + m.testN + " 局没见过的比赛上考试";
     $("#sbKpiAcc").textContent = pct(m.acc);
     $("#sbKpiAccS").textContent = "只看这 " + m.testN + " 局考试，不代表每场都准";
     $("#sbKpiCoverage").textContent = D.coverage.replayBattles + " 局";
