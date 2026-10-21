@@ -122,6 +122,15 @@ async function main() {
     if (Array.isArray(unhandled)) errors.push(...unhandled);
   }
 
+  async function waitFor(expr, timeout = 15000) {
+    const t0 = Date.now();
+    while (Date.now() - t0 < timeout) {
+      if (await evaluate(expr)) return true;
+      await sleep(200);
+    }
+    return false;
+  }
+
   const actionOracle = (battle) => (battle.bp || []).map((b, i) =>
     "第 " + (i + 1) + " 手，" + (Number(b[0]) === 1 ? "蓝方" : "红方") +
     (Number(b[1]) === 1 ? "选用" : "禁用") + String(b[2] || ""));
@@ -135,6 +144,7 @@ async function main() {
 
     console.log(`\n=== ${c.label}（${c.mid} / 第 ${c.seq} 局）===`);
     await visit(`bp-studio.html?match=${c.mid}&g=${c.seq}`, 1440, 1000, 2000);
+    await waitFor('document.querySelectorAll("#bpActions .studio-action").length > 0', 25000);
 
     // 外部图床（英雄/战队图标）可能比页面脚本慢，等 complete 再断言，最多 6 秒
     await evaluate(`new Promise(function(res){
@@ -271,6 +281,7 @@ async function main() {
     // 响应式：375 / 768
     for (const w of [768, 390]) {
       await visit(`bp-studio.html?match=${c.mid}&g=${c.seq}`, w, 900, 1800);
+      await waitFor('document.querySelectorAll("#bpActions .studio-action").length > 0', 25000);
       const lay = await evaluate(`(function(){
         var d=document.documentElement, b=document.body;
         var r=function(s){var e=document.querySelector(s);if(!e)return null;var x=e.getBoundingClientRect();return {l:x.left,r:x.right,w:x.width}};
@@ -290,12 +301,14 @@ async function main() {
   // ---- 2. 入口链接 ----
   console.log("\n=== 入口链接 ===");
   await visit("bp.html", 1440, 1000, 1600);
+  await waitFor('!!document.querySelector(\'a[href="bp-studio.html"]\')', 15000);
   const bpLink = await evaluate(`(function(){var a=document.querySelector('a[href="bp-studio.html"]');return a?{href:a.getAttribute("href"),text:a.textContent.trim()}:null;})()`);
   check("BP 分析页有演播室入口", !!bpLink, bpLink && bpLink.text);
 
   const g7 = CASES[0];
   const o7 = oracle(g7.mid, g7.seq);
   await visit("game.html?id=" + o7.bid, 1440, 1000, 2200);
+  await waitFor('!!document.querySelector(\'a[href*="bp-studio.html?match="]\')', 20000);
   const gameLink = await evaluate(`(function(){var a=document.querySelector('a[href*="bp-studio.html?match="]');return a?{href:a.getAttribute("href"),text:a.textContent.trim()}:null;})()`);
   check("对局详情有带 match/g 的演播室入口",
     !!gameLink && gameLink.href.includes("match=" + g7.mid) && gameLink.href.includes("g=" + g7.seq),
@@ -303,12 +316,14 @@ async function main() {
 
   // ---- 3. 无效参数回退 ----
   await visit("bp-studio.html?match=999999999&g=99", 1440, 1000, 1800);
+  await waitFor('document.querySelectorAll("#bpActions .studio-action").length > 0', 20000);
   const fallback = await evaluate(`(function(){return {ctx:document.querySelector("#matchContext").textContent, actions:document.querySelectorAll("#bpActions .studio-action").length, fb:document.querySelector("#studioFeedback").textContent};})()`);
   check("无效 match/g 回退到最近一场而不是报错", fallback && fallback.actions > 0 && !/失败/.test(fallback.fb),
     fallback && (fallback.ctx + " / " + fallback.actions));
 
   // ---- 4. 请求没有完整 BP 的小局：不静默换局 ----
   await visit("bp-studio.html?match=2026091201&g=7", 1440, 1000, 2000);
+  await waitFor('document.querySelectorAll("#bpActions .studio-action").length > 0', 25000);
   const partial = await evaluate(`(function(){
     return {fb:document.querySelector("#studioFeedback").textContent,
             actions:document.querySelectorAll("#bpActions .studio-action").length,
