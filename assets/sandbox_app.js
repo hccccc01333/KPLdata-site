@@ -714,6 +714,16 @@
     var note = "直播档案 " + c.nBattles + " 局 / " + num(c.nPoints) + " 分钟点";
     if (c.ece != null) note += " · ECE " + c.ece.toFixed(3);
     note += " · 非独立 test，只用于观察校准形态。";
+    var live = D.model.live || {};
+    var cps = (live.checkpoints || []).map(function (x) {
+      return x.m + "′ " + pct(x.acc) + "（Brier " + Number(x.brier).toFixed(3) + "）";
+    });
+    if (cps.length) note += " 分时点：" + cps.join(" / ") + "。";
+    var rvl = live.replayVsLive;
+    if (rvl && rvl.gapAll != null) {
+      note += " 重放 vs 直播 ΔBrier " + Number(rvl.gapAll).toFixed(3) +
+        "（同一批局，直播更差）。";
+    }
     $("#sbRelNote").textContent = note;
   }
 
