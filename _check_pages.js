@@ -43,6 +43,7 @@ const PAGES = [
   ["predict.html", "预测统计", ["#cpRows tr", "#kAccK"]],
   ["picks.html", "精选对局", [".pick-card"]],
   ["query.html", "数据查询", ["#qBody a.cell"]],
+  ["find.html", "智能找局", ["#fYear option", "#findBody tr", "#fCount"]],
   ["simulator.html", "大场模拟", ["main .panel, .sim-wrap", "#sumCheck", "#qaList .qa-item"]],
   ["stage.html", "赛段对比", ["main .panel, .stage-wrap"]],
   ["honors.html", "荣誉中心", ["#lanes .hn-lane", "#team .hn-team, #team .panel", "#boardRows tr"]],
@@ -140,7 +141,7 @@ async function main() {
 
   console.log("=== 逐页：未捕获异常 / 未处理 Promise 拒绝 + 关键区块渲染 ===");
   for (const [path, label, sels] of PAGES) {
-    const errs = await visit(BASE + path);
+    const errs = await visit(BASE + path, path === "find.html" ? 3600 : 1400);
     const counts = await evaluate(
       "(" + JSON.stringify(sels) + ").map(function(s){ return document.querySelectorAll(s).length; })"
     );

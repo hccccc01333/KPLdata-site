@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="assets/style.css?v=78">
 <link rel="stylesheet" href="assets/pages.css?v=78">
 <link rel="stylesheet" href="assets/v55.css?v=78">
+<link rel="stylesheet" href="assets/challenge.css?v=1">
 <style>
 .pr-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:8px}
 @media(max-width:900px){.pr-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -80,6 +81,21 @@
     <div class="pr-kpi"><div class="k">最后一帧（参考，不可当能力）</div><div class="v" id="kLast">—</div><div class="s">比赛已基本结束，命中率趋近 100% 属于口径而非模型</div></div>
   </div>
 
+  <section class="block" id="challengeBlock" style="margin-top:22px">
+    <div class="block-head">
+      <h2><i></i>赛前预测挑战</h2>
+      <span class="block-note mono">本地记录 · 不涉及账户 / 投注</span>
+    </div>
+    <div class="panel">
+      <div class="ch-top">
+        <div class="ch-stats" id="chStats">—</div>
+        <button class="btn ghost sm" id="chReset" type="button">清空记录</button>
+      </div>
+      <div id="chList"><div class="ch-muted">滚动到这里后加载赛程…</div></div>
+      <div class="block-note mono" style="margin-top:10px">只记录你的选择；结果以官方赛果为准，不构成预测或投注建议。</div>
+    </div>
+  </section>
+
   <div class="panel" style="margin-top:14px">
     <div class="panel-title">分时点命中率 <em class="mono">同一批对局，在不同时间点做预测</em></div>
     <div class="table-panel"><table class="tbl">
@@ -135,6 +151,7 @@
 <script src="assets/seasons.js?v=78"></script>
 <script src="assets/predict.js?v=78"></script>
 <script src="assets/common.js?v=78"></script>
+<script src="assets/challenge.js?v=1"></script>
 <script>
 (function () {
   "use strict";
