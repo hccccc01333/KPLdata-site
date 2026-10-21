@@ -139,6 +139,8 @@
   .sb-health-grid{grid-template-columns:1fr}
 }
 @media(max-width:700px){
+  .sb-main .block-head h2{flex-wrap:wrap;font-size:21px}
+  .sb-main .block-head h2 em{flex-basis:100%;margin-left:0;margin-top:2px}
   .sb-toolbar{align-items:stretch}
   .sb-field select{max-width:none;width:100%}
   .sb-field{width:100%}
