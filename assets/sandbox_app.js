@@ -32,7 +32,9 @@
   }
   function signedPct(v, digits) {
     if (v == null || isNaN(v)) return "—";
-    return (v > 0 ? "+" : "") + (v * 100).toFixed(digits == null ? 1 : digits) + " pp";
+    var pp = v * 100;
+    if (Math.abs(pp) < 0.05) return "0.0 pp";
+    return (pp > 0 ? "+" : "") + pp.toFixed(digits == null ? 1 : digits) + " pp";
   }
   function teamOr(v, fallback) { return v || fallback; }
   function durText(b) {
