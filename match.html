@@ -236,43 +236,71 @@
       var m = L && (L.matches || []).filter(function (x) { return x.matchId === matchId; })[0];
       if (!m) { zone.style.display = "none"; return; }
       zone.style.display = "";
-      var leadName = m.prob >= 0.5 ? m.t1 : m.t2;  // prob 为 camp1 视角
-      var pNow = Math.round((m.prob >= 0.5 ? m.prob : 1 - m.prob) * 100);
+      var disp = m.display || null;
+      var baseProb = (disp && disp.prob != null) ? disp.prob : m.prob;
+      var low = !!(disp && disp.state !== "normal");
+      var pointLeadName = baseProb >= 0.5 ? m.t1 : m.t2;  // prob 为 camp1 视角
+      var rangeTxt = disp ? (Math.round(disp.lo * 100) + "%–" + Math.round(disp.hi * 100) + "%") : "";
+      // 区间是 camp1 视角；正常卡展示"领先方"的区间，需要翻转到领先方
+      var leadRangeTxt = disp
+        ? (baseProb >= 0.5
+            ? (Math.round(disp.lo * 100) + "%–" + Math.round(disp.hi * 100) + "%")
+            : (Math.round((1 - disp.hi) * 100) + "%–" + Math.round((1 - disp.lo) * 100) + "%"))
+        : "";
+      var straddles = !!(disp && disp.lo <= 0.5 && disp.hi >= 0.5);
+      var pNow = Math.round((baseProb >= 0.5 ? baseProb : 1 - baseProb) * 100);
       var fc = m.forecast || {};
       function fcell(label, p, g, ahead) {
-        if (p == null) return "";
-        var pLead = m.prob >= 0.5 ? p : 1 - p;      // 领先方视角
-        var pTxt = Math.round(pLead * 100) + "%";
-        var arrow = (p - m.prob) * 100 > 2 ? ' <span style="opacity:.75">↑</span>'
-                  : ((p - m.prob) * 100 < -2 ? ' <span style="opacity:.75">↓</span>' : "");
+        // 低置信阶段不做趋势外推：避免把高方差时刻包装成确定预测
+        if (p == null || low) return "";
+        var pTxt = Math.round(p * 100) + "%";  // 与当前卡一致：camp1 视角
+        var arrow = (p - baseProb) * 100 > 2 ? ' <span style="opacity:.75">↑</span>'
+                  : ((p - baseProb) * 100 < -2 ? ' <span style="opacity:.75">↓</span>' : "");
         var gTxt = (g == null) ? "" : ('预计金差 <b>' + (g > 0 ? "+" : "") + g + "</b>");
-        return '<div class="live-kpi"><div class="k">' + K.esc(leadName) + " · " + ahead + ' 分钟后胜率（趋势外推）</div>' +
+        return '<div class="live-kpi"><div class="k">' + K.esc(m.t1) + " · " + ahead + ' 分钟后胜率（趋势外推）</div>' +
           '<div class="v">' + pTxt + arrow + '</div><div class="s">' + gTxt + "</div></div>";
       }
+      var probCard;
+      if (disp && disp.state === "insufficient") {
+        probCard = '<div class="live-kpi hl"><div class="k">当前胜率</div><div class="v" style="font-size:22px">样本不足</div>' +
+          '<div class="s">' + K.esc(m.t1) + ' 区间 ' + rangeTxt + ' · 模型仍在观察</div></div>';
+      } else if (disp && disp.state === "low_confidence") {
+        probCard = '<div class="live-kpi hl"><div class="k">当前胜率 · 低置信</div><div class="v" style="font-size:22px">' + rangeTxt + '</div>' +
+          '<div class="s">' + K.esc(m.t1) + ' 区间 · ' + K.esc(disp.note || "样本偏少，仅供参考") + '</div></div>';
+      } else {
+        probCard = '<div class="live-kpi hl"><div class="k">' + K.esc(pointLeadName) + ' 当前胜率（模型估算）</div><div class="v">' + pNow + '%</div>' +
+          '<div class="s">' + (disp ? ("区间 " + leadRangeTxt + " · 已做 2–3 分钟平滑") : "该局即时推算") + '</div></div>';
+      }
+      var advName = straddles ? "未定" : pointLeadName;
+      var advSub = straddles ? "区间跨过五五开" : (low ? "低置信" : "模型胜率领先");
+      var headTag = (disp && disp.objective_window)
+        ? '<span class="mono" style="color:#C08A8D;margin-left:8px">● ' + K.esc(disp.objective_label) + '窗口</span>' : "";
       zone.innerHTML = '<div class="live-card">' +
         '<div class="live-head">' + K.liveBadge() +
-        '<span class="t">' + K.esc(m.t1) + " vs " + K.esc(m.t2) + " · 第 " + m.seq + " 局 · 第 " + m.minute + " 分钟</span>" +
+        '<span class="t">' + K.esc(m.t1) + " vs " + K.esc(m.t2) + " · 第 " + m.seq + " 局 · 第 " + m.minute + " 分钟</span>" + headTag +
         '<span class="upd">数据更新 ' + K.esc(L.updatedAt) + " · 每 30 秒刷新</span></div>" +
-        '<div class="live-kpis">' +
-        '<div class="live-kpi hl"><div class="k">' + K.esc(leadName) + ' 当前胜率（模型估算）</div><div class="v">' + pNow + '%</div>' +
-        '<div class="s">该局即时推算</div></div>' +
+        '<div class="live-kpis">' + probCard +
         '<div class="live-kpi"><div class="k">当前金币差</div><div class="v">' + (m.gd > 0 ? "+" : "") + m.gd + '</div>' +
         '<div class="s">' + K.esc(m.t1) + ' 视角</div></div>' +
         '<div class="live-kpi"><div class="k">金差走势</div><div class="v">' + (m.goldSpd > 0 ? "+" : "") + m.goldSpd + '</div>' +
         '<div class="s ' + (m.goldSpd > 0 ? "up" : "down") + '">每分钟金币差</div></div>' +
-        '<div class="live-kpi"><div class="k">优势方</div><div class="v">' + K.esc(leadName) + '</div><div class="s">' + (m.gd > 0 ? "经济领先" : "经济落后") + "</div></div>" +
+        '<div class="live-kpi"><div class="k">模型倾向</div><div class="v">' + K.esc(advName) + '</div><div class="s">' + advSub + "</div></div>" +
         "</div>" +
         '<div class="live-chart" id="liveChart"></div>' +
-        fcell("", fc.p3, fc.g3, "3") + fcell("", fc.p5, fc.g5, "5") + 
-        '<div class="live-note">未来值为「趋势外推」：按当前胜率与金差走势线性推演（已收敛处理），仅供参考，非官方预测。</div>' +
+        fcell("", fc.p3, fc.g3, "3") + fcell("", fc.p5, fc.g5, "5") +
+        '<div class="live-note">' + (low
+          ? "开局或资源刷新窗口只展示区间，避免把高方差时刻当成确定预测。"
+          : "未来值为「趋势外推」：按当前胜率与金差走势线性推演（已收敛处理），仅供参考，非官方预测。") + '</div>' +
         "</div>";
       var fcPts = [];
       if (fc.p3 != null) fcPts.push([m.minute + 3, fc.p3]);
       if (fc.p5 != null) fcPts.push([m.minute + 5, fc.p5]);
-      var seriesPts = m.pts || [];
+      // 主曲线用后端平滑后的序列；原始点仍保留在 m.pts 供分析
+      var seriesPts = (m.ptsSmooth && m.ptsSmooth.length) ? m.ptsSmooth
+        : (m.pts || []).map(function (t) { return [t[0], t[1]]; });
       K.wrChart(document.getElementById("liveChart"),
         { timeline: seriesPts.map(function (t) { return { m: t[0], p: t[1] }; }),
-          phases: [], events: [], forecast: fcPts },
+          phases: [], events: [], forecast: low ? [] : fcPts },
         m.t1);
     }
     function reload() {
