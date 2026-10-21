@@ -44,7 +44,7 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 | 战队 | `teams.html`、`team.html`（能力雷达 / 系列赛画像 / 冠军墙）、`h2h.html` |
 | 选手 | `players.html`、`player.html`（能力雷达 / 关键局 / 打法画像 / 搭档对位） |
 | 英雄 | `heroes.html`、`hero.html`、`combos.html` |
-| 深度分析 | `bp.html`、`bp-studio.html`（真实比赛 BP 演播室）、`sandbox.html`（胜率沙盘 / 同状态检索 / 模型体检）、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`（含赛前预测挑战）、`find.html`（按终局条件找局）、`simulator.html`、`query.html` |
+| 深度分析 | `bp.html`、`bp-studio.html`（真实比赛 BP 演播室）、`sandbox.html`（这局谁更可能赢 / 历史对照 / 模型体检）、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`（含赛前预测挑战）、`find.html`（按终局条件找局）、`simulator.html`、`query.html` |
 | 对比工具 | `compare.html`、`compare-team.html`、`compare-player.html`、`compare-lane.html` |
 | 说明 | `about.html`、`404.html` |
 
