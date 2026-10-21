@@ -28,12 +28,13 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 
 ## 当前状态
 
-- 站点已从「多页面数据展示」收敛为 **V5.5 数据产品**：29 个页面 + 404，20 个离线构建脚本。
+- 站点已从「多页面数据展示」收敛为 **V5.5 数据产品**：30 个页面 + 404，20 个离线构建脚本。
 - 数据正确性：系列赛 / 战队 Elo / 选手逐局胜负已按真实战队身份重算；`check_series_consistency.py` 作为发布门禁。
-- 仍在开发：BP 赛事演播室（草稿 PR，尚未合并上线）；选手深挖数据口径收尾；资源指标去重。
+- BP 赛事演播室已上线：真实比赛逐手选禁回放、双方最终阵容、系列赛前几局英雄使用，支持深链与三档响应式。
+- 仍在开发：选手深挖数据口径收尾；资源指标去重。
 - 已知限制：部分历史系列赛缺官方胜负或逐局不完整；分钟级复盘只覆盖 211 局；模型测试集只有 20 局，不能当作稳定预测服务。
 
-## 页面（29 个 + 404）
+## 页面（30 个 + 404）
 
 | 模块 | 页面 |
 |---|---|
@@ -42,7 +43,7 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 | 战队 | `teams.html`、`team.html`（能力雷达 / 系列赛画像 / 冠军墙）、`h2h.html` |
 | 选手 | `players.html`、`player.html`（能力雷达 / 关键局 / 打法画像 / 搭档对位） |
 | 英雄 | `heroes.html`、`hero.html`、`combos.html` |
-| 深度分析 | `bp.html`、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`、`simulator.html`、`query.html` |
+| 深度分析 | `bp.html`、`bp-studio.html`（真实比赛 BP 演播室）、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`、`simulator.html`、`query.html` |
 | 对比工具 | `compare.html`、`compare-team.html`、`compare-player.html`、`compare-lane.html` |
 | 说明 | `about.html`、`404.html` |
 

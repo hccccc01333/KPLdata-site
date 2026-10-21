@@ -50,6 +50,7 @@
   var currentBid = String(qs.get("battle") || "");
   var requestedGame = Number(qs.get("g") || 0);
   var currentGame = null, gameRecords = null, gameIndex = [];
+  var requestedMissingSeq = 0;
   var mode = qs.get("mode") === "draft" ? "draft" : "final";
   var step = Number(qs.get("step")), initialStep = Number.isFinite(step) && qs.has("step") ? step : null;
   var timer = null, loadingVersion = 0;
@@ -100,6 +101,9 @@
     var selected = gameIndex.filter(function (r) {
       return (currentBid && String(r[0]) === currentBid) || (!currentBid && requestedGame && Number(r[1]) === requestedGame);
     })[0] || gameIndex[0];
+    requestedMissingSeq = requestedGame && !gameIndex.some(function (r) {
+      return Number(r[1]) === requestedGame;
+    }) ? requestedGame : 0;
     if (selected) $("#gameSelect").value = String(selected[0]);
     currentBid = selected ? String(selected[0]) : "";
     requestedGame = 0;
@@ -133,7 +137,9 @@
       else step = mode === "draft" ? 0 : g.bp.length;
       initialStep = null;
       render();
-      status("当前展示已归档的真实对局；阵容按已记录的选用顺序排列，不代表分路位置。");
+      status("当前展示已归档的真实对局；阵容按已记录的选用顺序排列，不代表分路位置。" +
+        (requestedMissingSeq ? " 第 " + requestedMissingSeq + " 局没有完整 BP 记录，已展示第 " + g.seq + " 局。" : ""));
+      requestedMissingSeq = 0;
     }).catch(function (err) {
       if (request !== loadingVersion) return;
       currentGame = null;
@@ -165,7 +171,7 @@
       var who = players.filter(function (p) { return Number(p.c) === camp && String(p.h) === h; })[0];
       var src = image(h);
       var cardImage = src ? '<div class="studio-card-art"><img class="studio-card-bg" src="' + src +
-        '" alt="" loading="lazy"><img class="studio-card-icon" src="' + src + '" alt="" loading="lazy"><div class="studio-card-gradient"></div></div>' :
+        '" alt=""><img class="studio-card-icon" src="' + src + '" alt=""><div class="studio-card-gradient"></div></div>' :
         '<div class="studio-card-art"><div class="studio-card-gradient"></div></div>';
       out.push('<div class="studio-card filled' + (h === revealedHero ? " new" : "") + '" title="' + esc(h) + (who ? " · " + esc(who.n) : "") + '">' +
         cardImage + '<span class="studio-card-index">PICK 0' + (i + 1) + '</span>' +
@@ -178,7 +184,7 @@
     var banHtml = '<span class="studio-ban-label">BAN</span>' + bans.map(function (b) {
       var src = image(b[2]);
       return '<span class="studio-ban" title="' + esc(b[2]) + '">' +
-        (src ? '<img src="' + src + '" alt="' + esc(b[2]) + '" loading="lazy">' : '<b>×</b>') + "</span>";
+        (src ? '<img src="' + src + '" alt="' + esc(b[2]) + '">' : '<b>×</b>') + "</span>";
     }).join("");
     for (var j = bans.length; j < 5; j++) banHtml += '<span class="studio-ban-placeholder" aria-hidden="true"></span>';
     $("#" + side + "Bans").innerHTML = banHtml;
