@@ -48,7 +48,7 @@ WEIGHTS = {
     "发育路": {"kda": .20, "gpm": .25, "dpm": .30, "bhpm": .08, "part": .07, "mvpRate": .10},
     "游走":   {"kda": .18, "gpm": .06, "dpm": .12, "bhpm": .28, "part": .26, "mvpRate": .10},
 }
-TEAM_W = {"oppAdj": .45, "marginMap": .30, "stab": .25}
+TEAM_W = {"oppAdj": .6, "stab": .4}
 
 THRESH = {"week": {"minGames": 4, "minMatches": 2},
           "month": {"minGames": 12, "minMatches": 4}}
@@ -375,7 +375,7 @@ def compute_lane(players: dict[str, dict], ln: str, kind: str):
 
 
 # --------------------------------------------------------------------------
-# 战队评分（独立模型：对手强度校正胜率 / 局分优势 / 稳定性；当期队内稳健标准化）
+# 战队评分（独立模型：对手强度校正胜率 / 稳定性；当期队内稳健标准化）
 # --------------------------------------------------------------------------
 def team_components(rows, counts=None):
     wr_of = {}
@@ -392,6 +392,7 @@ def team_components(rows, counts=None):
     out = []
     for r in rows:
         gw = gl = opp = g1 = g2 = gn = 0.0
+        mw = 0.0
         seen = set()
         for (mid, o), mm in r["mid"].items():
             w = 1.0 if counts is None else counts.get(mid, 0.0)
@@ -399,10 +400,11 @@ def team_components(rows, counts=None):
                 continue
             gw += mm["gw"] * w
             gl += mm["gl"] * w
+            mw += w
             seen.add(mid)
             os_ = wr_of.get(o, 0.5)
             won = mm["gw"] > mm["gl"]
-            opp += (os_ if won else 1 - os_) * w
+            opp += (os_ if won else os_ - 1) * w
             for x in mm["gd"]:
                 g1 += x * w
                 g2 += x * x * w
@@ -414,8 +416,8 @@ def team_components(rows, counts=None):
         var = max(0.0, (g2 / gn - mean * mean)) if gn else 0.0
         sd = var ** 0.5
         out.append({"team": r["team"], "tic": r["tic"], "g": g, "m": len(seen),
-                    "gw": gw, "gl": gl, "wr": gw / g, "oppAdj": opp / g,
-                    "marginMap": 0.5 + (gw - gl) / g / 2,
+                    "gw": gw, "gl": gl, "wr": gw / g,
+                    "oppAdj": opp / mw if mw else 0.0,
                     "stab": 1 - min(1.0, sd / GOLD_STD_REF)})
     return out
 
@@ -426,7 +428,7 @@ def team_scored(rows, counts=None):
     elig = [c for c in comps if c["m"] >= 1 and c["g"] > 0]
     if len(elig) < 2:
         return comps, []
-    robust_z_map(elig, ["oppAdj", "marginMap", "stab"])
+    robust_z_map(elig, ["oppAdj", "stab"])
     for e in elig:
         z = sum(TEAM_W[d] * e["z_" + d] for d in TEAM_W)
         e["z"] = z
@@ -477,7 +479,7 @@ def compute_team(bucket: dict, kind: str):
         if b and i == 0:                 # 稳定性估计只挂在榜首
             item["t1"] = b["top1"]
             item["ci"] = b["ci"]
-        # 候选同样保留完整字段（对手校正胜率 / 局分优势 / 稳定性），可复核
+        # 候选同样保留完整字段（对手校正胜率 / 稳定性），可复核
         board.append(item)
     note = None if elig else "样本不足，仅候选"
     return {"n": len(elig), "board": board, "note": note, "boot": bool(boots),
@@ -546,7 +548,7 @@ def main() -> None:
                 "teamWeights": TEAM_W,
                 "robustZ": "z = (x − median) / (1.4826 × MAD)，分母取该分路当期全部有数据选手",
                 "score": "综合分 = clamp(50 + 12 × Σ w·z, 0, 100)，50 ≈ 该分路当期中位",
-                "team": "战队三项分量（对手强度校正胜率 / 局分优势 / 稳定性）在当期队内稳健标准化后加权",
+                "team": "战队两项分量（对手强度校正胜率 / 稳定性）在当期队内稳健标准化后加权；对手校正按大场计，胜强队加分、负弱队扣分",
                 "bootstrap": f"按大场成组重采样 {BOOT_ITERS} 次 → 胜者命中率 + 综合分 95% 区间",
             },
             "source": "data/history 官方接口，2019–2026 全部已完赛对局",

@@ -868,6 +868,15 @@ async function main() {
 
   // (B) 荣誉中心候选行不得出现「假零」：候选同样带完整指标，缺失必须是 —，不是 0
   await visit(BASE + "honors.html", 1600);
+  // 默认周期可能是「进行中」且尚无达标样本，切到最近一个已完赛周期再验候选行
+  await evaluate(`(function(){
+    var sel = document.getElementById('fPeriod');
+    if (!sel) return;
+    var opts = [].slice.call(sel.options);
+    var pick = opts.filter(function(o){ return o.textContent.indexOf('进行中') < 0; })[0] || opts[1] || opts[0];
+    if (pick) { sel.value = pick.value; sel.dispatchEvent(new Event('change', {bubbles:true})); }
+  })()`);
+  await sleep(800);
   const hn = await evaluate(`(function(){
     var rows = [].slice.call(document.querySelectorAll('#boardRows tr'));
     var zero = [], n = 0;
