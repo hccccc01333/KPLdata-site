@@ -454,6 +454,7 @@
       '<div class="sb-state-meta"><span class="sb-tag gold">G' + b.seq + "</span>" +
         "<span>" + esc(b.date) + "</span><span>最终 " + esc(winTeam) + " 胜</span>" +
         "<span>" + esc(durText(b)) + "</span>" +
+        (b.src && b.src !== "v12" ? '<span class="sb-tag">非 V12 重放</span>' : "") +
         (pFallback ? '<span class="sb-tag">该帧无模型输出 · 显示最近有效预测</span>' : "") +
         "</div>" +
       '<div class="sb-stat-grid">' +
@@ -630,7 +631,7 @@
     $("#sbKpiAccS").textContent = "test 段 · 不是直播命中率";
     $("#sbKpiCoverage").textContent = D.coverage.replayBattles + " 局";
     $("#sbKpiCoverageS").textContent = D.coverage.replayMatches + " 场 · " +
-      num(D.coverage.replayFrames) + " 个状态点";
+      num(D.coverage.replayFrames) + " 个 V12 状态点";
     var earlyCb = (m.comeback || {}).early || {};
     $("#sbKpiWeak").textContent = pct(earlyCb.acc);
     $("#sbKpiWeakS").textContent = "early 翻盘局方向准确率 · n=" + (earlyCb.n || 0) + " 帧";
