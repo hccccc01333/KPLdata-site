@@ -28,13 +28,14 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 
 ## 当前状态
 
-- 站点已从「多页面数据展示」收敛为 **V5.5 数据产品**：31 个页面 + 404，20 个离线构建脚本。
+- 站点已从「多页面数据展示」收敛为 **V5.5 数据产品**：32 个页面 + 404，21 个离线构建脚本。
 - 数据正确性（2026-10-21）：系列赛 / 战队 Elo 已按真实战队身份重算；选手深挖逐局胜负改用 `battle_winner_team`；资源指标 `kill_big_dragon_num` 已去重；`check_series_consistency.py` 作为发布门禁。
+- 胜率沙盘已上线：212 局概率地形、同状态历史检索、What-if 与 V12 模型体检；数据由 `build_sandbox_data.py` 生成。
 - BP 赛事演播室已上线：真实比赛逐手选禁回放、双方最终阵容、系列赛前几局英雄使用，支持深链与三档响应式。
 - 仍在开发：V5 P2 其余项（今日观赛助手 / 本命英雄对局助手 / honors-v2 剩余项）。
-- 已知限制：部分历史系列赛缺官方胜负或逐局不完整；分钟级复盘只覆盖 211 局；模型测试集只有 20 局，不能当作稳定预测服务。
+- 已知限制：部分历史系列赛缺官方胜负或逐局不完整；分钟级复盘只覆盖 212 局；模型测试集只有 20 局，不能当作稳定预测服务。
 
-## 页面（31 个 + 404）
+## 页面（32 个 + 404）
 
 | 模块 | 页面 |
 |---|---|
@@ -43,11 +44,11 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 | 战队 | `teams.html`、`team.html`（能力雷达 / 系列赛画像 / 冠军墙）、`h2h.html` |
 | 选手 | `players.html`、`player.html`（能力雷达 / 关键局 / 打法画像 / 搭档对位） |
 | 英雄 | `heroes.html`、`hero.html`、`combos.html` |
-| 深度分析 | `bp.html`、`bp-studio.html`（真实比赛 BP 演播室）、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`（含赛前预测挑战）、`find.html`（按终局条件找局）、`simulator.html`、`query.html` |
+| 深度分析 | `bp.html`、`bp-studio.html`（真实比赛 BP 演播室）、`sandbox.html`（胜率沙盘 / 同状态检索 / 模型体检）、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`（含赛前预测挑战）、`find.html`（按终局条件找局）、`simulator.html`、`query.html` |
 | 对比工具 | `compare.html`、`compare-team.html`、`compare-player.html`、`compare-lane.html` |
 | 说明 | `about.html`、`404.html` |
 
-## 构建脚本（20 个）
+## 构建脚本（21 个）
 
 数据全部离线生成，页面只读 `assets/*.js`。
 
@@ -57,6 +58,7 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 | 比赛与预测 | `build_picks.py`、`build_predict_data.py`、`build_comeback_data.py`、`build_prematch_backtest.py` |
 | 战队 / 选手 / 英雄 | `build_team_data.py`、`build_player_details.py`、`build_player_deep.py`、`build_power_data.py`、`build_pro_hero.py`、`build_hero_growth.py`、`build_equip_data.py` |
 | BP / 系列赛 / 荣誉 / 纪录 | `build_bp_data.py`、`build_deep_data.py`、`build_honors_data.py`、`build_records.py` |
+| 交互 / 模型体检 | `build_sandbox_data.py`（概率地形 / 同状态索引 / 可靠性数据） |
 
 辅助脚本：`sync_readme_stats.py` 把上面的「数据规模」与 `assets/*.js` 索引对齐。
 
