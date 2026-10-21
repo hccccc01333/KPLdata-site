@@ -504,7 +504,7 @@
       "</div>" +
       '<div class="sb-whatif-out" id="wiOut">—</div>' +
       '<div class="sb-chips" id="wiChips"></div>' +
-      '<div class="sb-whatif-foot"><span class="note">同状态历史，不是因果；调整后样本不足时会提示。</span>' +
+      '<div class="sb-whatif-foot"><span class="note">同状态历史，不是因果；单资源边际受样本与相关性影响，可能为负。</span>' +
         '<button class="btn ghost sm" id="wiReset" type="button">重置</button></div>';
 
     var bind = function (id, key, isGd) {
@@ -576,7 +576,8 @@
           x[it[2]] += it[3];
           var aa = findAnalogs(x, state.battle);
           var d = aa.rate == null ? null : aa.rate - base.rate;
-          return '<span class="sb-chip ' + (d == null ? "" : d >= 0 ? "pos" : "neg") + '">' +
+          return '<span class="sb-chip ' + (d == null ? "" : d >= 0 ? "pos" : "neg") +
+            '" title="历史同状态差异，受样本与相关性影响，可能为负">' +
             esc(it[0]) + " ≈ " + (d == null ? "—" : signedPct(d)) + "</span>";
         }).join("");
       }
