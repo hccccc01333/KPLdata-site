@@ -145,8 +145,8 @@
     var sel = $("#sbMatch");
     if (!sel) return;
     sel.innerHTML = D.matches.map(function (m, i) {
-      return '<option value="' + i + '">' + esc(m.date) + " " + esc(m.t1) + " vs " +
-        esc(m.t2) + " · " + m.battles.length + " 局</option>";
+      return '<option value="' + i + '">' + esc((m.date || "").slice(5)) + " " +
+        esc(m.t1) + " vs " + esc(m.t2) + " · " + m.battles.length + "局</option>";
     }).join("");
     var cur = battleAt(state.battle).mid;
     for (var i = 0; i < D.matches.length; i++) {
@@ -159,9 +159,8 @@
     if (!sel || !m) return;
     sel.innerHTML = m.battles.map(function (bi) {
       var b = battleAt(bi);
-      var w = b.win === 1 ? b.t1 : b.t2;
       return '<option value="' + bi + '">G' + b.seq + " · " + esc(b.t1) + " vs " +
-        esc(b.t2) + " · " + esc(w) + " 胜</option>";
+        esc(b.t2) + "</option>";
     }).join("");
     sel.value = String(state.battle);
   }
@@ -423,7 +422,15 @@
   function renderState(b, f, s, a) {
     var host = $("#sbState");
     if (!host) return;
-    var p = f[1];
+    var pFrame = f, p = f[1], pFallback = false;
+    if (p == null) {
+      var fallback = b.frames[nearestFrameIndex(b, f[0], true)];
+      if (fallback && fallback[1] != null) {
+        pFrame = fallback;
+        p = fallback[1];
+        pFallback = true;
+      }
+    }
     var p2 = p == null ? null : 1 - p;
     var t1 = teamOr(b.t1, "阵营 1");
     var t2 = teamOr(b.t2, "阵营 2");
@@ -433,7 +440,8 @@
     var matchLink = b.mid ? '<a class="sb-link" href="match.html?id=' +
       encodeURIComponent(b.mid) + "&g=" + b.seq + '">赛后复盘 →</a>' : "";
     host.innerHTML =
-      '<div class="panel-title">当前状态 <em>V12 · ' + f[0].toFixed(1) + "'</em></div>" +
+      '<div class="panel-title">当前状态 <em>V12 · ' +
+        (pFallback ? pFrame[0].toFixed(1) + "'（最近有效）" : f[0].toFixed(1) + "'") + "</em></div>" +
       '<div class="sb-state-top">' +
         '<div><span class="sb-team">' + esc(t1) + '</span><div class="p" style="color:' +
           pTextColor(p) + '">' + pct(p) + "</div></div>" +
@@ -443,7 +451,9 @@
       "</div>" +
       '<div class="sb-state-meta"><span class="sb-tag gold">G' + b.seq + "</span>" +
         "<span>" + esc(b.date) + "</span><span>最终 " + esc(winTeam) + " 胜</span>" +
-        "<span>" + esc(durText(b)) + "</span></div>" +
+        "<span>" + esc(durText(b)) + "</span>" +
+        (pFallback ? '<span class="sb-tag">该帧无模型输出 · 显示最近有效预测</span>' : "") +
+        "</div>" +
       '<div class="sb-stat-grid">' +
         '<div class="sb-stat"><div class="k">金差（camp1 − camp2）</div><div class="v ' +
           (s.gd > 0 ? "pos" : s.gd < 0 ? "neg" : "") + '">' + signed(s.gd) + "</div></div>" +

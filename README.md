@@ -70,7 +70,7 @@ python check_series_consistency.py  # deep.js 对原始逐局数据的独立复�
 python test_series_logic.py         # 换边/让二追三/官方兜底/重复局号/串场局回归
 ```
 
-- `check_series_consistency.py` 发现严重不一致时返回退出码 1；比赛日快速链路可加 `--skip-cross-page`，避免 `players_detail.js` 尚未刷新导致误报。
+- `check_series_consistency.py` 发现严重不一致时返回退出码 1；比赛日快速链路两项检查都会执行，但加 `--skip-cross-page` 跳过依赖 `players_detail.js` / `player_deep.js` 刷新的跨页比对，避免旧资产误报。
 - `publish.bat` 在 git 提交 / 部署前强制执行前两项检查，`--deploy-only` 也不例外。
 - 核心仓库的 `scripts/watch_site_data.py` 负责自动重建：构建或门禁失败时不推进 state，保留旧状态并在 5 分钟后自动重试。
 
