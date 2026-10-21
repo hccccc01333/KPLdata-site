@@ -237,7 +237,10 @@
       if (!m) { zone.style.display = "none"; return; }
       zone.style.display = "";
       var disp = m.display || null;
-      var baseProb = (disp && disp.prob != null) ? disp.prob : m.prob;
+      // 样本不足时 display.prob 为 null；倾向要用融合后的 raw，不能退回旧模型单点
+      var baseProb = disp
+        ? (disp.prob != null ? disp.prob : (disp.raw != null ? disp.raw : m.prob))
+        : m.prob;
       var low = !!(disp && disp.state !== "normal");
       var pointLeadName = baseProb >= 0.5 ? m.t1 : m.t2;  // prob 为 camp1 视角
       var rangeTxt = disp ? (Math.round(disp.lo * 100) + "%–" + Math.round(disp.hi * 100) + "%") : "";
