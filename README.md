@@ -81,22 +81,26 @@ python test_series_logic.py         # 换边/让二追三/官方兜底/重复局
 ```bash
 python -m http.server 8777
 node _check_pages.js http://127.0.0.1:8777   # 全站异常 / 渲染 / 交互 / 响应式
+node _check_sandbox.js http://127.0.0.1:8777 # 胜率沙盘专项：地形 / What-if / 响应式
 node _regress.js                             # 分层回归总入口
 ```
 
 ## 目录
 
 ```text
-*.html                 29 个页面 + 404（纯静态，无构建步骤）
+*.html                 32 个页面 + 404（纯静态，无构建步骤）
 assets/v55.css         V5.5 竞技媒体白主题（当前视觉）
 assets/style.css       基础样式与旧主题层
 assets/pages.css       页面级样式
+assets/sandbox.css     胜率沙盘页面样式
 assets/common.js       导航 / 页脚 / 搜索 / 深链工具
 assets/data.js         站点主数据（各 build_*.py 产物同目录）
+assets/sandbox.js      胜率沙盘数据（构建产物）
+assets/sandbox_app.js  胜率沙盘交互（手写源码，不走自动数据提交）
 assets/games/          逐局详情分片，按需加载
 assets/replay/         复盘时间轴数据包
 assets/live_hist/      实时预测归档分片
-build_*.py             20 个数据生成脚本（读 ../02-KPL实时胜率预测系统）
+build_*.py             21 个数据生成脚本（读 ../02-KPL实时胜率预测系统）
 check_*.py             数据质量门禁
 DESIGN.md              设计规范
 ```
