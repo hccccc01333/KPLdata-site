@@ -70,8 +70,9 @@
 .sb-whatif-out .big{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--ink)}
 .sb-whatif-out .delta{font-family:var(--mono);font-weight:800}
 .sb-whatif-out .delta.pos{color:var(--teal)} .sb-whatif-out .delta.neg{color:var(--red)}
-.sb-whatif-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
-.sb-whatif-foot .note{font-size:10.5px;color:var(--faint);line-height:1.5;max-width:230px}
+.sb-whatif-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
+.sb-whatif-foot .note{font-size:10.5px;color:var(--faint);line-height:1.5;max-width:230px;flex:1 1 200px}
+.sb-whatif-foot .btn{flex:none;white-space:nowrap}
 .sb-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .sb-chip{font-size:10.5px;font-family:var(--mono);border:1px solid var(--line);border-radius:4px;padding:3px 6px;color:var(--ink2);background:var(--card2)}
 .sb-chip.pos{color:var(--teal);border-color:rgba(15,138,120,.25)}

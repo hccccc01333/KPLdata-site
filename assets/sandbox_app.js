@@ -148,7 +148,7 @@
     if (!sel) return;
     sel.innerHTML = D.matches.map(function (m, i) {
       return '<option value="' + i + '">' + esc((m.date || "").slice(5)) + " " +
-        esc(m.t1) + " vs " + esc(m.t2) + " · " + m.battles.length + "局</option>";
+        esc(m.t1) + " vs " + esc(m.t2) + "</option>";
     }).join("");
     var cur = battleAt(state.battle).mid;
     for (var i = 0; i < D.matches.length; i++) {
@@ -472,7 +472,7 @@
       "</div>" +
       '<div class="sb-hist">' +
         '<div class="sb-hist-top"><span class="k">历史上类似局面：左边赢的比例</span>' +
-          '<span class="v">' + pct(a.rate) + ' <small>参考 ' + a.n + " 个时刻</small></span></div>" +
+          '<span class="v">' + pct(a.rate) + "</span></div>" +
         '<div class="sb-hist-sub">大致范围 ' + pct(a.lo) + "–" + pct(a.hi) +
           " · 从 212 局里挑了 " + a.n + " 个最像的时刻</div>" +
         '<div class="sb-hist-gap' + lowCls + '">' +
