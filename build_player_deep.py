@@ -120,6 +120,7 @@ def main() -> None:
             bt1, bt2 = team_of(b, 1), team_of(b, 2)
             if not bt1 or not bt2:
                 bt1, bt2 = t1, t2
+            bw = battle_winner_team(b)
             plist = b.get("battle_player_list") or []
             gold_by_camp = {1: 0.0, 2: 0.0}
             for p in plist:
@@ -144,7 +145,7 @@ def main() -> None:
                         for x in members]}
                 heroes = [str(x.get("hero_name") or "") for x in members if x.get("hero_name")]
                 if heroes:
-                    won = 1 if battle_winner_team(b) == tname else 0
+                    won = 1 if bw == tname else 0
                     for h in heroes:
                         hero_all[h][0] += won
                         hero_all[h][1] += 1
@@ -169,7 +170,7 @@ def main() -> None:
                 raw.append((
                     name, pos, str(p.get("team_name") or (bt1 if camp == 1 else bt2)),
                     str(p.get("player_icon") or ""), mid, date, is_dec,
-                    1 if str(p.get("team_name") or (bt1 if camp == 1 else bt2)) == winner else 0,
+                    1 if str(p.get("team_name") or (bt1 if camp == 1 else bt2)) == bw else 0,
                     k, d, a, dmg, tank, part, gs, gpm, dpm,
                     str(p.get("hero_name") or ""), bid, (bt2 if camp == 1 else bt1),
                 ))

@@ -54,7 +54,9 @@ RADAR_FLOOR = 4           # 雷达分位下限，避免完全压平
 CORRUPT_GOLD = 200000.0   # 单方经济 > 此值视为脏数据（原始接口偶发溢出）
 GD_WINSOR = 15000.0       # 单局金差缩尾上限，抑制极端翻盘/脏数据对均值的影响
 
-DRAGON_FIELDS = ("kill_big_dragon_num", "kill_dark_tyrant_num", "kill_tyrant_num",
+# kill_big_dragon_num 疑似是先知主宰 + 暗影主宰合计（见 docs/数据字典.md），
+# 与两个分项同时相加会把资源差放大，因此只保留分项。
+DRAGON_FIELDS = ("kill_dark_tyrant_num", "kill_tyrant_num",
                  "kill_prophet_dragon_num", "kill_shadow_dragon_num", "kill_storm_dragon_king_num")
 
 
