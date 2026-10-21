@@ -250,7 +250,7 @@
         m + "'</text>");
     });
     svg.push('<text x="' + (pad.l + plotW) + '" y="' + (pad.t + plotH + 33) +
-      '" text-anchor="end" fill="#A3A7B0" font-size="10" font-family="monospace">金差（camp1 − camp2）</text>');
+      '" text-anchor="end" fill="#A3A7B0" font-size="10" font-family="monospace">经济差（左边 − 右边）</text>');
     svg.push('<text x="' + pad.l + '" y="' + (pad.t - 4) +
       '" fill="#A3A7B0" font-size="10" font-family="monospace">分钟</text>');
 
@@ -347,7 +347,7 @@
     var maxM = Math.max(20, Math.ceil(maxFrameMinute() / 5) * 5);
     function x(m) { return pad.l + clamp(m, 0, maxM) / maxM * plotW; }
     function y(p) { return pad.t + (1 - clamp(p, 0, 1)) * plotH; }
-    var svg = ['<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="V12 胜率曲线">'];
+    var svg = ['<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="模型每一分钟的判断">'];
     [0, 0.25, 0.5, 0.75, 1].forEach(function (p) {
       svg.push('<line x1="' + pad.l + '" y1="' + y(p) + '" x2="' + (pad.l + plotW) +
         '" y2="' + y(p) + '" stroke="' + (p === 0.5 ? "#A3A7B0" : "#E7E8EC") +
@@ -511,7 +511,7 @@
       "</div>" +
       '<div class="sb-whatif-out" id="wiOut">—</div>' +
       '<div class="sb-chips" id="wiChips"></div>' +
-      '<div class="sb-whatif-foot"><span class="note">这是历史对比，不是因果结论；某个资源变多，历史上胜率不一定更高，可能只是样本波动。</span>' +
+      '<div class="sb-whatif-foot"><span class="note">这是历史对比，不能说明“赢了是因为多拿了一条龙”；某个资源变多，历史上胜率不一定更高，可能只是样本波动。</span>' +
         '<button class="btn ghost sm" id="wiReset" type="button">恢复原样</button></div>';
 
     var bind = function (id, key, isGd) {
@@ -747,7 +747,7 @@
       return (b.brier || 0) - (a.brier || 0);
     });
     if (!rows.length) {
-      host.innerHTML = '<div class="sb-empty">暂无 test 明细。</div>';
+      host.innerHTML = '<div class="sb-empty">暂无考试明细。</div>';
       return;
     }
     var maxB = Math.max(0.2, Math.max.apply(null, rows.map(function (r) { return r.brier || 0; })));
@@ -756,38 +756,38 @@
       var date = (r.date || "").slice(5) || "—";
       return '<div class="sb-brier-row ' + (r.isComeback ? "cb" : "") + '" title="' +
         esc(r.t1 || r.id) + " vs " + esc(r.t2 || "—") + " · " + tag + ' · ' +
-        (r.nPoints || 0) + ' 个预测点">' +
-        '<span class="d">' + esc(date) + " G" + (r.seq || "?") + "</span>" +
+        (r.nPoints || 0) + ' 个时刻">' +
+        '<span class="d">' + esc(date) + " · 第" + (r.seq || "?") + "局</span>" +
         '<span class="bar"><i style="width:' + clamp((r.brier || 0) / maxB * 100, 0, 100) +
         '%"></i></span><span class="v">' + (r.brier == null ? "—" : r.brier.toFixed(3)) +
         "</span></div>";
-    }).join("") + '<div class="sb-rel-note">红色 = 翻盘局；20 局中 6 局为翻盘局。' +
-      "条形越短越好；每局样本量不同，不能只看单局排名。</div>";
+    }).join("") + '<div class="sb-rel-note">红色是翻盘局（20 局里有 6 局）。' +
+      "条越短，这一局整体猜得越准；每局时刻数不同，不要只按单局排名。</div>";
   }
 
   function renderWorst() {
     var host = $("#sbWorst");
     if (!host) return;
     var rows = D.model.worst || [];
-    var html = '<div class="sb-worst-row sb-worst-head"><div>对局</div><div class="n">Brier</div>' +
-      '<div class="n">方向</div><div class="ty">类型</div></div>';
+    var html = '<div class="sb-worst-row sb-worst-head"><div>比赛</div><div class="n">误差</div>' +
+      '<div class="n">猜对率</div><div class="ty">类型</div></div>';
     rows.forEach(function (r) {
       var name = r.t1 ? esc(r.t1) + " vs " + esc(r.t2) : esc(r.id);
       var link = r.mid ? '<a class="sb-link" href="match.html?id=' + encodeURIComponent(r.mid) +
         "&g=" + r.seq + '">' + name + "</a>" : name;
       html += '<div class="sb-worst-row"><div class="vs">' + link +
-        "<small>" + esc(r.date || "—") + " · G" + (r.seq || "?") + "</small></div>" +
+        "<small>" + esc(r.date || "—") + " · 第" + (r.seq || "?") + "局</small></div>" +
         '<div class="n bad">' + (r.brier == null ? "—" : r.brier.toFixed(3)) + "</div>" +
         '<div class="n">' + pct(r.acc) + "</div><div class=\"ty\">" +
-        (r.isComeback ? "翻盘" : "普通") + "</div></div>";
+        (r.isComeback ? "翻盘局" : "普通局") + "</div></div>";
     });
     var bad = D.model.badBattle;
     if (bad) {
       var name2 = bad.t1 ? esc(bad.t1) + " vs " + esc(bad.t2) : esc(bad.id);
       html += '<div class="sb-worst-row"><div class="vs">' + name2 +
-        "<small>护栏压力测试 · 命中 " + (bad.goldGuardHits || 0) + " 次</small></div>" +
+        "<small>特殊保护机制 · 触发 " + (bad.goldGuardHits || 0) + " 次</small></div>" +
         '<div class="n">' + (bad.brier == null ? "—" : bad.brier.toFixed(3)) + "</div>" +
-        '<div class="n">' + pct(bad.acc) + "</div><div class=\"ty\">护栏</div></div>";
+        '<div class="n">' + pct(bad.acc) + "</div><div class=\"ty\">保护机制</div></div>";
     }
     host.innerHTML = html;
   }
