@@ -33,8 +33,8 @@
   function signedPct(v, digits) {
     if (v == null || isNaN(v)) return "—";
     var pp = v * 100;
-    if (Math.abs(pp) < 0.05) return "0.0 pp";
-    return (pp > 0 ? "+" : "") + pp.toFixed(digits == null ? 1 : digits) + " pp";
+    if (Math.abs(pp) < 0.05) return "0.0 个百分点";
+    return (pp > 0 ? "+" : "") + pp.toFixed(digits == null ? 1 : digits) + " 个百分点";
   }
   function teamOr(v, fallback) { return v || fallback; }
   function durText(b) {
@@ -288,17 +288,18 @@
       rect.addEventListener("mousemove", function (evt) {
         if (!tip) return;
         var r = host.getBoundingClientRect();
-        var content = "<b>" + esc(D.surface.minuteLabels[mi]) + " 分钟</b> · " +
+        var content = "<b>第 " + esc(D.surface.minuteLabels[mi]) + " 分钟</b> · 经济差 " +
           esc(D.surface.goldLabels[gi]) + "<br>";
         if (!cell.n) {
-          content += "无样本";
+          content += "没有可参考的历史时刻";
         } else if (state.mode === "hist") {
-          content += "历史同状态 <b>" + pct(cell.hist) + "</b> · n=" + cell.n + "<br>" +
-            "95% 区间 " + pct(cell.lo) + "–" + pct(cell.hi) + "<br>" +
-            "V12 均值 " + pct(cell.model);
+          content += "历史上类似局面：左边队伍赢 <b>" + pct(cell.hist) + "</b><br>" +
+            "参考了 " + cell.n + " 个历史时刻 · 大致范围 " + pct(cell.lo) + "–" + pct(cell.hi) + "<br>" +
+            "模型平均判断：" + pct(cell.model);
         } else {
-          content += "V12 均值 <b>" + pct(cell.model) + "</b> · n=" + cell.n + "<br>" +
-            "历史同状态 " + pct(cell.hist) + " [" + pct(cell.lo) + "–" + pct(cell.hi) + "]";
+          content += "模型平均判断：左边队伍赢 <b>" + pct(cell.model) + "</b><br>" +
+            "参考了 " + cell.n + " 个历史时刻<br>" +
+            "历史上类似局面：" + pct(cell.hist) + "（" + pct(cell.lo) + "–" + pct(cell.hi) + "）";
         }
         tip.innerHTML = content;
         tip.style.display = "block";
@@ -327,10 +328,10 @@
     var el = $("#sbLegend");
     if (!el) return;
     var modeText = state.mode === "hist"
-      ? "颜色 = 历史同状态胜率（Beta 平滑）；越淡样本越少"
-      : "颜色 = 该格内 V12 平均概率；越淡样本越少";
-    el.innerHTML = '<span>0%</span><span class="grad"></span><span>100%</span>' +
-      '<span><i class="dot"></i>当前局面</span><span>' + esc(modeText) + "</span>";
+      ? "颜色越偏绿，左边队伍历史上赢得越多；越偏红，右边赢得多；颜色越淡，可参考的时刻越少"
+      : "颜色越偏绿，模型越看好左边队伍；越偏红，越看好右边；颜色越淡，参考时刻越少";
+    el.innerHTML = '<span>红：右边占优</span><span class="grad"></span><span>绿：左边占优</span>' +
+      '<span><i class="dot"></i>你正在看的时刻</span><span>' + esc(modeText) + "</span>";
   }
 
   /* ---------- 胜率曲线 ---------- */
@@ -625,16 +626,15 @@
     $("#sbMetaFrames").textContent = num(D.coverage.replayFrames);
     $("#sbMetaUpdated").textContent = D.updatedAt || "—";
     $("#sbKpiBrier").textContent = m.brier == null ? "—" : m.brier.toFixed(3);
-    $("#sbKpiBrierS").textContent = num(m.testFrames) + " 帧 / " + m.testN + " 局 · ECE " +
-      (m.ece == null ? "—" : m.ece.toFixed(3));
+    $("#sbKpiBrierS").textContent = "在 " + m.testN + " 局没见过的比赛上考试 · 越小越好";
     $("#sbKpiAcc").textContent = pct(m.acc);
-    $("#sbKpiAccS").textContent = "test 段 · 不是直播命中率";
+    $("#sbKpiAccS").textContent = "只看这 " + m.testN + " 局考试，不代表每场都准";
     $("#sbKpiCoverage").textContent = D.coverage.replayBattles + " 局";
     $("#sbKpiCoverageS").textContent = D.coverage.replayMatches + " 场 · " +
-      num(D.coverage.replayFrames) + " 个 V12 状态点";
+      num(D.coverage.replayFrames) + " 个可以对照的时刻";
     var earlyCb = (m.comeback || {}).early || {};
     $("#sbKpiWeak").textContent = pct(earlyCb.acc);
-    $("#sbKpiWeakS").textContent = "early 翻盘局方向准确率 · n=" + (earlyCb.n || 0) + " 帧";
+    $("#sbKpiWeakS").textContent = "前 8 分钟落后、最后翻盘 · 参考 " + (earlyCb.n || 0) + " 个时刻";
   }
 
   function renderHealth() {
