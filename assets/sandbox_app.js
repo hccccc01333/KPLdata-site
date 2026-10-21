@@ -239,9 +239,10 @@
 
     // 坐标轴
     [-20000, -10000, 0, 10000, 20000].forEach(function (g) {
+      var label = g === 0 ? "0" : (g < 0 ? "−" : "+") + Math.abs(g / 10000) + "万";
       svg.push('<text x="' + x(g).toFixed(1) + '" y="' + (pad.t + plotH + 17) +
         '" text-anchor="middle" fill="#8A8F99" font-size="10" font-family="monospace">' +
-        (g === 0 ? "0" : (g / 1000) + "k") + "</text>");
+        label + "</text>");
     });
     [0, 5, 10, 15, 20, 25].forEach(function (m) {
       if (m > maxM) return;
@@ -479,7 +480,7 @@
             "模型比历史" + (gap >= 0 ? "高" : "低") + " <b>" +
             Math.abs(gap * 100).toFixed(1) + " 个百分点</b>；" +
             (a.n < 10 ? "参考时刻偏少，百分比不稳定。" :
-              "只能说明历史上类似局面怎样，不能证明因果。")) +
+              "只能说明历史上类似局面怎样，不能说明是它导致了输赢。")) +
         "</div>" +
         '<div class="sb-state-meta" style="margin-top:9px">' + matchLink + "</div>" +
       "</div>";
@@ -785,9 +786,9 @@
     if (bad) {
       var name2 = bad.t1 ? esc(bad.t1) + " vs " + esc(bad.t2) : esc(bad.id);
       html += '<div class="sb-worst-row"><div class="vs">' + name2 +
-        "<small>特殊保护机制 · 触发 " + (bad.goldGuardHits || 0) + " 次</small></div>" +
+        "<small>特殊保护 · 触发 " + (bad.goldGuardHits || 0) + " 次</small></div>" +
         '<div class="n">' + (bad.brier == null ? "—" : bad.brier.toFixed(3)) + "</div>" +
-        '<div class="n">' + pct(bad.acc) + "</div><div class=\"ty\">保护机制</div></div>";
+        '<div class="n">' + pct(bad.acc) + "</div><div class=\"ty\">特殊保护</div></div>";
     }
     host.innerHTML = html;
   }
