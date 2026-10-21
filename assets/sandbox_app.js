@@ -441,43 +441,45 @@
     var gap = (p != null && a.rate != null) ? p - a.rate : null;
     var lowCls = a.n < 10 ? " sb-low" : "";
     var matchLink = b.mid ? '<a class="sb-link" href="match.html?id=' +
-      encodeURIComponent(b.mid) + "&g=" + b.seq + '">赛后复盘 →</a>' : "";
+      encodeURIComponent(b.mid) + "&g=" + b.seq + '">看这局的完整复盘 →</a>' : "";
     host.innerHTML =
-      '<div class="panel-title">当前状态 <em>V12 · ' +
-        (pFallback ? pFrame[0].toFixed(1) + "'（最近有效）" : f[0].toFixed(1) + "'") + "</em></div>" +
+      '<div class="panel-title">这一刻 <em>模型判断 · ' +
+        (pFallback ? "最近一次在第 " + pFrame[0].toFixed(1) + " 分钟" :
+          "第 " + f[0].toFixed(1) + " 分钟") + "</em></div>" +
       '<div class="sb-state-top">' +
-        '<div><span class="sb-team">' + esc(t1) + '</span><div class="p" style="color:' +
+        '<div><span class="sb-team">左边 · ' + esc(t1) + '</span><div class="p" style="color:' +
           pTextColor(p) + '">' + pct(p) + "</div></div>" +
         '<div class="sb-vs">VS</div>' +
-        '<div class="right"><span class="sb-team">' + esc(t2) + '</span><div class="p" style="color:' +
+        '<div class="right"><span class="sb-team">右边 · ' + esc(t2) + '</span><div class="p" style="color:' +
           pTextColor(p2) + '">' + pct(p2) + "</div></div>" +
       "</div>" +
-      '<div class="sb-state-meta"><span class="sb-tag gold">G' + b.seq + "</span>" +
-        "<span>" + esc(b.date) + "</span><span>最终 " + esc(winTeam) + " 胜</span>" +
+      '<div class="sb-state-meta"><span class="sb-tag gold">第 ' + b.seq + " 局</span>" +
+        "<span>" + esc(b.date) + "</span><span>最终赢家：" + esc(winTeam) + "</span>" +
         "<span>" + esc(durText(b)) + "</span>" +
-        (b.src && b.src !== "v12" ? '<span class="sb-tag">非 V12 重放</span>' : "") +
-        (pFallback ? '<span class="sb-tag">该帧无模型输出 · 显示最近有效预测</span>' : "") +
+        (b.src && b.src !== "v12" ? '<span class="sb-tag">这局没有当前模型重算</span>' : "") +
+        (pFallback ? '<span class="sb-tag">这一分钟没有模型数字 · 显示最近一次判断</span>' : "") +
         "</div>" +
       '<div class="sb-stat-grid">' +
-        '<div class="sb-stat"><div class="k">金差（camp1 − camp2）</div><div class="v ' +
+        '<div class="sb-stat"><div class="k">经济差（左边 − 右边）</div><div class="v ' +
           (s.gd > 0 ? "pos" : s.gd < 0 ? "neg" : "") + '">' + signed(s.gd) + "</div></div>" +
-        '<div class="sb-stat"><div class="k">击杀差</div><div class="v ' +
+        '<div class="sb-stat"><div class="k">击杀差（左 − 右）</div><div class="v ' +
           (s.kd > 0 ? "pos" : s.kd < 0 ? "neg" : "") + '">' + signed(s.kd) + "</div></div>" +
-        '<div class="sb-stat"><div class="k">推塔差</div><div class="v ' +
+        '<div class="sb-stat"><div class="k">推塔差（左 − 右）</div><div class="v ' +
           (s.td > 0 ? "pos" : s.td < 0 ? "neg" : "") + '">' + signed(s.td) + "</div></div>" +
-        '<div class="sb-stat"><div class="k">资源差（加权）</div><div class="v ' +
+        '<div class="sb-stat"><div class="k">龙/资源差（左 − 右）</div><div class="v ' +
           (s.obj > 0 ? "pos" : s.obj < 0 ? "neg" : "") + '">' + signed(s.obj) + "</div></div>" +
       "</div>" +
       '<div class="sb-hist">' +
-        '<div class="sb-hist-top"><span class="k">同状态历史（camp1 胜率）</span>' +
-          '<span class="v">' + pct(a.rate) + ' <small>n=' + a.n + "</small></span></div>" +
-        '<div class="sb-hist-sub">95% 区间 ' + pct(a.lo) + "–" + pct(a.hi) +
-          " · 最相近的 " + a.n + " 个状态（分钟 / 金差 / 击杀 / 推塔 / 资源）</div>" +
+        '<div class="sb-hist-top"><span class="k">历史上类似局面，左边队伍赢的比例</span>' +
+          '<span class="v">' + pct(a.rate) + ' <small>参考 ' + a.n + " 个时刻</small></span></div>" +
+        '<div class="sb-hist-sub">大致范围 ' + pct(a.lo) + "–" + pct(a.hi) +
+          " · 从 212 局里挑了 " + a.n + " 个最像的时刻</div>" +
         '<div class="sb-hist-gap' + lowCls + '">' +
-          (gap == null ? "样本不足，暂不比较。" :
-            "V12 比同状态历史" + (gap >= 0 ? "高" : "低") + " <b>" +
-            Math.abs(gap * 100).toFixed(1) + " pp</b>；" +
-            (a.n < 10 ? "样本偏少，百分比不稳定。" : "只代表历史伴随关系，不是因果。")) +
+          (gap == null ? "参考时刻不足，暂不比较。" :
+            "模型比历史" + (gap >= 0 ? "高" : "低") + " <b>" +
+            Math.abs(gap * 100).toFixed(1) + " 个百分点</b>；" +
+            (a.n < 10 ? "参考时刻偏少，百分比不稳定。" :
+              "只能说明历史上类似局面怎样，不能证明因果。")) +
         "</div>" +
         '<div class="sb-state-meta" style="margin-top:9px">' + matchLink + "</div>" +
       "</div>";
@@ -485,29 +487,32 @@
 
   /* ---------- What-if ---------- */
   function wiValue(k) {
-    if (k === "gd") return (wi.gd / 1000).toFixed(2).replace(/\.?0+$/, "") + "k";
+    if (k === "gd") {
+      var v = wi.gd / 1000;
+      return (v > 0 ? "+" : "") + (Math.round(v * 100) / 100) + " 千";
+    }
     return (wi[k] > 0 ? "+" : "") + wi[k];
   }
   function renderWhatIf(b, f, s, a) {
     var host = $("#sbWhatIf");
     if (!host) return;
     host.innerHTML =
-      '<div class="panel-title">What-if <em>把状态改一点，再看历史</em></div>' +
+      '<div class="panel-title">如果局面变一点 <em>拖动滑杆，看看历史胜率怎么变</em></div>' +
       '<div class="sb-whatif-grid">' +
-        '<label class="sb-wi"><span class="lab">经济 <b id="wiGdV">' + wiValue("gd") +
+        '<label class="sb-wi"><span class="lab">经济领先变化 <b id="wiGdV">' + wiValue("gd") +
           '</b></span><input id="wiGd" type="range" min="-5" max="5" step="0.25" value="' +
           (wi.gd / 1000) + '"></label>' +
-        '<label class="sb-wi"><span class="lab">推塔 <b id="wiTdV">' + wiValue("td") +
+        '<label class="sb-wi"><span class="lab">多推几座塔 <b id="wiTdV">' + wiValue("td") +
           '</b></span><input id="wiTd" type="range" min="-5" max="5" step="1" value="' + wi.td + '"></label>' +
-        '<label class="sb-wi"><span class="lab">击杀 <b id="wiKdV">' + wiValue("kd") +
+        '<label class="sb-wi"><span class="lab">多拿几个人头 <b id="wiKdV">' + wiValue("kd") +
           '</b></span><input id="wiKd" type="range" min="-10" max="10" step="1" value="' + wi.kd + '"></label>' +
-        '<label class="sb-wi"><span class="lab">资源 <b id="wiObjV">' + wiValue("obj") +
+        '<label class="sb-wi"><span class="lab">多拿几条龙 <b id="wiObjV">' + wiValue("obj") +
           '</b></span><input id="wiObj" type="range" min="-10" max="10" step="1" value="' + wi.obj + '"></label>' +
       "</div>" +
       '<div class="sb-whatif-out" id="wiOut">—</div>' +
       '<div class="sb-chips" id="wiChips"></div>' +
-      '<div class="sb-whatif-foot"><span class="note">同状态历史，不是因果；单资源边际受样本与相关性影响，可能为负。</span>' +
-        '<button class="btn ghost sm" id="wiReset" type="button">重置</button></div>';
+      '<div class="sb-whatif-foot"><span class="note">这是历史对比，不是因果结论；某个资源变多，历史上胜率不一定更高，可能只是样本波动。</span>' +
+        '<button class="btn ghost sm" id="wiReset" type="button">恢复原样</button></div>';
 
     var bind = function (id, key, isGd) {
       var el = $("#" + id);
@@ -559,19 +564,18 @@
       '<div><span class="big">' + pct(base.rate) + " → " + pct(after.rate) + "</span>" +
       (delta == null ? "" : ' <span class="delta ' + (delta >= 0 ? "pos" : "neg") + '">' +
         signedPct(delta) + "</span>") + "</div>" +
-      '<div style="margin-top:3px">同状态样本 n=' + after.n +
-        (after.n < 8 ? ' <span class="sb-low">（偏少）</span>' : "") +
-        " · 中位距离 " + (after.medianDist == null ? "—" : after.medianDist.toFixed(2)) + "</div>";
+      '<div style="margin-top:3px">参考了 ' + after.n + " 个最像的历史时刻" +
+        (after.n < 8 ? ' <span class="sb-low">（偏少，结果不稳定）</span>' : "") + "</div>";
 
     if (chips) {
       if (base.rate == null) {
         chips.innerHTML = "";
       } else {
         var items = [
-          ["+1k 经济", s, "gd", 1000],
-          ["+1 塔", s, "td", 1],
-          ["+1 击杀", s, "kd", 1],
-          ["+1 资源", s, "obj", 1]
+          ["多 1 千经济", s, "gd", 1000],
+          ["多 1 座塔", s, "td", 1],
+          ["多 1 个人头", s, "kd", 1],
+          ["多 1 条龙", s, "obj", 1]
         ];
         chips.innerHTML = items.map(function (it) {
           var x = { m: it[1].m, gd: it[1].gd, kd: it[1].kd, td: it[1].td, obj: it[1].obj };
@@ -579,7 +583,7 @@
           var aa = findAnalogs(x, state.battle);
           var d = aa.rate == null ? null : aa.rate - base.rate;
           return '<span class="sb-chip ' + (d == null ? "" : d >= 0 ? "pos" : "neg") +
-            '" title="历史同状态差异，受样本与相关性影响，可能为负">' +
+            '" title="历史上类似局面的差异，可能受样本影响，不一定代表因果">' +
             esc(it[0]) + " ≈ " + (d == null ? "—" : signedPct(d)) + "</span>";
         }).join("");
       }
@@ -591,25 +595,25 @@
     var host = $("#sbAnalog");
     if (!host) return;
     if (!a.n) {
-      host.innerHTML = '<div class="panel-title">同状态历史 <em>最相近的 40 个状态</em></div>' +
-        '<div class="sb-empty">没有找到可比较的历史状态。</div>';
+      host.innerHTML = '<div class="panel-title">历史上类似的局面 <em>挑了 40 个最像的时刻</em></div>' +
+        '<div class="sb-empty">没有找到可比较的历史时刻。</div>';
       return;
     }
     var rows = a.examples.map(function (x) {
       var bb = x.b;
       var w = bb.win === 1 ? bb.t1 : bb.t2;
       return '<div class="sb-analog-row" data-bi="' + x.bi + '" data-m="' + x.f[0] + '" title="' +
-        esc(bb.t1) + " vs " + esc(bb.t2) + " · 最终 " + esc(w) + ' 胜">' +
+        esc(bb.t1) + " vs " + esc(bb.t2) + " · 最终赢家：" + esc(w) + '">' +
         '<span class="d">' + esc((bb.date || "").slice(5)) + "</span>" +
-        '<span class="vs">' + esc(bb.t1) + " vs " + esc(bb.t2) + " · G" + bb.seq + "</span>" +
+        '<span class="vs">' + esc(bb.t1) + " vs " + esc(bb.t2) + " · 第 " + bb.seq + " 局</span>" +
         '<span class="r ' + (bb.win === 1 ? "win" : "") + '">' +
-          (bb.win === 1 ? "camp1" : "camp2") + " 胜</span></div>";
+          (bb.win === 1 ? "左边赢" : "右边赢") + "</span></div>";
     }).join("");
     host.innerHTML =
-      '<div class="panel-title">同状态历史 <em>最相近的 40 个状态</em></div>' +
-      '<div class="sb-analog-sum">在 ' + D.coverage.replayBattles + " 局里找到 <b>" + a.n +
-        "</b> 个相近状态，camp1 最终赢 <b>" + a.wins + "</b> 次（<b>" + pct(a.rate) +
-        "</b>）。<br>点一行可跳到那局同一分钟。</div>" +
+      '<div class="panel-title">历史上类似的局面 <em>挑了 40 个最像的时刻</em></div>' +
+      '<div class="sb-analog-sum">从 ' + D.coverage.replayBattles + " 局里挑了 <b>" + a.n +
+        "</b> 个最像的时刻，左边队伍最后赢了 <b>" + a.wins + "</b> 次（<b>" + pct(a.rate) +
+        "</b>）。<br>点一行，可以跳到那局同一分钟。</div>" +
       '<div class="sb-analog-list">' + rows + "</div>";
     host.querySelectorAll(".sb-analog-row").forEach(function (row) {
       row.addEventListener("click", function () {
