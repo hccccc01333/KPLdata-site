@@ -92,6 +92,7 @@
       '<div class="cov-note">本局可看的内容：亮色=有数据，虚线=官方未提供</div></div>' +
       '<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">' +
       '<a class="btn ghost sm" href="match.html?id=' + K.esc(MID) + '">← 整场详情</a>' +
+      '<a class="btn ghost sm" href="bp-studio.html?match=' + encodeURIComponent(MID) + '&amp;g=' + encodeURIComponent(g.seq) + '">赛事 BP 演播室 →</a>' +
       (g.video ? '<a class="btn primary sm" href="' + K.esc(g.video) + '" target="_blank" rel="noopener">看本局回放 ↗</a>'
                : '<a class="btn ghost sm" href="https://search.bilibili.com/all?keyword=' +
                  encodeURIComponent("KPL " + g.t1 + " " + g.t2 + " 第" + g.seq + "局") +
