@@ -37,7 +37,10 @@ HIST = PROJ / "data" / "history"
 CN = timezone(timedelta(hours=8))
 MIN_PLAYER_GAMES = 40      # 进入关键局榜单的最低出场
 MIN_DEC_GAMES = 8          # 关键局样本门槛
-ELO_K = 22
+# 2026-10 升级：K=40 + 年度向 1500 回归 25%，去掉局分差（MOV）加成。
+# 离线回测：校准后 2026 Brier 约 0.219，旧配置（K=22 + MOV + 无回归）约 0.223。
+ELO_K = 40
+ELO_SEASON_REGRESS = 0.25
 
 
 def num(v, default=0.0):
@@ -53,6 +56,7 @@ def main() -> None:
     teams: dict[str, dict] = {}
     players: dict[str, dict] = {}
     elo: dict[str, float] = defaultdict(lambda: 1500.0)
+    elo_last_year: dict[str, int] = {}
     matches = []          # 供 Elo / 表单按时间排序
     battles_n = 0
     diag = Counter()
@@ -243,14 +247,15 @@ def main() -> None:
     for x in matches:
         T(x["winner"])["form"].append("W")
         T(x["loser"])["form"].append("L")
+        year = int(x["date"][:4])
+        for team in (x["t1"], x["t2"]):
+            if elo_last_year.get(team) not in (None, year):
+                elo[team] = 1500.0 + (elo[team] - 1500.0) * (1.0 - ELO_SEASON_REGRESS)
+            elo_last_year[team] = year
         ra, rb = elo[x["t1"]], elo[x["t2"]]
         ea = 1.0 / (1.0 + 10 ** ((rb - ra) / 400.0))
         sa = 1.0 if x["winner"] == x["t1"] else 0.0
-        margin = abs(x["wins"] - x["losses"])
-        if margin <= 0:
-            margin = 1
-        mov = min(2.0, 1.0 + 0.35 * max(0, margin - 1))
-        k = ELO_K * (1.0 + (0.25 if x["bo"] >= 7 else 0.0)) * mov
+        k = ELO_K * (1.0 + (0.25 if x["bo"] >= 7 else 0.0))
         elo[x["t1"]] = ra + k * (sa - ea)
         elo[x["t2"]] = rb + k * ((1 - sa) - (1 - ea))
         T(x["t1"])["opps"].append(elo[x["t2"]])

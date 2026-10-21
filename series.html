@@ -39,8 +39,9 @@
         <th style="width:28%">转化率</th><th class="num">首局败者翻盘</th><th class="num">打到决胜局</th><th class="num">平均局数</th></tr></thead>
       <tbody id="boRows"></tbody>
     </table></div>
-    <div class="br-note" style="margin-top:10px">读法：BO5 里先赢第一局的队伍，最终有 76.5% 拿下整个系列赛；
-      反过来，先丢一局的队伍仍有 23.5% 的机会翻盘。「打到决胜局」= 系列赛打满（3:2 / 4:3）。</div>
+    <div class="br-note" style="margin-top:10px">读法：BO5 里先赢第一局的队伍，最终有
+      <b id="bo5FirstConv">—</b> 拿下整个系列赛；反过来，先丢一局的队伍仍有
+      <b id="bo5Comeback">—</b> 的机会翻盘。「打到决胜局」= 系列赛打满（3:2 / 4:3）。</div>
   </section>
 
   <section class="block">
@@ -70,7 +71,7 @@
   <section class="block">
     <div class="block-head">
       <h2><i></i>战队实力评级</h2>
-      <span class="block-note mono">逐场累计 · 按对手强度与比分差加权</span>
+      <span class="block-note mono">逐场累计 · 按对手强度加权</span>
     </div>
     <div class="panel table-panel"><table class="tbl">
       <thead><tr><th class="num">#</th><th>战队</th><th class="num">实力分</th><th class="num">对手平均分</th>
@@ -78,7 +79,7 @@
       <tbody id="eloRows"></tbody>
     </table></div>
     <div class="br-note" style="margin-top:10px">实力分是「赢强队加分更多、输弱队扣分更多」的逐场累计值（初始 1500），
-      比分越悬殊调整越大；跨年份可横向比较，但不代表当前版本绝对强弱。对手平均分为近 60 个系列赛的对手实力均值。</div>
+      每年首场向 1500 回归 25%；跨年份可横向比较，但不代表当前版本绝对强弱。对手平均分为近 60 个系列赛的对手实力均值。</div>
   </section>
 
   <div class="panel">
@@ -97,7 +98,7 @@
 
 <script src="assets/data.js?v=78"></script>
 <script src="assets/schedule_all.js?v=78"></script>
-<script src="assets/deep.js?v=78"></script>
+<script src="assets/deep.js?v=79"></script>
 <script src="assets/common.js?v=78"></script>
 <script>
 (function () {
@@ -114,6 +115,8 @@
 
   var bo5 = (D.series.byBo.filter(function (x) { return x.bo === 5; })[0] || {});
   var revN = D.series.reverseSweeps.length;
+  $("#bo5FirstConv").textContent = pct(bo5.firstConv || 0, 1);
+  $("#bo5Comeback").textContent = pct(1 - (bo5.firstConv || 0), 1);
   $("#srBrief").innerHTML = '<span class="ico">▍</span><div>' +
     '共 <b>' + D.matches.toLocaleString("en-US") + '</b> 个系列赛、' + D.matches + ' 场大场。' +
     'BO5 里先赢首局的队伍 <b>' + pct(bo5.firstConv || 0, 1) + '</b> 拿下系列赛；' +

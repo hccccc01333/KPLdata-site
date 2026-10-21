@@ -70,7 +70,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="赛前模拟 · KPL 数据中心">
-<meta property="og:description" content="基于实力评级、范围战绩、近期状态、历史交手、赛制经验与首发强度的 BO3/BO5/BO7 赛前胜负与比分推算，经走步回测校准。">
+<meta property="og:description" content="以实力评级判断胜负方向，按赛季滚动校准概率；近期状态、交手、首发与英雄环境作为赛前情报。给出 BO3/BO5/BO7 大场胜率与比分分布。">
 </head>
 <body data-page="simulator.html">
 <header id="siteHeader"></header>
@@ -79,7 +79,7 @@
   <div class="wrap">
     <div class="ph-kicker mono">PRE-MATCH · 赛前模拟</div>
     <h1>赛前胜负与比分模拟</h1>
-    <p>以<b>实力评级</b>判断胜负方向，用走步回测得到的<b>概率校准</b>修正幅度；近期状态、交手、首发与英雄环境作为赛前情报，帮助你理解这个判断。
+    <p>以<b>实力评级</b>判断胜负方向，用按赛季滚动的<b>走步回测校准</b>修正幅度；近期状态、交手、首发与英雄环境作为赛前情报，帮助你理解这个判断。
       再按 BO 系列赛逐局展开，给出大场胜率、最可能比分与完整比分分布。纯赛前信息，不含未开赛对局数据。</p>
   </div>
 </header>
@@ -171,8 +171,8 @@
   <div class="model-grid">
     <div class="panel">
       <ul class="rules">
-        <li><b>胜负判断。</b>以全历史逐场累计的实力评级（Elo）为准：Elo 差映射为单局胜率，再按 BO 赛制逐局展开。走步回测显示，状态、交手、首发与英雄环境等特征在独立测试集上没有提升准确率，因此只作为赛前情报展示，不进入最终概率。</li>
-        <li><b>概率校准。</b>原始 Elo 概率在极端区间偏自信；用无截距收缩（α=0.443，只在 2025 年之前拟合）保留胜负判断、只调整概率幅度。2025 年之后的 714 场作为独立测试集。</li>
+        <li><b>胜负判断。</b>以全历史逐场累计的实力评级（Elo，K=40、年度向 1500 回归 25%、不含分差加成）为准：Elo 差映射为单局胜率，再按 BO 赛制逐局展开。状态、交手、首发与英雄环境暂不进入生产概率，只作为赛前情报展示。</li>
+        <li><b>概率校准。</b>原始 Elo 概率在极端区间偏自信；用无截距收缩保留胜负判断、只调整概率幅度。α 按赛季滚动：每个赛季只用此前一个完整赛季（不足则扩展到更早赛季）拟合；2025 年之后的 715 场按走步口径评估。</li>
         <li><b>战绩平滑。</b>胜负场做拉普拉斯平滑（+2 胜 / +4 场），避免 3 局 3 胜直接推出 100%。</li>
         <li><b>系列赛推算。</b>按「先赢到半数加一局」逐局展开精确计算，比分概率之和恒为 1（页面实时校验）。</li>
       </ul>
@@ -192,9 +192,9 @@
 <script src="assets/data.js?v=78"></script>
 <script src="assets/seasons.js?v=78"></script>
 <script src="assets/schedule_all.js?v=78"></script>
-<script src="assets/deep.js?v=78"></script>
+<script src="assets/deep.js?v=79"></script>
 <script src="assets/lineups.js?v=78"></script>
-<script src="assets/prematch_calib.js?v=78"></script>
+<script src="assets/prematch_calib.js?v=79"></script>
 <script src="assets/common.js?v=78"></script>
 <script>
 (function () {
@@ -206,7 +206,7 @@
   var DEEP = (window.KPL_DEEP && window.KPL_DEEP.teams) || {};
   var LINEUPS = window.KPL_LINEUPS || {};
   var CAL = window.KPL_PRE_CALIB || null;
-  var ALPHA = CAL ? CAL.alpha : 0.443;
+  var ALPHA = CAL ? CAL.alpha : 0.5;
   var selA = $("#simA"), selB = $("#simB"), selBo = $("#simBo");
   var ckManual = $("#simManual"), rngP = $("#simP"), lblPv = $("#simPv");
   var byName = {}, SCOPE = "all";
@@ -381,25 +381,29 @@
     $("#mtA").textContent = a;
     $("#mtP").textContent = K.pct(pAuto);
     $("#modelNote").textContent = CAL
-      ? "α 来自 2019–2024 走步回测；2025 年之后的 " + CAL.test.n + " 场独立测试：命中率 " +
-        K.pct(CAL.test.acc, 1) + "，Brier " + CAL.test.brier.toFixed(3) +
+      ? "α 按赛季滚动（当前 " + (CAL.currentSeason || "—") + " 赛季 α=" +
+        Number(CAL.alpha).toFixed(2) + "，只用该赛季之前的完整赛季拟合）；" +
+        CAL.test.n + " 场走步测试：命中率 " + K.pct(CAL.test.acc, 1) +
+        "，Brier " + CAL.test.brier.toFixed(3) +
         "（原始 Elo " + CAL.test.rawBrier.toFixed(3) + "）。"
       : "校准参数尚未生成。";
 
     if (CAL) {
       var t = CAL.test;
       $("#btGrid").innerHTML =
-        '<div class="bt-cell"><div class="k">训练 / 测试</div><div class="v">' + CAL.trainN + " / " + t.n +
-          '</div><div class="s">2025 年之前训练 · 之后独立测试</div></div>' +
+        '<div class="bt-cell"><div class="k">α 训练 / 测试</div><div class="v">' + CAL.trainN + " / " + t.n +
+          '</div><div class="s">α 只用此前完整赛季 · 2025+ 走步测试</div></div>' +
         '<div class="bt-cell"><div class="k">测试命中率</div><div class="v">' + K.pct(t.acc, 1) +
           '</div><div class="s">原始 Elo ' + K.pct(t.rawAcc, 1) + " · 校准不改变胜负判断</div></div>" +
         '<div class="bt-cell hl"><div class="k">测试 Brier</div><div class="v">' + t.brier.toFixed(3) +
           '</div><div class="s">原始 Elo ' + t.rawBrier.toFixed(3) + " · 越低越好</div></div>" +
         '<div class="bt-cell"><div class="k">测试 LogLoss</div><div class="v">' + t.logloss.toFixed(3) +
           '</div><div class="s">概率越接近真实频率，值越低</div></div>';
-      $("#btNote").textContent = "走步回测按时间顺序逐场预测，只用该场之前的比赛更新实力评级。" +
-        "最终模型只保留实力评级并做无截距校准：命中率不变，Brier 从 " + t.rawBrier.toFixed(3) +
-        " 降到 " + t.brier.toFixed(3) + "。状态、交手、首发与英雄环境经测试未提升准确率，仅作为赛前情报展示。";
+      $("#btNote").textContent = "走步回测按时间顺序逐场预测，只用该场之前的比赛更新实力评级；" +
+        "每个赛季的 α 只用此前一个完整赛季（不足则扩展到更早赛季）拟合。" +
+        "实力评级采用 K=40、年度回归 25%、不含分差加成；最终只保留实力评级并做无截距校准：" +
+        "命中率不变，Brier 从 " + t.rawBrier.toFixed(3) + " 降到 " + t.brier.toFixed(3) +
+        "。生产概率不引入状态、交手、首发与英雄环境，这些只作为赛前情报展示。";
     }
 
     var da = DEEP[a] || {}, db = DEEP[b] || {};
