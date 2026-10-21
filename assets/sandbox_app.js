@@ -643,37 +643,50 @@
 
   function renderHealth() {
     var m = D.model;
-    $("#sbHealthNote").textContent = m.version + " · test " + m.testN + " 局 / " +
-      num(m.testFrames) + " 帧 · 训练于 " + (m.trainedAt || "—");
+    $("#sbHealthNote").textContent = m.version + " · 用 " + m.testN + " 局没见过的比赛考试 · 训练于 " +
+      (m.trainedAt || "—");
     var cbAll = (m.comeback || {}).all || {};
     var kpis = [
-      ["Brier（test）", m.brier == null ? "—" : m.brier.toFixed(3), "越低越好 · 298 帧"],
-      ["ECE（test）", m.ece == null ? "—" : m.ece.toFixed(3), "校准误差 · 越低越好"],
-      ["方向准确率", pct(m.acc), "test 段 · n=" + num(m.testFrames)],
-      ["翻盘局方向准确率", pct(cbAll.acc), "全部翻盘帧 · n=" + (cbAll.n || 0)]
+      ["预测误差（越小越好）", m.brier == null ? "—" : m.brier.toFixed(3),
+        "在 " + m.testN + " 局没见过的比赛上考试"],
+      ["说 70% 时准不准", m.ece == null ? "—" : m.ece.toFixed(3),
+        "校准误差；越接近 0，概率越可信"],
+      ["胜负猜对率", pct(m.acc), m.testN + " 局考试 · " + num(m.testFrames) + " 个时刻"],
+      ["翻盘局猜对率", pct(cbAll.acc), "最难的翻盘局 · " + (cbAll.n || 0) + " 个时刻"]
     ];
     $("#sbHealthKpis").innerHTML = kpis.map(function (x) {
       return '<div class="sb-health-kpi"><div class="k">' + esc(x[0]) + '</div><div class="v">' +
         esc(x[1]) + '</div><div class="s">' + esc(x[2]) + "</div></div>";
     }).join("");
 
-    var labels = { early: "早期 ≤8′", mid: "中期 9–15′", late: "后期 16′+", all: "全部时点" };
+    var labels = { early: "前 8 分钟", mid: "9–15 分钟", late: "16 分钟后", all: "整局平均" };
     var order = ["early", "mid", "late", "all"];
     $("#sbPhases").innerHTML = order.filter(function (k) { return m.phases[k]; }).map(function (k) {
       var p = m.phases[k];
       return '<div class="sb-phase"><div class="k">' + labels[k] + '</div><div class="v">' +
-        pct(p.acc) + '</div><div class="s">Brier ' + (p.brier == null ? "—" : p.brier.toFixed(3)) +
-        ' · ECE ' + (p.ece == null ? "—" : p.ece.toFixed(3)) + ' · n=' + p.n +
-        '</div><div class="bar"><i style="width:' + clamp((p.acc || 0) * 100, 0, 100) +
+        pct(p.acc) + '</div><div class="s">误差 ' + (p.brier == null ? "—" : p.brier.toFixed(3)) +
+        ' · 校准 ' + (p.ece == null ? "—" : p.ece.toFixed(3)) + ' · ' + p.n +
+        ' 个时刻</div><div class="bar"><i style="width:' + clamp((p.acc || 0) * 100, 0, 100) +
         '%"></i></div></div>';
     }).join("");
 
     renderReliability();
     renderBrierStrip();
     renderWorst();
-    $("#sbNotes").innerHTML = "<h3>读数边界</h3><ul>" + (D.notes || []).map(function (n) {
+    var tech = (D.techNotes || []).slice();
+    if (D.calibration && D.calibration.ece != null) {
+      tech.push("直播档案 ECE " + D.calibration.ece.toFixed(3) + "（非独立 test，仅供观察校准形态）。");
+    }
+    var rvl = (D.model.live || {}).replayVsLive;
+    if (rvl && rvl.gapAll != null) {
+      tech.push("重放 vs 直播 ΔBrier " + Number(rvl.gapAll).toFixed(3) + "（同一批局，直播更差）。");
+    }
+    $("#sbNotes").innerHTML = "<h3>看这些数字前，先知道</h3><ul>" + (D.notes || []).map(function (n) {
       return "<li>" + esc(n) + "</li>";
-    }).join("") + "</ul>";
+    }).join("") + "</ul>" +
+      '<details class="sb-tech"><summary>给数据同学：口径与算法</summary><ul>' +
+      tech.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") +
+      "</ul></details>";
   }
 
   function renderReliability() {
@@ -690,7 +703,7 @@
     var plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
     function x(p) { return pad.l + p * plotW; }
     function y(p) { return pad.t + (1 - p) * plotH; }
-    var svg = ['<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="可靠性图">'];
+    var svg = ['<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="模型说多少，实际赢多少">'];
     [0, 0.25, 0.5, 0.75, 1].forEach(function (p) {
       svg.push('<line x1="' + x(p) + '" y1="' + pad.t + '" x2="' + x(p) + '" y2="' +
         (pad.t + plotH) + '" stroke="#ECEFF3" stroke-width="1"></line>');
@@ -709,26 +722,21 @@
       var r = 3 + Math.sqrt(b.n) / 3.2;
       svg.push('<circle cx="' + x(b.meanP).toFixed(1) + '" cy="' + y(b.obs).toFixed(1) +
         '" r="' + r.toFixed(1) + '" fill="#2E6FD0" fill-opacity=".55" stroke="#FFFFFF" stroke-width="1.2">' +
-        "<title>" + pct(b.meanP) + " → " + pct(b.obs) + " · n=" + b.n + "</title></circle>");
+        "<title>模型说 " + pct(b.meanP) + " → 实际赢 " + pct(b.obs) +
+        " · 参考 " + b.n + " 个时刻</title></circle>");
     });
     svg.push('<text x="' + (pad.l + plotW) + '" y="' + (H - 17) +
-      '" text-anchor="end" fill="#A3A7B0" font-size="10" font-family="monospace">预测概率</text>');
+      '" text-anchor="end" fill="#A3A7B0" font-size="10" font-family="monospace">模型说的胜率</text>');
     svg.push("</svg>");
     host.innerHTML = svg.join("");
     var c = D.calibration;
-    var note = "直播档案 " + c.nBattles + " 局 / " + num(c.nPoints) + " 分钟点";
-    if (c.ece != null) note += " · ECE " + c.ece.toFixed(3);
-    note += " · 非独立 test，只用于观察校准形态。";
     var live = D.model.live || {};
     var cps = (live.checkpoints || []).map(function (x) {
-      return x.m + "′ " + pct(x.acc) + "（Brier " + Number(x.brier).toFixed(3) + "）";
+      return "第 " + x.m + " 分钟 " + pct(x.acc);
     });
-    if (cps.length) note += " 分时点：" + cps.join(" / ") + "。";
-    var rvl = live.replayVsLive;
-    if (rvl && rvl.gapAll != null) {
-      note += " 重放 vs 直播 ΔBrier " + Number(rvl.gapAll).toFixed(3) +
-        "（同一批局，直播更差）。";
-    }
+    var note = "这是 " + c.nBattles + " 局直播时留下的记录，不是考试卷。";
+    if (cps.length) note += cps.join("，") + "。";
+    note += "同一局前后几分钟很像，只能看大致趋势。点越靠近斜线，说明模型说的概率越可信；点越大，参考时刻越多。";
     $("#sbRelNote").textContent = note;
   }
 
