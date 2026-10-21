@@ -1,0 +1,89 @@
+# GitHub Pages 国内镜像：workers.dev 在国内被 DNS 污染，此工作流把纯静态产物
+# 发布到 https://hccccc01333.github.io/KPLdata-site/，供国内网络直接访问。
+#
+# 只拷贝页面与 assets/，不发布 build_*.py、测试脚本、文档等仓库文件。
+# 数据每几分钟就更新一次，而 Pages 有每小时构建次数软限制，因此：
+#   - push / schedule 触发时先看最近一次 Pages 部署时间，不足 9 分钟就跳过；
+#   - workflow_dispatch 手动触发不受限制，用于需要立即同步时。
+# 这样镜像最多滞后约一个数据更新周期（~10 分钟），发布频率稳定在每小时 6 次左右。
+name: Deploy mirror to GitHub Pages
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  push:
+    branches: [main]
+    paths:
+      - "*.html"
+      - "assets/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  deployments: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.gate.outputs.deploy }}
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+
+      - name: Check deployment age
+        id: gate
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          last=$(gh api "repos/${GITHUB_REPOSITORY}/deployments?environment=github-pages&per_page=1" \
+            --jq '.[0].created_at // empty' 2>/dev/null || true)
+          if [ -z "$last" ]; then
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          last_ts=$(date -u -d "$last" +%s)
+          now_ts=$(date -u +%s)
+          if [ $((now_ts - last_ts)) -lt 540 ]; then
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            echo "Last deployment was $last; skipping (throttled)."
+          else
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Last deployment was $last; proceeding."
+          fi
+
+      - name: Stage static files
+        if: github.event_name == 'workflow_dispatch' || steps.gate.outputs.deploy == 'true'
+        run: |
+          mkdir -p _site
+          cp -r assets _site/
+          cp ./*.html _site/
+
+      - name: Configure Pages
+        if: github.event_name == 'workflow_dispatch' || steps.gate.outputs.deploy == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        if: github.event_name == 'workflow_dispatch' || steps.gate.outputs.deploy == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.deploy != 'false'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

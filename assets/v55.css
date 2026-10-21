@@ -453,3 +453,152 @@ html.v55 .sr-grid.five{grid-template-columns:repeat(5,minmax(0,1fr))}
   html.v55 .sr-grid.five .sr-cell:nth-child(5){border-right:none}
   html.v55 .sr-grid.five .sr-cell:nth-child(4){border-right:1px solid var(--line)}
 }
+
+/* ---------------- 选手：赛季漂移 / 搭档对手 / 对位网 ---------------- */
+html.v55 .pd-drift-sum{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0 4px;font-size:12.5px;color:var(--muted)}
+html.v55 .pd-drift-sum b{font-variant-numeric:tabular-nums}
+html.v55 .pd-drift-sum .up{color:#0F8A78}
+html.v55 .pd-drift-sum .down{color:#D5374B}
+html.v55 .chem-grid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:0 26px}
+html.v55 .chem-col{min-width:0}
+html.v55 .chem-col h4{font-size:12px;color:var(--muted);font-weight:600;margin:0 0 6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+html.v55 .chem-row{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid rgba(25,27,35,.06);font-size:12.5px;min-width:0}
+html.v55 .chem-row:last-child{border-bottom:none}
+html.v55 .chem-row .nm{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+html.v55 .chem-row .nums{font-family:var(--mono);color:var(--muted);font-size:11px;white-space:nowrap;flex:none}
+html.v55 .chem-row .d{font-family:var(--mono);font-weight:700;font-size:11.5px;white-space:nowrap;flex:none}
+html.v55 .chem-row .d.up{color:#0F8A78}
+html.v55 .chem-row .d.down{color:#D5374B}
+html.v55 .chem-lineup .nm{font-weight:500;color:var(--ink2)}
+html.v55 .rival-wrap{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:24px;align-items:start}
+html.v55 .rival-net svg{width:100%;height:auto;display:block}
+html.v55 .rival-list .chem-row .nm{flex:1}
+html.v55 .rival-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:8px}
+html.v55 .rival-legend i{display:inline-block;width:16px;height:2px;vertical-align:middle;margin-right:5px}
+@media(max-width:960px){
+  html.v55 .chem-grid{grid-template-columns:1fr;gap:18px}
+  html.v55 .rival-wrap{grid-template-columns:1fr}
+}
+
+/* 阵容协同行：名字一行、样本与期望一行 */
+html.v55 .chem-row.chem-lineup{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"nm d" "nums nums";row-gap:1px}
+html.v55 .chem-lineup .nm{grid-area:nm}
+html.v55 .chem-lineup .d{grid-area:d;align-self:center}
+html.v55 .chem-lineup .nums{grid-area:nums;white-space:normal}
+
+html.v55 .chem-row.chem-lineup{grid-template-areas:"nm d" "nums nums" "heroes heroes"}
+html.v55 .chem-lineup .heroes{grid-area:heroes;font-size:10.5px;color:var(--faint);line-height:1.6;white-space:normal}
+
+/* ---------------- 首页更新公告 ---------------- */
+html.v55 .release-bar{display:flex;align-items:center;gap:12px;margin-top:18px;padding:10px 14px;
+  border:1px solid rgba(240,47,85,.22);background:rgba(240,47,85,.05);border-radius:10px;font-size:13px}
+html.v55 .release-bar .ub-badge{flex:none;font-size:10.5px;font-weight:800;letter-spacing:.06em;
+  color:#fff;background:var(--brand);border-radius:4px;padding:2px 7px}
+html.v55 .release-bar .ub-text{min-width:0;color:var(--ink2)}
+html.v55 .release-bar .ub-text b{color:var(--ink);font-weight:800;margin-right:8px}
+html.v55 .release-bar .ub-sum{color:var(--muted)}
+html.v55 .release-bar .ub-link{margin-left:auto;color:var(--brand);font-weight:700;white-space:nowrap;flex:none}
+html.v55 .release-bar .ub-close{flex:none;border:none;background:none;color:var(--faint);font-size:18px;
+  line-height:1;cursor:pointer;padding:0 2px}
+html.v55 .release-bar .ub-close:hover{color:var(--ink)}
+@media(max-width:720px){
+  html.v55 .release-bar{flex-wrap:wrap;gap:6px 10px}
+  html.v55 .release-bar .ub-text{flex:1 1 100%;order:3}
+  html.v55 .release-bar .ub-link{margin-left:auto}
+}
+
+/* ---------------- 更新日志 ---------------- */
+html.v55 .up-item{position:relative;padding:0 0 34px 28px;border-left:1px solid var(--line)}
+html.v55 .up-item:last-child{border-left-color:transparent;padding-bottom:8px}
+html.v55 .up-item::before{content:"";position:absolute;left:-4px;top:7px;width:7px;height:7px;
+  border-radius:50%;background:var(--line2)}
+html.v55 .up-item.latest::before{background:var(--brand);box-shadow:0 0 0 4px rgba(240,47,85,.12)}
+html.v55 .up-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+html.v55 .up-v{font-family:var(--mono);font-size:12.5px;font-weight:800;color:var(--brand)}
+html.v55 .up-date{font-size:11.5px;color:var(--faint)}
+html.v55 .up-now{font-size:10.5px;font-weight:800;color:var(--brand);border:1px solid rgba(240,47,85,.3);
+  border-radius:4px;padding:1px 6px}
+html.v55 .up-title{font-size:21px;font-weight:900;color:var(--ink);margin:7px 0 6px;letter-spacing:.01em}
+html.v55 .up-sum{font-size:13px;color:var(--muted);margin:0 0 10px;line-height:1.8}
+html.v55 .up-list{list-style:none;margin:0;padding:0}
+html.v55 .up-list li{position:relative;padding-left:14px;font-size:13px;color:var(--ink2);
+  line-height:1.95;margin-bottom:3px}
+html.v55 .up-list li::before{content:"";position:absolute;left:0;top:12px;width:4px;height:4px;
+  border-radius:50%;background:var(--muted)}
+@media(max-width:600px){
+  html.v55 .up-item{padding-left:20px}
+  html.v55 .up-title{font-size:18px}
+}
+
+/* ---------------- 赛事纪录 ---------------- */
+html.v55 .rec-list{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+html.v55 .rec-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;
+  padding:14px 18px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
+html.v55 .rec-row:last-child{border-bottom:none}
+html.v55 .rec-row:hover{background:var(--card2)}
+html.v55 .rec-row .rank{font-family:var(--mono);font-size:13px;font-weight:800;color:var(--faint);text-align:center}
+html.v55 .rec-row.top1 .rank{color:var(--brand)}
+html.v55 .rec-who{min-width:0}
+html.v55 .rec-who b{display:block;font-size:14.5px;font-weight:800;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.v55 .rec-who em{display:block;font-style:normal;font-size:11.5px;color:var(--muted);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.v55 .rec-val{font-family:var(--mono);font-size:22px;font-weight:900;color:var(--ink);
+  white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+html.v55 .rec-val small{font-size:11px;font-weight:600;color:var(--muted);margin-left:4px}
+html.v55 .rec-row.top1 .rec-val{color:var(--brand)}
+@media(max-width:640px){
+  html.v55 .rec-row{grid-template-columns:30px minmax(0,1fr) auto;gap:10px;padding:12px 14px}
+  html.v55 .rec-val{font-size:18px}
+  html.v55 .rec-who b{font-size:13.5px}
+}
+
+/* 赛事纪录：主题筛选 */
+html.v55 .theme-chips{display:flex;gap:7px;flex-wrap:wrap}
+html.v55 .theme-chips button{font-family:inherit;font-size:12.5px;padding:6px 12px;border-radius:999px;
+  border:1px solid var(--line2);background:#fff;color:var(--ink2);cursor:pointer}
+html.v55 .theme-chips button:hover{border-color:var(--ink2);color:var(--ink)}
+html.v55 .theme-chips button.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+
+/* 赛事纪录：可点开条目 */
+html.v55 .rec-row.openable .rec-who b{border-bottom:1px dashed rgba(25,27,35,.28)}
+html.v55 .rec-row.openable:hover .rec-who b{border-bottom-color:var(--brand)}
+/* 同场十人抽屉 */
+.rec-modal{position:fixed;inset:0;z-index:130;display:none}
+.rec-modal.on{display:block}
+.rec-modal-bg{position:absolute;inset:0;background:rgba(23,24,30,.48);backdrop-filter:blur(2px)}
+.rec-modal-panel{position:relative;max-width:860px;margin:5vh auto;background:#fff;border-radius:14px;
+  box-shadow:0 30px 80px rgba(23,24,30,.28);max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.rec-modal-head{position:relative;padding:20px 24px 14px;border-bottom:1px solid var(--line)}
+.rec-modal-head h3{font-size:20px;font-weight:900;color:var(--ink);margin:5px 0 4px}
+.rec-modal-head h3 span{color:var(--faint);font-weight:600;margin:0 5px}
+.rec-modal-head .rm-kicker{font-size:10.5px;letter-spacing:.12em;color:var(--faint)}
+.rec-modal-head .rm-sub{font-size:12.5px;color:var(--muted)}
+.rec-modal-head .rm-sub b{color:var(--brand);font-variant-numeric:tabular-nums}
+.rm-close{position:absolute;right:16px;top:16px;width:32px;height:32px;border:none;background:transparent;
+  color:var(--muted);font-size:22px;line-height:1;cursor:pointer;border-radius:6px;z-index:3}
+.rm-close:hover{background:var(--inset);color:var(--ink)}
+.rm-body{padding:4px 24px 18px;overflow:auto}
+.rm-loading{padding:40px 24px;text-align:center;color:var(--muted);font-size:13px}
+.rm-team{display:flex;align-items:center;gap:8px;margin:16px 0 6px;font-size:13.5px;font-weight:800;color:var(--ink)}
+.rm-team img{width:20px;height:20px;object-fit:contain}
+.rm-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.rm-tbl th{color:var(--muted);font-weight:600;font-size:11px;text-align:right;padding:6px 8px;
+  border-bottom:1px solid var(--line2);white-space:nowrap}
+.rm-tbl th:first-child{text-align:left}
+.rm-tbl td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;
+  font-variant-numeric:tabular-nums;color:var(--ink2)}
+.rm-tbl td:first-child{text-align:left}
+.rm-tbl tr.hl td{background:rgba(240,47,85,.06);color:var(--ink);font-weight:700}
+.rm-player{display:flex;align-items:center;gap:8px;min-width:0}
+.rm-player img{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none}
+.rm-player span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rm-player small{color:var(--muted);font-size:11px}
+.rm-foot{padding:12px 24px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
+@media(max-width:720px){
+  .rec-modal-panel{margin:0;max-height:100vh;height:100vh;border-radius:0}
+  .rec-modal-head{padding:16px 16px 12px}
+  .rm-body{padding:4px 16px 16px}
+  .rm-tbl th,.rm-tbl td{padding:6px 4px}
+  .rm-tbl th:nth-child(5),.rm-tbl td:nth-child(5){display:none}
+}

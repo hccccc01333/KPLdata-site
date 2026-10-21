@@ -25,6 +25,8 @@ const PAGES = [
   ["teams.html", "战队榜", ["#teamGrid > *, .tcard, .team-card", ".champ", ".pw b"]],
   ["team.html?id=重庆狼队", "战队详情", ["#teamHead, .page-hero", ".tstat-grid, .panel", ".cmp-radar svg, .radar-wrap .empty-tip"]],
   ["players.html", "选手榜", ["#plBody tr, .player, .pl-card"]],
+  ["player.html?id=一诺", "选手详情", ["#main .panel", ".sr-grid"]],
+  ["series.html", "系列赛研究", ["#boRows tr", "#decRows tr", "#revRows", "#eloRows tr"]],
   ["heroes.html", "英雄列表", ["#heroGrid > *, .hcard"]],
   ["hero.html?id=曹操", "英雄详情", ["#heroHead .page-hero, #heroHead .hd-top", "#main .panel", "#heroGrowthChart svg"]],
   ["match.html?id=2026062603&g=3&m=13", "比赛复盘", ["#rpRange", "#rpChart svg", "#rpGrid .rp-panel"]],
@@ -603,17 +605,67 @@ async function main() {
   check("详情页第三层时间轴/冠军墙有内容", tl && tl.rows > 0 && tl.wall > 0,
     tl && (tl.rows + " 行 / " + tl.wall + " 冠"));
 
-  // 行为断言：切换基准后雷达仍渲染，且基准说明随之变化
-  const segBefore = await evaluate("(document.querySelector('.radar-side .block-note')||{}).textContent || ''");
-  await evaluate(`(function(){ var b = document.querySelector('#baseSeg button[data-base="history"]'); if (b) b.click(); })()`);
+  // 行为断言：手动切换基准后雷达仍渲染，且基准说明随之变化。
+  // 注意：全部年份下默认基准已经是“历史”，所以这里改点“赛事”验证手动覆盖。
+  await evaluate("localStorage.setItem('kpl_scope_v1','all')");
+  await visit(BASE + "team.html?id=重庆狼队", 1500);
+  const segBefore = await evaluate("(document.querySelector('#radarBaseNote')||{}).textContent || ''");
+  await evaluate(`(function(){ var b = document.querySelector('#baseSeg button[data-base="league"]'); if (b) b.click(); })()`);
   await sleep(450);
   const segAfter = await evaluate(`(function(){
-    return { note: (document.querySelector('.radar-side .block-note')||{}).textContent || '',
+    return { note: (document.querySelector('#radarBaseNote')||{}).textContent || '',
              radar: !!(document.querySelector('#main .cmp-radar svg') || document.querySelector('#main .radar-wrap .empty-tip')) };
   })()`);
   check("切换基准后雷达仍渲染", segAfter && segAfter.radar === true, segAfter && segAfter.radar);
-  check("切换基准后基准说明更新为历史基准", segAfter && segAfter.note !== segBefore && /全部年份/.test(segAfter.note),
+  check("切换基准后基准说明更新为赛事基准",
+    segAfter && segAfter.note !== segBefore && /基准：/.test(segAfter.note) && !/全部年份/.test(segAfter.note),
     segAfter && segAfter.note.slice(0, 40));
+
+  // 雷达默认基准必须跟随顶部数据范围：全部→历史、年度→年度、赛事→赛事；
+  // 所选赛事样本不足时应回退到年度，而不是直接空图。
+  const radarSnap = `JSON.stringify((function(){
+    function txt(s){ var e=document.querySelector(s); return e ? e.textContent.trim().replace(/\\s+/g,' ') : ''; }
+    return {
+      note: txt('#radarBaseNote'), fallback: txt('#radarFallbackNote'),
+      on: txt('#baseSeg button.on'), header: txt('.hd-sub'),
+      radar: !!document.querySelector('#main .cmp-radar svg')
+    };
+  })())`;
+  await evaluate("localStorage.setItem('kpl_scope_v1','all')");
+  await visit(BASE + "team.html?id=重庆狼队", 1500);
+  const radarAll = JSON.parse(await evaluate(radarSnap) || "{}");
+  check("全部范围下雷达默认历史基准",
+    radarAll.radar === true && /全部年份/.test(radarAll.note) && radarAll.on === "历史",
+    radarAll.note);
+
+  await evaluate(`(function(){ var y=document.getElementById('scopeYear'); y.value='2025'; y.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(650);
+  const radarYear = JSON.parse(await evaluate(radarSnap) || "{}");
+  check("年度范围下雷达默认年度基准",
+    radarYear.radar === true && /2025 年/.test(radarYear.note) && radarYear.on === "年度" && /2025 年/.test(radarYear.header),
+    radarYear.note + " / " + radarYear.header);
+
+  await evaluate(`(function(){ var s=document.getElementById('scopeLeague'); s.value='20250004'; s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(650);
+  const radarFallback = JSON.parse(await evaluate(radarSnap) || "{}");
+  check("赛事样本不足时雷达回退年度",
+    radarFallback.radar === true && /回退到「年度」/.test(radarFallback.fallback) && /2025 年/.test(radarFallback.note),
+    radarFallback.fallback || radarFallback.note);
+
+  await evaluate(`(function(){ var s=document.getElementById('scopeLeague'); s.value='20250001'; s.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+  await sleep(650);
+  const radarLeague = JSON.parse(await evaluate(radarSnap) || "{}");
+  check("赛事范围下雷达默认赛事基准",
+    radarLeague.radar === true && /2025年KPL春季赛/.test(radarLeague.note) && radarLeague.on === "赛事",
+    radarLeague.note);
+
+  await evaluate(`(function(){ var b=document.querySelector('#baseSeg [data-base="history"]'); if(b) b.click(); })()`);
+  await sleep(450);
+  const radarHistory = JSON.parse(await evaluate(radarSnap) || "{}");
+  check("手动切到历史基准仍可用",
+    radarHistory.radar === true && /全部年份/.test(radarHistory.note) && radarHistory.on === "历史",
+    radarHistory.note);
+  await evaluate("localStorage.setItem('kpl_scope_v1','all')");
 
   console.log("\n=== V5 阶段四 大场模拟升级（概率校验 / 参数输入 / 概率树 / 可解释结论）===");
   await visit(BASE + "simulator.html", 1500);
@@ -768,10 +820,10 @@ async function main() {
   check("战队入口保留逐年趋势开关", tTeam === true, tTeam);
   check("选手入口无逐年趋势开关（无逐年数据）", tPlayer === false, tPlayer);
 
-  console.log("\n=== V5 · 全站 UI 与数据可信度专项 ===");
-  // (A) 原生选择控件：本体与弹出选项都必须是「深底浅字」。
+  console.log("\n=== V5.5 · 全站 UI 与数据可信度专项 ===");
+  // (A) 原生选择控件：V5.5 竞技媒体白要求「浅底深字」。
   //     诚实说明：无头浏览器无法真正展开系统原生弹出层，这里校验的是浏览器实际计算出的
-  //     select / option 背景与前景色（浅底 + 浅字 = 文字不可见）；真实弹出层观感仍需在
+  //     select / option 背景与前景色（深底 + 深字 = 文字不可见）；真实弹出层观感仍需在
   //     桌面与手机上人工确认。
   const SEL_PAGES = ["schedule.html", "teams.html", "players.html", "heroes.html", "combos.html",
                      "h2h.html", "stage.html", "simulator.html", "bp.html", "query.html",
@@ -784,8 +836,8 @@ async function main() {
         if (!m) return null;
         var a = m[4] === undefined ? 1 : parseFloat(m[4]);
         var r = +m[1], g = +m[2], b = +m[3];
-        // 半透明前景按"叠加在深色页面"上近似成较低亮度
-        if (a < 1) { r *= a; g *= a; b *= a; }
+        // 半透明前景按"叠加在浅色页面上"近似成较高亮度
+        if (a < 1) { r = 255 - (255 - r) * a; g = 255 - (255 - g) * a; b = 255 - (255 - b) * a; }
         return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
       }
       var sels = [].slice.call(document.querySelectorAll('select'));
@@ -793,23 +845,23 @@ async function main() {
       sels.forEach(function(sel){
         var cs = getComputedStyle(sel);
         var bg = lum(cs.backgroundColor), fg = lum(cs.color);
-        if (bg === null || fg === null || bg > 0.35 || fg < 0.55) badSel.push(sel.id || sel.className || 'select');
+        if (bg === null || fg === null || bg < 0.55 || fg > 0.55) badSel.push(sel.id || sel.className || 'select');
         var os = [].slice.call(sel.options || []);
         opts += os.length;
         os.forEach(function(o){
           if (!(o.text || '').trim()) emptyOpt++;
           var oc = getComputedStyle(o);
           var obg = lum(oc.backgroundColor), ofg = lum(oc.color);
-          if (obg === null || ofg === null || obg > 0.35 || ofg < 0.55) {
+          if (obg === null || ofg === null || obg < 0.55 || ofg > 0.55) {
             if (badOpt.length < 4) badOpt.push((sel.id || '') + ':' + (o.text || '').slice(0, 6));
           }
         });
       });
       return { n: sels.length, opts: opts, badSel: badSel, badOpt: badOpt, emptyOpt: emptyOpt };
     })()`);
-    check(sp + " 选择框本体为深底浅字", s && s.n > 0 && s.badSel.length === 0,
+    check(sp + " 选择框本体为浅底深字", s && s.n > 0 && s.badSel.length === 0,
       s && (s.n + " 个" + (s.badSel.length ? " / 异常 " + s.badSel.join(",") : " / 全部合规")));
-    check(sp + " 选择框选项为深底浅字", s && s.opts > 0 && s.badOpt.length === 0,
+    check(sp + " 选择框选项为浅底深字", s && s.opts > 0 && s.badOpt.length === 0,
       s && (s.opts + " 项" + (s.badOpt.length ? " / 异常 " + s.badOpt.join(",") : " / 全部合规")));
     check(sp + " 选择框选项均有文字", s && s.emptyOpt === 0, s && s.emptyOpt);
   }

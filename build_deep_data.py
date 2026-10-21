@@ -2,12 +2,15 @@
 """深挖数据：系列赛（BO）规律 / 战队 Elo 强度 / 选手关键局表现 → assets/deep.js
 
 数据源：../02-KPL实时胜率预测系统/data/history/<league>/matches/<match>.json
-       （逐局数据；battle 级 camp 顺序才是权威口径）
+
+口径（P0 修正）：KPL 的 camp1/camp2 是**每一小局**的蓝/红方，同一战队可以换边。
+因此所有胜负都必须先落回本局 camp 队名，再按战队身份累计；不能拿一个阵营序号
+贯穿整个系列赛。统一实现见 kpl_series.py。
 
 输出：
   KPL_DEEP = {
-    generatedAt, matches, battles,
-    series: { byBo:[...], reverseSweeps:[...], longest:[...] },
+    generatedAt, matches, battles, coverage,
+    series: { byBo:[...], reverseSweeps:[...], decBoard:[...] },
     teams:  {队名: {elo, rank, ...系列赛画像}},
     players:{选手: {关键局/稳定性}}
   }
@@ -22,6 +25,8 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+from kpl_series import SeriesResult, battle_winner_team, summarize_match, team_name_of
 
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
@@ -43,10 +48,6 @@ def num(v, default=0.0):
         return default
 
 
-def team_of(battle: dict, camp: int) -> str:
-    return str((battle.get(f"camp{camp}") or {}).get("team_name") or "")
-
-
 def main() -> None:
     files = sorted(HIST.glob("*/matches/*.json"))
     teams: dict[str, dict] = {}
@@ -54,6 +55,7 @@ def main() -> None:
     elo: dict[str, float] = defaultdict(lambda: 1500.0)
     matches = []          # 供 Elo / 表单按时间排序
     battles_n = 0
+    diag = Counter()
 
     def T(name: str) -> dict:
         if name not in teams:
@@ -77,111 +79,73 @@ def main() -> None:
             }
         return players[name]
 
+    def note_icon(team: str, result: SeriesResult) -> None:
+        rec = T(team)
+        if rec["icon"]:
+            return
+        for b in result.battles:
+            for pl in b.get("battle_player_list") or []:
+                if not isinstance(pl, dict):
+                    continue
+                if str(pl.get("team_name") or "") != team:
+                    continue
+                if pl.get("team_icon"):
+                    rec["icon"] = str(pl["team_icon"])
+                    return
+
     for f in files:
+        diag["files"] += 1
         try:
             o = json.loads(f.read_text(encoding="utf-8"))
         except Exception:
+            diag["bad_json"] += 1
             continue
-        m = o.get("match") or {}
-        bs = [b for b in (o.get("battles") or []) if b.get("win_camp") in (1, 2)]
-        if not bs:
+
+        res = summarize_match(o, fallback_id=f.stem)
+        if res is None:
+            diag["no_battles"] += 1
             continue
-        bs.sort(key=lambda b: int(b.get("battle_seq") or 0))
-        t1, t2 = team_of(bs[0], 1), team_of(bs[0], 2)
-        if not t1 or not t2:
-            continue
-        wins = Counter()
-        for b in bs:
-            wins[int(b["win_camp"])] += 1
-        bo = int(m.get("bo") or 0) or (len(bs) * 2 - 1)
-        need = (bo // 2) + 1
-        tie = wins[1] == wins[2]
-        complete = (not tie) and max(wins.values()) == need
-        mw = int(m.get("win_camp") or 0)
-        c1m = str((m.get("camp1") or {}).get("team_name") or "")
-        c2m = str((m.get("camp2") or {}).get("team_name") or "")
-        if complete:
-            win_camp = 1 if wins[1] > wins[2] else 2
-            winner, loser = (t1, t2) if win_camp == 1 else (t2, t1)
-        elif mw in (1, 2) and c1m and c2m:
-            # 逐局数据不完整（早年缺局/缺决胜局）：用官方大场胜负兜底，局分不参与统计
-            win_camp = mw
-            winner = c1m if mw == 1 else c2m
-            loser = c2m if mw == 1 else c1m
-            if winner not in (t1, t2):
+        T(res.team1); T(res.team2)
+        note_icon(res.team1, res)
+        note_icon(res.team2, res)
+        if res.side_switches:
+            diag["side_switch_series"] += 1
+        if res.official_conflict:
+            diag["official_conflict"] += 1
+        for err in res.errors:
+            diag[f"error_{err}"] += 1
+
+        # 局级战绩与选手逐局胜负：即使大场缺官方结果，只要有逐局胜方就照实计入。
+        battles_n += len(res.battles)
+        for battle_winner in res.battle_winners:
+            if battle_winner not in (res.team1, res.team2):
                 continue
-        else:
-            continue
-        loser_camp = 2 if win_camp == 1 else 1
-        g_w = wins[win_camp] if complete else 0
-        g_l = wins[loser_camp] if complete else 0
-        date = str(m.get("start_time") or "")
-        mid = str(m.get("match_id") or f.stem)
-        lid = str(m.get("league_id") or "")
-        stage = str(m.get("match_stage_name") or "")
+            other = res.team2 if battle_winner == res.team1 else res.team1
+            wt, lt = T(battle_winner), T(other)
+            wt["gameN"] += 1; wt["gameW"] += 1
+            lt["gameN"] += 1
 
-        a, b2 = T(winner), T(loser)
-        a["seriesN"] += 1; a["seriesW"] += 1
-        b2["seriesN"] += 1
-        if not a["icon"]:
-            for bt in bs:
-                for pl in bt.get("battle_player_list") or []:
-                    if str(pl.get("team_name") or "") == winner and pl.get("team_icon"):
-                        a["icon"] = str(pl["team_icon"]); break
-                if a["icon"]:
-                    break
-        if not b2["icon"]:
-            for bt in bs:
-                for pl in bt.get("battle_player_list") or []:
-                    if str(pl.get("team_name") or "") == loser and pl.get("team_icon"):
-                        b2["icon"] = str(pl["team_icon"]); break
-                if b2["icon"]:
-                    break
-        a["gameN"] += g_w; a["gameW"] += g_w
-        b2["gameN"] += g_l; b2["gameW"] += g_l
-        a["bo"][bo]["n"] += 1; a["bo"][bo]["w"] += 1
-        b2["bo"][bo]["n"] += 1
-        a["form"].append("W"); b2["form"].append("L")
-
-        first_camp = int(bs[0]["win_camp"])
-        first_team = t1 if first_camp == 1 else t2
-        ft = T(first_team)
-        ft["fgN"] += 1
-        if first_team == winner:
-            ft["fgW"] += 1
-        # 先丢一局的一方（翻盘统计）
-        fb_team = t2 if first_camp == 1 else t1
-        fb = T(fb_team)
-        fb["cbN"] += 1
-        if fb_team == winner:
-            fb["cbW"] += 1
-        # 让二追 N（BO5 及以上，且逐局完整）
-        rs_sweep = False
-        if complete and len(bs) >= 3 and bo >= 5:
-            g1 = int(bs[0]["win_camp"]); g2 = int(bs[1]["win_camp"])
-            if g1 == g2:
-                behind_team = t2 if g1 == 1 else t1
-                T(behind_team)["rsN"] += 1
-                if behind_team == winner:
-                    T(behind_team)["rsW"] += 1
-                    rs_sweep = True
-        # 决胜局
-        went_distance = complete and bo >= 3 and g_w == need and g_l == need - 1
-        if went_distance:
-            T(winner)["decN"] += 1; T(winner)["decW"] += 1
-            T(loser)["decN"] += 1
-
-        # 选手累计
-        for bi, bt in enumerate(bs):
-            is_dec = went_distance and bi == len(bs) - 1
+        # 选手累计：won 按「该选手所属战队 == 本局胜方战队」计算，
+        # 而不是「该选手 camp == 系列赛胜方 camp」。
+        dec_battle = res.decisive_battle
+        for bt in res.battles:
+            is_dec = bt is dec_battle
+            bw = battle_winner_team(bt)
+            if not bw:
+                continue
             for p in bt.get("battle_player_list") or []:
+                if not isinstance(p, dict):
+                    continue
                 name = str(p.get("player_name") or p.get("actual_player_name") or "").strip()
                 if not name:
                     continue
-                camp = int(p.get("camp") or 0)
+                camp = int(num(p.get("camp"), 0))
                 if camp not in (1, 2):
                     continue
-                won = 1 if camp == win_camp else 0
+                team = str(p.get("team_name") or "").strip() or team_name_of(bt, camp)
+                if team not in (res.team1, res.team2):
+                    continue
+                won = 1 if team == bw else 0
                 k = int(num(p.get("kill_num"))); d = int(num(p.get("death_num"))); asst = int(num(p.get("assist_num")))
                 dmg = None
                 dv = p.get("hurt_total_rate")
@@ -198,8 +162,8 @@ def main() -> None:
                 rec = P(name)
                 rec["g"] += 1; rec["w"] += won
                 rec["k"] += k; rec["d"] += d; rec["a"] += asst
-                if p.get("team_name"):
-                    rec["team"] = str(p["team_name"])
+                if team:
+                    rec["team"] = team
                 if p.get("position_desc"):
                     rec["pos"] = str(p["position_desc"])
                 if p.get("player_icon"):
@@ -219,20 +183,72 @@ def main() -> None:
                         rec["decDmg"] += dmg; rec["decDmgN"] += 1
                         rec["decDmgs"].append(dmg)
 
+        if not res.resolved:
+            diag["unresolved"] += 1
+            continue
+
+        diag["resolved"] += 1
+        diag[f"source_{res.source}"] += 1
+
+        winner, loser = res.winner, res.loser
+        a, b2 = T(winner), T(loser)
+        a["seriesN"] += 1; a["seriesW"] += 1
+        b2["seriesN"] += 1
+
+        a["bo"][res.bo]["n"] += 1; a["bo"][res.bo]["w"] += 1
+        b2["bo"][res.bo]["n"] += 1
+
+        # 首局转化 / 先丢一局翻盘
+        if res.first_game:
+            first = res.first_game
+            other = res.team2 if first == res.team1 else res.team1
+            ft = T(first)
+            ft["fgN"] += 1
+            if first == winner:
+                ft["fgW"] += 1
+            fb = T(other)
+            fb["cbN"] += 1
+            if other == winner:
+                fb["cbW"] += 1
+
+        # 让二追三/四：先统计 0:2 落后的机会，再统计兑现次数。
+        # 前两局由同一队拿下时，落后的是另一队（不是 winners[0]）。
+        if (res.battle_complete and res.bo >= 5 and len(res.battle_winners) >= 3
+                and res.battle_winners[0] == res.battle_winners[1]):
+            front = res.battle_winners[0]
+            behind = res.team2 if front == res.team1 else res.team1
+            bt = T(behind)
+            bt["rsN"] += 1
+            if behind == winner:
+                bt["rsW"] += 1
+
+        # 决胜局
+        if res.decisive:
+            T(winner)["decN"] += 1; T(winner)["decW"] += 1
+            T(loser)["decN"] += 1
+
+        w_games, l_games = res.score if winner == res.team1 else (res.score[1], res.score[0])
         matches.append({
-            "mid": mid, "lid": lid, "date": date, "bo": bo, "stage": stage,
-            "t1": t1, "t2": t2, "winner": winner, "loser": loser,
-            "wins": g_w, "losses": g_l, "complete": complete,
-            "wentDistance": went_distance, "first": first_team, "revSweep": rs_sweep,
+            "mid": res.match_id, "lid": res.league_id, "date": res.date, "bo": res.bo,
+            "stage": res.stage, "t1": res.team1, "t2": res.team2,
+            "winner": winner, "loser": loser,
+            "wins": w_games, "losses": l_games,
+            "complete": res.battle_complete, "source": res.source,
+            "wentDistance": res.decisive, "first": res.first_game,
+            "revSweep": res.reverse_sweep,
         })
 
     # ---------------- Elo（按时间顺序，系列赛级 + 局分差加成） ----------------
     matches.sort(key=lambda x: (x["date"], x["mid"]))
     for x in matches:
+        T(x["winner"])["form"].append("W")
+        T(x["loser"])["form"].append("L")
         ra, rb = elo[x["t1"]], elo[x["t2"]]
         ea = 1.0 / (1.0 + 10 ** ((rb - ra) / 400.0))
         sa = 1.0 if x["winner"] == x["t1"] else 0.0
-        margin = abs(x["wins"] - x["losses"]) if x.get("complete") else 1
+        margin = abs(x["wins"] - x["losses"])
+        if margin <= 0:
+            margin = 1
         mov = min(2.0, 1.0 + 0.35 * max(0, margin - 1))
         k = ELO_K * (1.0 + (0.25 if x["bo"] >= 7 else 0.0)) * mov
         elo[x["t1"]] = ra + k * (sa - ea)
@@ -258,7 +274,8 @@ def main() -> None:
             "decN": t["decN"], "decW": t["decW"],
             "cbN": t["cbN"], "cbW": t["cbW"],
             "rsN": t["rsN"], "rsW": t["rsW"],
-            "bo5": dict(t["bo"].get(5, {})), "bo7": dict(t["bo"].get(7, {})),
+            "bo5": dict(t["bo"].get(5, {"n": 0, "w": 0})),
+            "bo7": dict(t["bo"].get(7, {"n": 0, "w": 0})),
             "sos": round(sos), "form": form,
         }
 
@@ -270,6 +287,7 @@ def main() -> None:
         kda = (p["k"] + p["a"]) / max(1, p["d"])
         dmg = p["dmg"] / p["dmgN"] if p["dmgN"] else None
         part = p["part"] / p["partN"] if p["partN"] else None
+
         # 波动率（变异系数）：标准差 / 均值，越小越稳
         def cv(arr):
             if len(arr) < 5:
@@ -279,6 +297,7 @@ def main() -> None:
                 return None
             sd = math.sqrt(sum((x - mu) ** 2 for x in arr) / len(arr))
             return sd / abs(mu)
+
         dec_n = p["decN"]
         dec_kda = ((p["decK"] + p["decA"]) / max(1, p["decD"])) if dec_n else None
         dec_dmg = (p["decDmg"] / p["decDmgN"]) if p["decDmgN"] else None
@@ -300,13 +319,15 @@ def main() -> None:
         if not rows:
             continue
         n = len(rows)
-        fw = sum(1 for x in rows if x["first"] == x["winner"])
-        cb = n - fw
+        first_rows = [x for x in rows if x["first"]]
+        fw = sum(1 for x in first_rows if x["first"] == x["winner"])
+        first_n = len(first_rows)
+        first_conv = fw / first_n if first_n else 0.0
         complete_rows = [x for x in rows if x.get("complete")]
         dist = Counter(x["wins"] + x["losses"] for x in complete_rows)
         by_bo.append({
             "bo": bo, "n": n,
-            "firstConv": round(fw / n, 3), "comeback": round(cb / n, 3),
+            "firstConv": round(first_conv, 3), "comeback": round(1.0 - first_conv, 3),
             "distance": round(sum(1 for x in rows if x["wentDistance"]) / n, 3),
             "avgGames": round(sum(x["wins"] + x["losses"] for x in complete_rows) / len(complete_rows), 2) if complete_rows else 0,
             "dist": {str(k): v for k, v in sorted(dist.items())},
@@ -325,9 +346,18 @@ def main() -> None:
         key=lambda v: -(v["decW"] / max(1, v["decN"])),
     )
 
+    coverage = {
+        "files": diag["files"],
+        "resolvedSeries": diag["resolved"],
+        "officialFallback": diag["source_official"],
+        "unresolved": diag["unresolved"],
+        "sideSwitchSeries": diag["side_switch_series"],
+        "officialConflicts": diag["official_conflict"],
+        "battles": battles_n,
+    }
     data = {
         "generatedAt": datetime.now(CN).strftime("%Y-%m-%d %H:%M"),
-        "matches": len(matches), "battles": battles_n,
+        "matches": len(matches), "battles": battles_n, "coverage": coverage,
         "series": {"byBo": by_bo, "reverseSweeps": rev[:40], "decBoard": dec_board},
         "teams": out_teams,
         "players": out_players,
@@ -336,6 +366,7 @@ def main() -> None:
     path.write_text("KPL_DEEP = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n",
                     encoding="utf-8")
     print(f"deep.js: {path.stat().st_size/1024:.0f} KB | series {len(matches)} | teams {len(out_teams)} | players {len(out_players)}")
+    print(f"  coverage: {coverage}")
     for row in by_bo:
         print(f"  BO{row['bo']}: n={row['n']} 首局转化={row['firstConv']*100:.1f}% 翻盘={row['comeback']*100:.1f}% "
               f"打到决胜局={row['distance']*100:.1f}%")

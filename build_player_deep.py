@@ -20,9 +20,14 @@ from __future__ import annotations
 import json
 import math
 import sys
+
+import numpy as np
+from scipy.optimize import minimize
 from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+from kpl_series import summarize_match, battle_winner_team, team_name_of
 
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
@@ -66,6 +71,9 @@ def main() -> None:
     files = sorted(HIST.glob("*/matches/*.json"))
     matches = []      # (date, mid, t1, t2, win_camp, bo, battles)
     raw = []          # 每局每名选手的紧凑记录
+    team_latest = {}  # team -> 最近一场的首发五人
+    team_picks = defaultdict(list)   # team -> 最近 30 个英雄
+    hero_all = defaultdict(lambda: [0, 0])  # hero -> [wins, games]
     skipped = 0
 
     for f in files:
@@ -74,27 +82,39 @@ def main() -> None:
         except Exception:
             continue
         m = o.get("match") or {}
-        bs = [b for b in (o.get("battles") or []) if b.get("win_camp") in (1, 2)]
+        raw_bs = [b for b in (o.get("battles") or []) if b.get("win_camp") in (1, 2)]
+        if not raw_bs:
+            continue
+        by_seq = {}
+        for b in raw_bs:
+            seq = int(b.get("battle_seq") or 0)
+            if seq > 0 and seq not in by_seq:
+                by_seq[seq] = b
+        bs = [by_seq[k] for k in sorted(by_seq)]
         if not bs:
             continue
-        bs.sort(key=lambda b: int(b.get("battle_seq") or 0))
         t1, t2 = team_of(bs[0], 1), team_of(bs[0], 2)
         if not t1 or not t2:
             continue
-        wins = Counter(int(b["win_camp"]) for b in bs)
-        if wins[1] == wins[2]:
+        team_wins = Counter()
+        for b in bs:
+            bw = battle_winner_team(b)
+            if bw in (t1, t2):
+                team_wins[bw] += 1
+        if team_wins[t1] == team_wins[t2]:
             continue
-        win_camp = 1 if wins[1] > wins[2] else 2
+        winner = t1 if team_wins[t1] > team_wins[t2] else t2
+        loser = t2 if winner == t1 else t1
         bo = int(m.get("bo") or 0) or (len(bs) * 2 - 1)
         date = str(m.get("start_time") or "")
         mid = str(m.get("match_id") or f.stem)
         need = (bo // 2) + 1
-        complete = max(wins.values()) == need
+        complete = max(team_wins.values()) == need
         dec_seq = -1
-        if complete and bo >= 3 and wins[win_camp] == need and wins[3 - win_camp] == need - 1 and len(bs) == bo:
+        if complete and bo >= 3 and team_wins[winner] == need and team_wins[loser] == need - 1 and len(bs) == bo:
             dec_seq = int(bs[-1].get("battle_seq") or 0)
 
-        matches.append((date, mid, t1, t2, win_camp, bo))
+        matches.append((date, mid, t1, t2, winner, bo))
 
         for b in bs:
             bt1, bt2 = team_of(b, 1), team_of(b, 2)
@@ -111,6 +131,25 @@ def main() -> None:
             if dur_min <= 0 or dur_min > 60:
                 dur_min = None
             is_dec = bool(dec_seq and int(b.get("battle_seq") or 0) == dec_seq)
+            bid = str(b.get("battle_id") or (mid + "_" + str(b.get("battle_seq") or 0)))
+            for camp0, tname in ((1, bt1), (2, bt2)):
+                members = [x for x in plist if int(x.get("camp") or 0) == camp0]
+                if len(members) != 5:
+                    continue
+                cur = team_latest.get(tname)
+                if not cur or date >= cur["date"]:
+                    team_latest[tname] = {"date": date, "mid": mid, "players": [
+                        {"name": str(x.get("player_name") or x.get("actual_player_name") or "").strip(),
+                         "pos": str(x.get("position_desc") or ""), "icon": str(x.get("player_icon") or "")}
+                        for x in members]}
+                heroes = [str(x.get("hero_name") or "") for x in members if x.get("hero_name")]
+                if heroes:
+                    won = 1 if battle_winner_team(b) == tname else 0
+                    for h in heroes:
+                        hero_all[h][0] += won
+                        hero_all[h][1] += 1
+                    team_picks[tname].extend(heroes)
+                    team_picks[tname] = team_picks[tname][-30:]
             for p in plist:
                 name = str(p.get("player_name") or p.get("actual_player_name") or "").strip()
                 if not name:
@@ -130,19 +169,20 @@ def main() -> None:
                 raw.append((
                     name, pos, str(p.get("team_name") or (bt1 if camp == 1 else bt2)),
                     str(p.get("player_icon") or ""), mid, date, is_dec,
-                    1 if camp == win_camp else 0, k, d, a, dmg, tank, part, gs, gpm, dpm,
-                    str(p.get("hero_name") or ""),
+                    1 if str(p.get("team_name") or (bt1 if camp == 1 else bt2)) == winner else 0,
+                    k, d, a, dmg, tank, part, gs, gpm, dpm,
+                    str(p.get("hero_name") or ""), bid, (bt2 if camp == 1 else bt1),
                 ))
 
     # ---------------- Elo：按时间累计，取开赛前实力分作为对手强度 ----------------
     matches.sort(key=lambda x: (x[0], x[1]))
     elo = defaultdict(lambda: 1500.0)
     elo_at = {}
-    for date, mid, t1, t2, win_camp, bo in matches:
+    for date, mid, t1, t2, winner, bo in matches:
         ra, rb = elo[t1], elo[t2]
         elo_at[mid] = {t1: ra, t2: rb}
         ea = 1.0 / (1.0 + 10 ** ((rb - ra) / 400.0))
-        sa = 1.0 if win_camp == 1 else 0.0
+        sa = 1.0 if winner == t1 else 0.0
         margin = 1
         k = ELO_K * (1.0 + (0.25 if bo >= 7 else 0.0))
         elo[t1] = ra + k * (sa - ea)
@@ -153,7 +193,7 @@ def main() -> None:
     acc = defaultdict(lambda: {m: [0.0, 0.0, 0] for m in METRICS})  # 均值/方差累计
 
     def metric_of(r):
-        (_, _, _, _, _, _, _, _, k, d, a, dmg, tank, part, gs, gpm, dpm, _) = r
+        (_, _, _, _, _, _, _, _, k, d, a, dmg, tank, part, gs, gpm, dpm, _, _, _) = r
         return {
             "kda": (k + a) / max(1, d),
             "dmg": dmg, "gold": gs, "part": part, "tank": tank,
@@ -188,7 +228,8 @@ def main() -> None:
     heroes = defaultdict(Counter)
     meta = {}
     for r in raw:
-        (name, pos, team, icon, mid, date, is_dec, won, k, d, a, dmg, tank, part, gs, gpm, dpm, hero) = r
+        (name, pos, team, icon, mid, date, is_dec, won, k, d, a, dmg, tank, part, gs, gpm, dpm, hero,
+         bid, opp_team) = r
         mv = metric_of(r)
         zs = [
             zget(pos, "kda", mv["kda"]),
@@ -202,7 +243,8 @@ def main() -> None:
         if not zs:
             continue
         comp = sum(zs) / len(zs)
-        per_player[name].append((comp, won, 1 if is_dec else 0, date, mid, pos, team))
+        per_player[name].append((comp, won, 1 if is_dec else 0, date, mid, pos, team, bid,
+                                 opp_team, dmg, gs, part, mv["kda"], hero))
         if hero:
             heroes[name][hero] += 1
         cur = meta.get(name)
@@ -210,6 +252,131 @@ def main() -> None:
             meta[name] = {"team": team, "pos": pos, "icon": icon or (cur or {}).get("icon", ""), "last": date}
         elif cur and icon and not cur.get("icon"):
             cur["icon"] = icon
+
+    # ---------------- 同场上下文：阵容 / 队友 / 对手 / 同位置对位 ----------------
+    lineup_at = defaultdict(list)
+    posgroup = defaultdict(lambda: defaultdict(list))
+    for r in raw:
+        lineup_at[(r[18], r[2])].append(r[0])
+        posgroup[(r[18], r[1])][r[2]].append(r[0])
+    comp_game = {}
+    for nm, rows0 in per_player.items():
+        for x in rows0:
+            comp_game[(x[7], nm)] = x[0]
+    team_heroes = defaultdict(set)
+    for r in raw:
+        if r[17]:
+            team_heroes[(r[18], r[2])].add(r[17])
+
+    # ---------------- 阵容协同模型 ----------------
+    # 每名选手的实力 = 其逐局综合表现均值（同位置 z 口径）；
+    # 阵容实力 = 五人实力的均值；用全部对局做逻辑回归，把「实力差」映射成期望胜率。
+    p_sum = {}
+    p_n = {}
+    for nm, rows0 in per_player.items():
+        p_sum[nm] = sum(x[0] for x in rows0)
+        p_n[nm] = len(rows0)
+
+    battle_teams = defaultdict(dict)
+    team_won = {}
+    for r in raw:
+        battle_teams[r[18]][r[2]] = True
+        team_won[(r[18], r[2])] = r[7]
+
+    game_ctx = {}
+    fit_rows = []
+    for bid, teams in battle_teams.items():
+        if len(teams) != 2:
+            continue
+        t1, t2 = list(teams.keys())
+        l1 = lineup_at.get((bid, t1), [])
+        l2 = lineup_at.get((bid, t2), [])
+        if len(l1) != 5 or len(l2) != 5:
+            continue
+        def loo_strength(names, bid):
+            vals = []
+            for nm in names:
+                n0 = p_n.get(nm, 0)
+                c = comp_game.get((bid, nm))
+                if n0 <= 1 or c is None:
+                    vals.append(0.0)
+                else:
+                    vals.append((p_sum[nm] - c) / (n0 - 1))
+            return sum(vals) / len(vals) if vals else 0.0
+        s1 = loo_strength(l1, bid)
+        s2 = loo_strength(l2, bid)
+        game_ctx[bid] = {"t1": t1, "t2": t2, "s1": s1, "s2": s2}
+        fit_rows.append((s1 - s2, team_won.get((bid, t1), 0)))
+
+    # 逻辑回归（Newton-Raphson，两参数：斜率 a / 截距 b）
+    la, lb = 1.0, 0.0
+    for _ in range(40):
+        ga = gb = haa = hab = hbb = 0.0
+        for d, y in fit_rows:
+            p = 1.0 / (1.0 + math.exp(-(la * d + lb)))
+            w = p * (1.0 - p)
+            ga += (y - p) * d
+            gb += (y - p)
+            haa -= w * d * d
+            hab -= w * d
+            hbb -= w
+        det = haa * hbb - hab * hab
+        if abs(det) < 1e-12:
+            break
+        da = (hbb * ga - hab * gb) / det
+        db = (haa * gb - hab * ga) / det
+        la -= da
+        lb -= db
+        if abs(da) + abs(db) < 1e-8:
+            break
+
+    if fit_rows:
+        exp_mean = sum(1.0 / (1.0 + math.exp(-(la * d + lb))) for d, _ in fit_rows) / len(fit_rows)
+        act_mean = sum(y for _, y in fit_rows) / len(fit_rows)
+        print(f"  synergy model: a={la:.2f} b={lb:.3f} | fit n={len(fit_rows)} "
+              f"expected={exp_mean:.3f} actual={act_mean:.3f}")
+
+    # ---------------- 全局英雄效应（带 L2 的逻辑回归） ----------------
+    # 先估计「某英雄在一般阵容下的强弱」，后面阵容×英雄交互项以它为基准，
+    # 这样 β 表示的是「这套阵容用该英雄的额外加成」，而不是「英雄本身很强」。
+    hero_list = sorted({h for hs in team_heroes.values() for h in hs if h})
+    h_index = {h: i for i, h in enumerate(hero_list)}
+    ctx_items = list(game_ctx.items())
+    n_g = len(ctx_items)
+    Xg = np.zeros((n_g, len(hero_list)), dtype=np.float64)
+    off = np.zeros(n_g, dtype=np.float64)
+    yv = np.zeros(n_g, dtype=np.float64)
+    for i, (bid, ctx) in enumerate(ctx_items):
+        for h in team_heroes.get((bid, ctx["t1"]), []):
+            j = h_index.get(h)
+            if j is not None:
+                Xg[i, j] = 1.0
+        p1 = 1.0 / (1.0 + math.exp(-(la * (ctx["s1"] - ctx["s2"]) + lb)))
+        p1 = min(max(p1, 1e-6), 1 - 1e-6)
+        off[i] = math.log(p1 / (1 - p1))
+        yv[i] = team_won.get((bid, ctx["t1"]), 0)
+
+    LAM_G = 2.0
+
+    def _nll_gamma(g):
+        z = off + Xg @ g
+        ll = np.sum(yv * z - np.logaddexp(0, z)) - 0.5 * LAM_G * np.sum(g * g)
+        p = 1.0 / (1.0 + np.exp(-z))
+        grad = Xg.T @ (yv - p) - LAM_G * g
+        return -ll, -grad
+
+    try:
+        res_g = minimize(_nll_gamma, np.zeros(len(hero_list)), jac=True,
+                         method="L-BFGS-B", options={"maxiter": 200})
+        gamma = res_g.x
+    except Exception:
+        gamma = np.zeros(len(hero_list))
+
+    def hero_offset(team_heroes_set):
+        return sum(gamma[h_index[h]] for h in team_heroes_set if h in h_index)
+
+    def safe_mean(vals):
+        return sum(vals) / len(vals) if vals else None
 
     # ---------------- 选手汇总 ----------------
     pos_perf = defaultdict(list)
@@ -287,6 +454,249 @@ def main() -> None:
         pos_ceil[d["pos"]].append(d["p90"])
         pos_form[d["pos"]].append(d["formZ"])
 
+    # ---------------- 搭档 / 对手 / 赛季漂移 / 对位 ----------------
+    chem_out = {}
+    for name, rows in per_player.items():
+        if len(rows) < MIN_GAMES:
+            continue
+        tot_n = len(rows)
+        tot_w = sum(x[1] for x in rows)
+        tot_comp = sum(x[0] for x in rows)
+        mean_comp = tot_comp / tot_n
+
+        # 赛季切片
+        seasons = {}
+        for x in rows:
+            year = str(x[3])[:4]
+            if not year.isdigit():
+                continue
+            cell = seasons.setdefault(year, {"n": 0, "w": 0, "comp": 0.0, "dmg": [], "gold": [], "part": [], "kda": [], "heroes": set()})
+            cell["n"] += 1; cell["w"] += x[1]; cell["comp"] += x[0]
+            if x[9] is not None: cell["dmg"].append(x[9])
+            if x[10] is not None: cell["gold"].append(x[10])
+            if x[11] is not None: cell["part"].append(x[11])
+            cell["kda"].append(x[12])
+            if x[13]: cell["heroes"].add(x[13])
+        season_rows = []
+        for y in sorted(seasons)[-6:]:
+            c = seasons[y]
+            if c["n"] < 10:
+                continue
+            season_rows.append({
+                "y": y, "n": c["n"], "wr": round(c["w"] / c["n"], 3),
+                "perf": round(max(1, min(99, 50 + c["comp"] / c["n"] * 15)), 1),
+                "dmg": round(safe_mean(c["dmg"]) or 0, 1),
+                "gold": round(safe_mean(c["gold"]) or 0, 1),
+                "part": round(safe_mean(c["part"]) or 0, 1),
+                "kda": round(safe_mean(c["kda"]) or 0, 2),
+                "heroes": len(c["heroes"]),
+            })
+
+        # 阵容 / 队友 / 对手 / 同位置对位
+        lu = defaultdict(lambda: [0, 0, 0.0])
+        mate = defaultdict(lambda: [0, 0, 0.0])
+        opps = defaultdict(lambda: [0, 0, 0.0])
+        rivals = defaultdict(lambda: [0, 0, 0.0, 0.0])
+        for x in rows:
+            comp, won = x[0], x[1]
+            pos, team, bid, opp = x[5], x[6], x[7], x[8]
+            lineup = tuple(sorted(lineup_at.get((bid, team), [])))
+            if len(lineup) == 5:
+                cell = lu[lineup]; cell[0] += 1; cell[1] += won; cell[2] += comp
+            for m in lineup:
+                if m != name:
+                    cell = mate[m]; cell[0] += 1; cell[1] += won; cell[2] += comp
+            cell = opps[opp]; cell[0] += 1; cell[1] += won; cell[2] += comp
+            for rn in posgroup.get((bid, pos), {}).get(opp, []):
+                if rn == name:
+                    continue
+                rc = comp_game.get((bid, rn))
+                if rc is None:
+                    continue
+                cell = rivals[rn]; cell[0] += 1; cell[1] += won; cell[2] += comp; cell[3] += rc
+
+        lineup_rows = []
+        for key, (n, w, cs) in lu.items():
+            if n < 30:
+                continue
+            games_L = [x for x in rows
+                       if tuple(sorted(lineup_at.get((x[7], x[6]), []))) == key]
+            if len(games_L) < 30:
+                continue
+
+            # 本方留一：把这套阵容的 n 场从每名选手的样本里剔除
+            own_vals = []
+            for p0 in key:
+                n0 = p_n.get(p0, 0)
+                if n0 - len(games_L) < 50:
+                    own_vals = None
+                    break
+                s_in = sum(comp_game.get((x[7], p0), 0.0) for x in games_L)
+                own_vals.append((p_sum[p0] - s_in) / (n0 - len(games_L)))
+            if not own_vals:
+                continue
+            own_strength = sum(own_vals) / 5.0
+
+            # 对手留一：统计对手五人在「与这套阵容交手」中的表现并剔除
+            opp_sum = defaultdict(float)
+            opp_n = defaultdict(int)
+            for x in games_L:
+                for q in lineup_at.get((x[7], x[8]), []):
+                    cq = comp_game.get((x[7], q))
+                    if cq is not None:
+                        opp_sum[q] += cq
+                        opp_n[q] += 1
+
+            exp_sum = 0.0
+            exp_n = 0
+            base_logits = []
+            for x in games_L:
+                opp_lineup = lineup_at.get((x[7], x[8]), [])
+                if len(opp_lineup) != 5:
+                    continue
+                vals = []
+                for q in opp_lineup:
+                    n0 = p_n.get(q, 0)
+                    if n0 - opp_n[q] < 50:
+                        vals = []
+                        break
+                    vals.append((p_sum[q] - opp_sum[q]) / (n0 - opp_n[q]))
+                if not vals:
+                    continue
+                s_opp = sum(vals) / 5.0
+                p_base = 1.0 / (1.0 + math.exp(-(la * (own_strength - s_opp) + lb)))
+                p_base = min(max(p_base, 1e-6), 1 - 1e-6)
+                exp_sum += p_base
+                exp_n += 1
+                base_logits.append((x, math.log(p_base / (1 - p_base))))
+            if exp_n < max(20, int(n * 0.8)):
+                continue
+            exp_wr = exp_sum / exp_n
+
+            # 阵容 × 英雄池：同赛季内比较 + 每阵容 L2 逻辑回归交叉验证
+            # 赛季切片：同一赛季内比较，剔除版本/环境差异
+            seasons_L = {}
+            hero_stats = defaultdict(lambda: [0, 0])
+            for x in games_L:
+                y_ = str(x[3])[:4]
+                cell = seasons_L.setdefault(y_, {"n": 0, "w": 0, "hero": defaultdict(lambda: [0, 0])})
+                cell["n"] += 1
+                cell["w"] += x[1]
+                for h in team_heroes.get((x[7], x[6]), []):
+                    cell["hero"][h][0] += 1
+                    cell["hero"][h][1] += x[1]
+                    hero_stats[h][0] += 1
+                    hero_stats[h][1] += x[1]
+
+            # 每阵容的 L2 交互模型：offset = 基础期望 + 全局英雄效应
+            heroes_use = sorted([h for h, v in hero_stats.items() if v[0] >= 10])
+            beta_map = {}
+            if heroes_use and base_logits:
+                hh_index = {h: i for i, h in enumerate(heroes_use)}
+                Xl = np.zeros((len(base_logits), len(heroes_use)), dtype=np.float64)
+                ol = np.zeros(len(base_logits), dtype=np.float64)
+                yl = np.zeros(len(base_logits), dtype=np.float64)
+                for i, (x, bl) in enumerate(base_logits):
+                    hs = team_heroes.get((x[7], x[6]), [])
+                    for h in hs:
+                        j = hh_index.get(h)
+                        if j is not None:
+                            Xl[i, j] = 1.0
+                    ol[i] = bl + hero_offset(hs)
+                    yl[i] = x[1]
+                LAM_L = 5.0
+
+                def _nll_beta(b):
+                    z = ol + Xl @ b
+                    ll = np.sum(yl * z - np.logaddexp(0, z)) - 0.5 * LAM_L * np.sum(b * b)
+                    p = 1.0 / (1.0 + np.exp(-z))
+                    grad = Xl.T @ (yl - p) - LAM_L * b
+                    return -ll, -grad
+
+                try:
+                    res_b = minimize(_nll_beta, np.zeros(len(heroes_use)), jac=True,
+                                     method="L-BFGS-B", options={"maxiter": 200})
+                    for h, b in zip(heroes_use, res_b.x):
+                        beta_map[h] = float(b)
+                except Exception:
+                    beta_map = {}
+
+            hero_rows = []
+            for h, (hn, hw) in hero_stats.items():
+                if hn < 10:
+                    continue
+                # 同赛季内的胜率差，按英雄场次加权
+                wsum = 0.0
+                den = 0
+                for y_, cell in seasons_L.items():
+                    hhn, hhw = cell["hero"].get(h, (0, 0))
+                    if hhn >= 6 and cell["n"] >= 15:
+                        delta = (hhw / hhn) - (cell["w"] / cell["n"])
+                        wsum += delta * hhn
+                        den += hhn
+                if den < 8:
+                    continue
+                d_raw = wsum / den * 100
+                # 小样本收缩：n/(n+10)
+                d_adj = d_raw * den / (den + 10)
+                m_pp = beta_map.get(h, None)
+                hero_rows.append({
+                    "h": h, "n": hn, "used": den, "wr": round(hw / hn, 3),
+                    "d": round(d_adj, 1),
+                    "m": round(m_pp * 25.0, 1) if m_pp is not None else None,
+                })
+            hero_rows.sort(key=lambda r: -r["d"])
+            heroes = hero_rows[:2]
+            weak = sorted(hero_rows, key=lambda r: r["d"])[:1]
+            for h in weak:
+                if h not in heroes:
+                    heroes.append(h)
+
+            lineup_rows.append({
+                "names": list(key), "n": n, "wr": round(w / n, 3),
+                "exp": round(exp_wr, 3), "syn": round((w / n - exp_wr) * 100, 1),
+                "heroes": heroes[:3],
+            })
+        lineup_rows.sort(key=lambda r: -r["syn"])
+        lineup_rows = lineup_rows[:3]
+
+        mate_rows = []
+        for m, (n, w, cs) in mate.items():
+            if n < 30 or tot_n - n < 20:
+                continue
+            wr_with = w / n
+            wr_without = (tot_w - w) / (tot_n - n)
+            dc = cs / n - (tot_comp - cs) / (tot_n - n)
+            mate_rows.append({"name": m, "n": n, "wr": round(wr_with, 3),
+                              "dwr": round((wr_with - wr_without) * 100, 1), "dc": round(dc, 2)})
+        mate_rows.sort(key=lambda r: -abs(r["dc"]))
+        mate_rows = mate_rows[:4]
+
+        opp_rows = []
+        for t, (n, w, cs) in opps.items():
+            if n < 8 or not t or t == "待定":
+                continue
+            opp_rows.append({"team": t, "n": n, "wr": round(w / n, 3), "dc": round(cs / n - mean_comp, 2)})
+        opp_rows.sort(key=lambda r: -abs(r["dc"]))
+        opp_rows = opp_rows[:4]
+
+        rival_rows = []
+        for rn, (n, w, cs, rcs) in rivals.items():
+            if n < 5:
+                continue
+            rival_rows.append({"name": rn, "n": n, "wr": round(w / n, 3),
+                               "dc": round((cs - rcs) / n, 2)})
+        rival_rows.sort(key=lambda r: -r["n"])
+        top = rival_rows[:5]
+        hard = sorted(rival_rows, key=lambda r: r["wr"])[:1]
+        for h in hard:
+            if h not in top:
+                top.append(h)
+        chem_out[name] = {
+            "lineups": lineup_rows, "mates": mate_rows, "opps": opp_rows,
+            "seasons": season_rows, "rivals": top[:6],
+        }
+
     out = {}
     for name, d in tmp.items():
         pp = pos_perf[d["pos"]]
@@ -318,6 +728,7 @@ def main() -> None:
             "name": name, "team": d["team"], "pos": d["pos"], "icon": d["icon"],
             "g": d["g"], "w": d["w"],
             "perf": round(perf_pct, 1),
+            "z": round(d["perf"], 3),
             "stab": round(stab_pct, 1),
             "clutch": round(clutch_pct, 1) if clutch_pct is not None else None,
             "heroPct": round(hero_pct, 1), "oppPct": round(opp_pct, 1) if opp_pct is not None else None,
@@ -331,6 +742,9 @@ def main() -> None:
             "decN": d["decN"],
             "spark": d["spark"],
             "tags": tags[:5],
+            "seasons": (chem_out.get(name) or {}).get("seasons", []),
+            "chem": {k: (chem_out.get(name) or {}).get(k, []) for k in ("lineups", "mates", "opps")},
+            "rivals": (chem_out.get(name) or {}).get("rivals", []),
         }
 
     # ---------------- 打法相似度（同位置余弦） ----------------
@@ -373,6 +787,49 @@ def main() -> None:
     path.write_text("KPL_PLAYER_DEEP = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n",
                     encoding="utf-8")
     print(f"player_deep.js: {path.stat().st_size/1024:.0f} KB | players {len(out)} | games {len(raw)}")
+
+    # 最近首发五人 + 平均同位置分位（供赛前模拟使用）
+    lineups = {}
+    for team, info in team_latest.items():
+        ps, names, pos, icons = [], [], [], []
+        for m0 in info["players"]:
+            rec = out.get(m0["name"])
+            names.append(m0["name"])
+            pos.append(m0["pos"])
+            icons.append((rec or {}).get("icon") or m0["icon"])
+            if rec and rec.get("perf") is not None:
+                ps.append(rec["perf"])
+        zs = []
+        for m0 in info["players"]:
+            rec = out.get(m0["name"])
+            if rec and rec.get("z") is not None:
+                zs.append(rec["z"])
+        picks = team_picks.get(team, [])
+        comfort = None
+        ent = None
+        if picks:
+            vals = []
+            for h in picks:
+                w, n = hero_all.get(h, (0, 0))
+                vals.append((w + 2) / (n + 4))
+            comfort = round(sum(vals) / len(vals) * 100, 1)
+            cnt = Counter(picks)
+            tot = len(picks)
+            ent = round(-sum((c / tot) * math.log(c / tot) for c in cnt.values()) / math.log(max(2, len(cnt))), 3)
+        lineups[team] = {
+            "date": info["date"], "names": names, "pos": pos, "icons": icons,
+            "perf": [round(v, 1) for v in ps] if len(ps) == len(names) else [],
+            "strength": round(sum(ps) / len(ps), 1) if len(ps) >= 4 else None,
+            "z": [round(v, 2) for v in zs] if len(zs) == len(names) else [],
+            "strengthZ": round(sum(zs) / len(zs), 3) if len(zs) >= 4 else None,
+            "heroComfort": comfort,
+            "heroEntropy": ent,
+            "picks": picks[-10:],
+        }
+    lp = SITE / "assets" / "lineups.js"
+    lp.write_text("KPL_LINEUPS = " + json.dumps(lineups, ensure_ascii=False, separators=(",", ":")) + ";",
+                  encoding="utf-8")
+    print(f"lineups.js: {lp.stat().st_size/1024:.1f} KB | teams {len(lineups)}")
 
 
 if __name__ == "__main__":

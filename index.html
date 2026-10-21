@@ -6,9 +6,9 @@
 <title>KPL 数据中心 · 2026 赛事数据 · 赛程 / 战队 / 选手 / 英雄</title>
 <meta name="description" content="KPL 赛事数据产品：按比赛日看赛程比分、战队与选手数据、英雄梯度、比赛复盘与胜负模拟。数据来自腾讯 KPL 公开赛事接口。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=59">
-<link rel="stylesheet" href="assets/pages.css?v=59">
-<link rel="stylesheet" href="assets/v55.css?v=59">
+<link rel="stylesheet" href="assets/style.css?v=78">
+<link rel="stylesheet" href="assets/pages.css?v=78">
+<link rel="stylesheet" href="assets/v55.css?v=78">
 <style>
 /* 我的 KPL：仅在存在收藏时出现，无收藏整块隐藏（不留空壳） */
 .myk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:12px}
@@ -35,6 +35,8 @@
 <header id="siteHeader"></header>
 
 <main class="wrap">
+
+  <div id="releaseBar" class="release-bar" style="display:none"></div>
 
   <div id="favStrip" style="display:none;margin-top:14px"></div>
 
@@ -103,6 +105,7 @@
   <section class="block" style="margin-top:22px">
     <div class="block-head">
       <h2><i></i>战队排行榜</h2>
+      <span class="block-note mono" id="teamRankNote"></span>
       <a class="more" href="teams.html">完整榜单 →</a>
     </div>
     <div class="panel table-panel">
@@ -124,6 +127,7 @@
   <section class="block">
     <div class="block-head">
       <h2><i></i>选手榜</h2>
+      <span class="block-note mono" id="playerRankNote"></span>
       <a class="more" href="players.html">完整榜单 →</a>
     </div>
     <div class="player-grid" id="plTop"></div>
@@ -167,20 +171,43 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=59"></script>
-<script src="assets/details.js?v=59"></script>
-<script src="assets/seasons.js?v=59"></script>
-<script src="assets/schedule_all.js?v=59"></script>
-<script src="assets/coverage.js?v=59"></script>
-<script src="assets/replay/index.js?v=59"></script>
-<script src="assets/common.js?v=59"></script>
-<script src="assets/share.js?v=59"></script>
+<script src="assets/data.js?v=78"></script>
+<script src="assets/details.js?v=78"></script>
+<script src="assets/seasons.js?v=78"></script>
+<script src="assets/schedule_all.js?v=78"></script>
+<script src="assets/coverage.js?v=78"></script>
+<script src="assets/replay/index.js?v=78"></script>
+<script src="assets/updates.js?v=78"></script>
+<script src="assets/common.js?v=78"></script>
+<script src="assets/share.js?v=78"></script>
 <script>
 (function () {
   "use strict";
   var D = KPL.data, DT = KPL.details, K = KPL, $ = function (s) { return document.querySelector(s); };
   K.init();
 
+
+  /* ---------- 更新公告：新版本首次访问时提示一次 ---------- */
+  (function renderUpdateBar() {
+    var U = window.KPL_UPDATES || [];
+    if (!U.length) return;
+    var latest = U[0];
+    var seen = "";
+    try { seen = localStorage.getItem("kpl_update_seen") || ""; } catch (e) {}
+    if (seen === latest.version) return;
+    var el = document.getElementById("releaseBar");
+    if (!el) return;
+    el.style.display = "";
+    el.innerHTML = '<span class="ub-badge">更新</span>' +
+      '<span class="ub-text"><b>' + K.esc(latest.version) + " " + K.esc(latest.title) + "</b>" +
+      '<span class="ub-sum">· ' + K.esc(latest.summary || "") + "</span></span>" +
+      '<a class="ub-link" href="updates.html">查看更新 →</a>' +
+      '<button class="ub-close" type="button" aria-label="关闭更新提示">×</button>';
+    el.querySelector(".ub-close").addEventListener("click", function () {
+      try { localStorage.setItem("kpl_update_seen", latest.version); } catch (e) {}
+      el.style.display = "none";
+    });
+  })();
 
   /* ---------- 实时比分与状态覆盖（live.js，每 30 秒） ---------- */
   function applyTodayLive() {
@@ -639,10 +666,18 @@
     var d = K.scopeOf(scopeId);
     var scopeLabel = (K.scopeName ? K.scopeName(scopeId) : scopeId) || "当前数据范围";
     renderHotStrip(d, scopeLabel);
-    /* 战队榜前 8（按单局胜率，样本 >= 30 局） */
-    var teams = (d.teams || []).filter(function (t) { return t.games >= 30; })
-      .slice().sort(function (a, b) { return b.wr - a.wr; }).slice(0, 8);
-    $("#stTop").innerHTML = teams.map(function (t, i) {
+    /* 战队榜前 8：从 30 局门槛开始，样本不够就逐级放宽，保证小范围也有内容 */
+    var teamsAll = (d.teams || []).slice().sort(function (a, b) { return b.wr - a.wr; });
+    var teamMin = 30;
+    var teams = teamsAll.filter(function (t) { return t.games >= teamMin; });
+    if (teams.length < 4) { teamMin = 10; teams = teamsAll.filter(function (t) { return t.games >= teamMin; }); }
+    if (teams.length < 4) { teamMin = 0; teams = teamsAll; }
+    teams = teams.slice(0, 8);
+    var teamNote = document.getElementById("teamRankNote");
+    if (teamNote) teamNote.textContent = teamMin ? "当前范围 · 样本 ≥" + teamMin + " 局" : "当前范围 · 全部战队";
+    if (!teams.length) {
+      $("#stTop").innerHTML = '<tr><td colspan="7"><div class="empty-tip">当前数据范围暂无战队数据</div></td></tr>';
+    } else $("#stTop").innerHTML = teams.map(function (t, i) {
       var tier = K.tierOf(t.wr);
       return "<tr>" +
         '<td class="num"><span class="rank' + (i < 3 ? " r" + (i + 1) : "") + '">' + (i + 1) + "</span></td>" +
@@ -656,16 +691,25 @@
     }).join("");
     /* 热门英雄 top 12（按出场局数） */
     $("#heroTop").innerHTML = (d.heroes || []).slice(0, 12).map(K.heroCard).join("");
-    /* 选手榜前 8（按 KDA，样本 >= 30 局） */
-    var players = (d.players || []).filter(function (p) { return p.games >= 30; })
-      .slice().sort(function (a, b) {   // 降序：KDA 缺失排最后，不当作 0 参与排名
-        var x = K.mnum(a.kda), y = K.mnum(b.kda);
-        if (x === null && y === null) return 0;
-        if (x === null) return 1;
-        if (y === null) return -1;
-        return y - x;
-      }).slice(0, 8);
-    $("#plTop").innerHTML = players.map(function (p, i) {
+    /* 选手榜前 8：同样从 30 局门槛开始逐级放宽 */
+    function byKda(a, b) {   // 降序：KDA 缺失排最后，不当作 0 参与排名
+      var x = K.mnum(a.kda), y = K.mnum(b.kda);
+      if (x === null && y === null) return 0;
+      if (x === null) return 1;
+      if (y === null) return -1;
+      return y - x;
+    }
+    var playersAll = (d.players || []).slice().sort(byKda);
+    var playerMin = 30;
+    var players = playersAll.filter(function (p) { return p.games >= playerMin; });
+    if (players.length < 4) { playerMin = 10; players = playersAll.filter(function (p) { return p.games >= playerMin; }); }
+    if (players.length < 4) { playerMin = 0; players = playersAll; }
+    players = players.slice(0, 8);
+    var playerNote = document.getElementById("playerRankNote");
+    if (playerNote) playerNote.textContent = playerMin ? "当前范围 · 样本 ≥" + playerMin + " 局" : "当前范围 · 全部选手";
+    if (!players.length) {
+      $("#plTop").innerHTML = '<div class="empty-tip">当前数据范围暂无选手数据</div>';
+    } else $("#plTop").innerHTML = players.map(function (p, i) {
       var ava = p.icon ? '<img class="p-ava" src="' + K.esc(p.icon) + '" alt="" loading="lazy">'
         : '<span class="p-ava ph">' + K.esc(String(p.name).slice(0, 1)) + "</span>";
       return '<a class="player reveal" href="player.html?id=' + encodeURIComponent(p.name) + '" style="transition-delay:' + Math.min(i * 22, 200) + 'ms">' + ava +

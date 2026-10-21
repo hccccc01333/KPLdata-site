@@ -217,9 +217,10 @@ window.KPL = (function () {
             ["英雄对比", "compare.html"], ["战队对比", "compare-team.html"],
             ["选手对比", "compare-player.html"], ["位置对比", "compare-lane.html"],
             ["赛段对比", "stage.html"], ["翻盘研究所", "comeback.html"],
-            ["数据查询", "query.html"], ["赛事模拟器", "simulator.html"]] },
+            ["数据查询", "query.html"], ["赛前模拟", "simulator.html"]] },
     { ic: "layers", label: "荣誉", href: "honors.html",
-      pages: ["honors.html"], sub: [] }
+      pages: ["honors.html", "records.html"],
+      sub: [["赛事纪录", "records.html"]] }
   ];
   function navGroupHtml(page, real) {
     return NAV.map(function (g) {
@@ -253,6 +254,7 @@ window.KPL = (function () {
       '了解数据口径与更新方式 → <a href="about.html" style="color:var(--gold)">数据说明</a></p></div>' +
       '<div class="foot-right mono"><div>数据更新 <b>' + esc(D ? D.generatedAt : "—") + "</b></div>" +
       '<a href="https://github.com/hccccc01333/KPLdata" target="_blank" rel="noopener">开源仓库 ↗</a>' +
+      '<a href="updates.html">更新日志</a>' +
       '<a href="about.html">数据说明 · 免责</a></div></div>';
   }
 

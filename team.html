@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>战队详情 · KPL 数据中心</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=59">
-<link rel="stylesheet" href="assets/pages.css?v=59">
-<link rel="stylesheet" href="assets/v55.css?v=59">
+<link rel="stylesheet" href="assets/style.css?v=78">
+<link rel="stylesheet" href="assets/pages.css?v=78">
+<link rel="stylesheet" href="assets/v55.css?v=78">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL 数据中心">
 <meta property="og:title" content="战队详情 · KPL 数据中心">
@@ -20,16 +20,16 @@
 <main class="wrap" id="main" style="margin-top:6px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=59"></script>
-<script src="assets/details.js?v=59"></script>
-<script src="assets/schedule_all.js?v=59"></script>
-<script src="assets/seasons.js?v=59"></script>
-<script src="assets/players_detail.js?v=59"></script>
-<script src="assets/team_data.js?v=59"></script>
-<script src="assets/power.js?v=59"></script>
-<script src="assets/deep.js?v=59"></script>
-<script src="assets/common.js?v=59"></script>
-<script src="assets/share.js?v=59"></script>
+<script src="assets/data.js?v=78"></script>
+<script src="assets/details.js?v=78"></script>
+<script src="assets/schedule_all.js?v=78"></script>
+<script src="assets/seasons.js?v=78"></script>
+<script src="assets/players_detail.js?v=78"></script>
+<script src="assets/team_data.js?v=78"></script>
+<script src="assets/power.js?v=78"></script>
+<script src="assets/deep.js?v=78"></script>
+<script src="assets/common.js?v=78"></script>
+<script src="assets/share.js?v=78"></script>
 <script>
 (function () {
   "use strict";
@@ -152,8 +152,16 @@
     return s + "</svg>";
   }
 
-  var base = "league";
+  function defaultBase(scope) {
+    if (scope === "all") return "history";
+    if (/^\d{4}$/.test(scope)) return "year";
+    return "league";
+  }
+  function baseLabel(key) {
+    return key === "league" ? "赛事" : key === "year" ? "年度" : "历史";
+  }
   var curScope = "all";
+  var base = defaultBase(curScope);
 
   function rawCell(dim, row) {
     var v = row[dim];
@@ -163,20 +171,44 @@
   }
   function radarPanel() {
     var b = baselines();
-    var sid = b[base];
-    var row = sid ? rowOf(sid, team.team) : null;
+    var orders = {
+      league: ["league", "year", "history"],
+      year: ["year", "history"],
+      history: ["history"]
+    };
+    var order = orders[base] || ["history"];
+    var picked = null;
+    for (var i = 0; i < order.length; i++) {
+      var key = order[i], sid0 = b[key];
+      if (!sid0) continue;
+      var row0 = rowOf(sid0, team.team);
+      if (row0 && row0.r !== undefined) {
+        picked = { key: key, sid: sid0, row: row0 };
+        break;
+      }
+    }
+
     var btns = [["league", "赛事"], ["year", "年度"], ["history", "历史"]].map(function (x) {
       return '<button type="button"' + (base === x[0] ? ' class="on"' : "") + ' data-base="' + x[0] + '">' +
         x[1] + "</button>";
     }).join("");
-    var label = base === "history" ? "全部年份" : K.scopeName(sid);
-    var head = '<div class="panel-title">能力雷达 <em class="mono">同基准内百分位 · 三基准可直接对比</em>' +
+    var head = '<div class="panel-title">能力雷达 <em class="mono">同基准内百分位 · 默认跟随顶部数据范围</em>' +
       '<span class="seg" id="baseSeg">' + btns + "</span></div>";
-    if (!row || row.r === undefined) {
+    if (!picked) {
+      var attempted = b[base];
+      var attemptedLabel = base === "history" ? "全部年份" : (attempted ? K.scopeName(attempted) : baseLabel(base));
+      var need = attempted ? powerScope(attempted).threshold.g : 0;
       return '<div class="panel" style="grid-column:1/-1">' + head +
-        '<div class="empty-tip">该战队在「' + K.esc(label) + "」基准下样本不足（门槛 ≥" +
-        powerScope(sid).threshold.g + " 局），换一个基准再看。</div></div>";
+        '<div class="empty-tip">该战队在「' + K.esc(attemptedLabel) + "」基准下样本不足" +
+        (attempted ? "（门槛 ≥" + need + " 局）" : "") + "，换一个基准再看。</div></div>";
     }
+
+    var sid = picked.sid, row = picked.row;
+    var label = picked.key === "history" ? "全部年份" : K.scopeName(sid);
+    var fallback = picked.key !== base
+      ? '<div class="block-note mono" id="radarFallbackNote">当前「' + baseLabel(base) +
+        "」基准样本不足，已回退到「" + baseLabel(picked.key) + "」基准。</div>"
+      : "";
     var tbl = '<table class="tbl"><thead><tr><th>维度</th><th class="num">战队原始值</th><th class="num">基准分位</th></tr></thead><tbody>' +
       DIMS.map(function (d, i) {
         return "<tr><td>" + d[1] + '</td><td class="num mono">' + rawCell(d[0], row) +
@@ -184,8 +216,9 @@
       }).join("") + "</tbody></table>";
     return '<div class="panel" style="grid-column:1/-1">' + head +
       '<div class="radar-wrap"><div class="cmp-radar">' + radarSVG(row.r) + "</div>" +
-      '<div class="radar-side"><div class="block-note mono">基准：' + K.esc(label) + " · 合格 " +
-      powerScope(sid).n + " 支 · " + (P.meta.algorithmVersion || "power-v1") + "</div>" + tbl + "</div></div></div>";
+      '<div class="radar-side"><div class="block-note mono" id="radarBaseNote">基准：' + K.esc(label) + " · 合格 " +
+      powerScope(sid).n + " 支 · " + (P.meta.algorithmVersion || "power-v1") + "</div>" +
+      fallback + tbl + "</div></div></div>";
   }
 
   function timeline() {
@@ -256,6 +289,7 @@
       return {
         kind: "战队档案",
         title: team.team,
+        icon: team.icon || "",
         sub: K.scopeName(curScope) + " · 大场 " + row.mw + "-" + row.ml + " · 单局 " + row.gw + "-" + row.gl,
         stats: [
           ["多维战力分", row.score !== undefined ? row.score : "样本不足"],
@@ -394,7 +428,12 @@
     K.refresh();
   }
 
-  curScope = K.scopeBar("#scopeBar", function (id2) { curScope = id2; render(); }) || "all";
+  curScope = K.scopeBar("#scopeBar", function (id2) {
+    curScope = id2;
+    base = defaultBase(curScope);
+    render();
+  }) || "all";
+  base = defaultBase(curScope);
   render();
 })();
 </script>
