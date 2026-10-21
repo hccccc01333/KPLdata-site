@@ -3,6 +3,7 @@
   "use strict";
   var $ = function (s) { return document.querySelector(s); };
   var K = window.KPL || null;
+  if (K && K.init) K.init();
   var INDEX = window.KPL_GAME_INDEX || {};
   var SCHEDULE = window.KPL_SCHEDULE_ALL || [];
   var BY_ID = Object.create(null);
