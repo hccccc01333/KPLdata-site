@@ -214,7 +214,7 @@
     function x(gd) { return pad.l + (gd - minG) / (maxG - minG) * plotW; }
     function y(m) { return pad.t + (1 - clamp(m, 0, maxM) / maxM) * plotH; }
 
-    var svg = ['<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="胜率概率地形">'];
+    var svg = ['<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="胜率地图">'];
     svg.push('<rect x="0" y="0" width="' + W + '" height="' + H + '" fill="#FFFFFF"></rect>');
 
     // 网格单元
