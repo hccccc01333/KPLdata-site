@@ -73,7 +73,7 @@ window.KPL = (function () {
   var STAGE_CN_EXTRA = {
     cgs1: "常规赛·第 1 轮", cgs2: "常规赛·第 2 轮", cgs3: "常规赛·第 3 轮",
     kws: "卡位赛", jhs: "季后赛", js: "决赛", zjs: "总决赛", lts: "擂台赛",
-    dbtts: "单败淘汰赛", sbtts: "双败淘汰赛", fjs: "附加赛", tws: "突围赛"
+    dbtts: "单败淘汰赛", sbtts: "双败淘汰赛", fjs: "附加赛", tws: "突围赛", tts: "淘汰赛"
   };
   function stageLabel(stage) {
     var s = String(stage == null ? "" : stage);
@@ -211,9 +211,9 @@ window.KPL = (function () {
       pages: ["heroes.html", "combos.html"],
       sub: [["英雄组合", "combos.html"]] },
     { ic: "target", label: "分析", href: "bp.html",
-      pages: ["bp.html", "predict.html", "stage.html", "series.html", "compare.html", "compare-team.html",
+      pages: ["bp.html", "predict.html", "sandbox.html", "stage.html", "series.html", "compare.html", "compare-team.html",
              "compare-player.html", "compare-lane.html", "comeback.html", "query.html", "find.html", "simulator.html"],
-      sub: [["系列赛研究", "series.html"], ["实时预测", "predict.html"],
+      sub: [["胜率沙盘", "sandbox.html"], ["系列赛研究", "series.html"], ["实时预测", "predict.html"],
             ["英雄对比", "compare.html"], ["战队对比", "compare-team.html"],
             ["选手对比", "compare-player.html"], ["位置对比", "compare-lane.html"],
             ["赛段对比", "stage.html"], ["翻盘研究所", "comeback.html"],

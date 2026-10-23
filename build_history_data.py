@@ -45,6 +45,8 @@ STAGE_CN = {
     "zjs": "总决赛",
     "dbtts": "单败淘汰赛",
     "sbtts": "双败淘汰赛",
+    "tws": "突围赛",
+    "tts": "淘汰赛",
     "kpl_select": "选拔赛",
     "select": "季前赛",
     "other_select": "选拔赛",
