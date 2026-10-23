@@ -116,7 +116,7 @@ async function main() {
   check("同状态历史样例已渲染", base && base.analogs >= 3, base && base.analogs);
   check("V12 曲线已渲染", base && base.curve >= 1, base && base.curve);
   check("KPI Brier = 0.177", base && base.brier === "0.177", base && base.brier);
-  check("KPI 覆盖 = 212 局", base && base.coverage === "212 局", base && base.coverage);
+  check("KPI 覆盖 = 222 局", base && base.coverage === "222 局", base && base.coverage);
   check("1440px 无横向溢出", base && base.overflow <= 1, base && base.overflow + "px");
 
   // 模式切换

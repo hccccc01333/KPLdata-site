@@ -422,6 +422,47 @@
     overlay.addEventListener("pointercancel", function () { drag.on = false; });
   }
 
+  /* ---------- 一句话结论（普通观众入口） ---------- */
+  function renderPlain(b, f, s, a) {
+    var host = $("#sbPlain");
+    if (!host) return;
+    var p = f[1], pFrame = f, pFallback = false;
+    if (p == null) {
+      var fb = b.frames[nearestFrameIndex(b, f[0], true)];
+      if (fb && fb[1] != null) {
+        p = fb[1];
+        pFrame = fb;
+        pFallback = true;
+      }
+    }
+    var t1 = teamOr(b.t1, "左边队伍");
+    var t2 = teamOr(b.t2, "右边队伍");
+    var winTeam = b.win === 1 ? t1 : b.win === 2 ? t2 : "未知";
+    var gap = s.gd;
+    var gapTxt = (gap == null || isNaN(gap)) ? "经济差暂缺" :
+      (gap === 0 ? "双方经济基本持平" :
+        (gap > 0 ? t1 + " 领先 " + Math.abs(gap) + " 金币" :
+          t2 + " 领先 " + Math.abs(gap) + " 金币"));
+    var fav = p == null ? null : (p >= 0.5 ? t1 : t2);
+    var favP = p == null ? null : Math.max(p, 1 - p);
+    var histFav = a.rate == null ? null : (a.rate >= 0.5 ? t1 : t2);
+    var histWins = a.rate == null ? null : (a.rate >= 0.5 ? a.wins : a.n - a.wins);
+    var histP = a.rate == null ? null : Math.max(a.rate, 1 - a.rate);
+    var line2 = p == null ? "这一分钟模型没有有效判断。" :
+      "模型认为 " + fav + " 更可能赢（" + pct(favP) + "）";
+    if (a.rate != null) {
+      line2 += "；历史上最像的 " + a.n + " 个时刻里，" + histFav +
+        " 最终赢了 " + histWins + " 次（" + pct(histP) + "）";
+    }
+    line2 += "。";
+    host.innerHTML =
+      '<div class="big">第 ' + f[0].toFixed(1) + " 分钟：" + esc(gapTxt) + "。</div>" +
+      '<div class="sub">' + esc(line2) + "</div>" +
+      (pFallback ? '<div class="hint">这一分钟没有模型数字，显示的是最近一次判断。</div>' : "") +
+      '<div class="hint">这局最终：<b>' + esc(winTeam) + "</b> 赢了 · " + esc(b.date || "") + " · 第 " + b.seq + " 局。</div>" +
+      '<div class="hint">这是“当前局面 + 历史同类”的参考，不是结果承诺。拖动时间条，看看模型什么时候改主意。</div>';
+  }
+
   /* ---------- 状态卡 ---------- */
   function renderState(b, f, s, a) {
     var host = $("#sbState");
@@ -474,7 +515,7 @@
         '<div class="sb-hist-top"><span class="k">历史上类似局面：左边赢的比例</span>' +
           '<span class="v">' + pct(a.rate) + "</span></div>" +
         '<div class="sb-hist-sub">大致范围 ' + pct(a.lo) + "–" + pct(a.hi) +
-          " · 从 212 局里挑了 " + a.n + " 个最像的时刻</div>" +
+          " · 从 " + D.coverage.replayBattles + " 局里挑了 " + a.n + " 个最像的时刻</div>" +
         '<div class="sb-hist-gap' + lowCls + '">' +
           (gap == null ? "参考时刻不足，暂不比较。" :
             "模型比历史" + (gap >= 0 ? "高" : "低") + " <b>" +
@@ -629,6 +670,8 @@
   function renderMeta() {
     var m = D.model;
     $("#sbMetaFrames").textContent = num(D.coverage.replayFrames);
+    var mb = $("#sbMetaBattles");
+    if (mb) mb.textContent = D.coverage.replayBattles + " 局";
     $("#sbMetaUpdated").textContent = D.updatedAt || "—";
     $("#sbKpiBrier").textContent = m.brier == null ? "—" : m.brier.toFixed(3);
     $("#sbKpiBrierS").textContent = "在 " + m.testN + " 局没见过的比赛上考试";
@@ -793,6 +836,41 @@
     host.innerHTML = html;
   }
 
+  /* ---------- 示例入口：找一场翻盘 / 碾压 ---------- */
+  function pickComeback() {
+    var best = null;
+    D.battles.forEach(function (b, bi) {
+      if (b.win !== 1 && b.win !== 2) return;
+      var minLead = Infinity, minute = null;
+      b.frames.forEach(function (f) {
+        if (f[1] == null || f[2] == null) return;
+        var lead = b.win === 1 ? f[2] : -f[2];
+        if (lead < minLead) { minLead = lead; minute = f[0]; }
+      });
+      if (minute != null && minLead < -4000 && (!best || minLead < best.minLead)) {
+        best = { bi: bi, minute: minute, minLead: minLead };
+      }
+    });
+    return best;
+  }
+
+  function pickBlowout() {
+    var best = null;
+    D.battles.forEach(function (b, bi) {
+      if (b.win !== 1 && b.win !== 2) return;
+      var maxLead = -Infinity, minute = null;
+      b.frames.forEach(function (f) {
+        if (f[1] == null || f[2] == null) return;
+        var lead = b.win === 1 ? f[2] : -f[2];
+        if (lead > maxLead) { maxLead = lead; minute = f[0]; }
+      });
+      if (minute != null && maxLead > 8000 && (!best || maxLead > best.maxLead)) {
+        best = { bi: bi, minute: minute, maxLead: maxLead };
+      }
+    });
+    return best;
+  }
+
   /* ---------- 事件绑定 ---------- */
   function bindControls() {
     var matchSel = $("#sbMatch");
@@ -839,6 +917,20 @@
         renderAll();
       });
     }
+    var cb = $("#sbComeback");
+    if (cb) {
+      cb.addEventListener("click", function () {
+        var x = pickComeback();
+        if (x) loadBattle(x.bi, x.minute);
+      });
+    }
+    var bl = $("#sbBlowout");
+    if (bl) {
+      bl.addEventListener("click", function () {
+        var x = pickBlowout();
+        if (x) loadBattle(x.bi, x.minute);
+      });
+    }
   }
 
   function renderAll() {
@@ -856,6 +948,7 @@
     renderLegend();
     renderCurve();
     renderState(b, f, s, a);
+    renderPlain(b, f, s, a);
     renderWhatIf(b, f, s, a);
     renderAnalog(b, f, s, a);
   }
