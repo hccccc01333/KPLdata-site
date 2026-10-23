@@ -201,20 +201,21 @@ window.KPL = (function () {
   var NAV = [
     { ic: "calendar", label: "赛事", href: "schedule.html",
       pages: ["index.html", "schedule.html", "bracket.html"],
-      sub: [["赛事进程", "bracket.html"], ["精选对局", "picks.html"]] },
+      sub: [["赛程中心", "schedule.html"], ["赛事进程", "bracket.html"], ["精选对局", "picks.html"]] },
     { ic: "shield", label: "战队", href: "teams.html",
       pages: ["teams.html", "h2h.html"],
-      sub: [["交手记录", "h2h.html"]] },
+      sub: [["战队榜", "teams.html"], ["交手记录", "h2h.html"]] },
     { ic: "user", label: "选手", href: "players.html",
       pages: ["players.html"], sub: [] },
     { ic: "crown", label: "英雄", href: "heroes.html",
       pages: ["heroes.html", "combos.html"],
-      sub: [["英雄组合", "combos.html"]] },
+      sub: [["英雄列表", "heroes.html"], ["英雄组合", "combos.html"]] },
     { ic: "target", label: "分析", href: "bp.html",
       pages: ["bp.html", "bracket-forecast.html", "predict.html", "sandbox.html",
              "stage.html", "series.html", "compare.html", "compare-team.html",
              "compare-player.html", "compare-lane.html", "comeback.html", "query.html", "find.html", "simulator.html"],
-      sub: [["冠军预测", "bracket-forecast.html"],
+      sub: [["BP 分析", "bp.html"],
+            ["冠军预测", "bracket-forecast.html"],
             ["胜率沙盘", "sandbox.html"], ["系列赛研究", "series.html"], ["实时预测", "predict.html"],
             ["英雄对比", "compare.html"], ["战队对比", "compare-team.html"],
             ["选手对比", "compare-player.html"], ["位置对比", "compare-lane.html"],
@@ -222,7 +223,7 @@ window.KPL = (function () {
             ["数据查询", "query.html"], ["智能找局", "find.html"], ["赛前模拟", "simulator.html"]] },
     { ic: "layers", label: "荣誉", href: "honors.html",
       pages: ["honors.html", "records.html"],
-      sub: [["赛事纪录", "records.html"]] }
+      sub: [["荣誉中心", "honors.html"], ["赛事纪录", "records.html"]] }
   ];
   function navGroupHtml(page, real) {
     return NAV.map(function (g) {
@@ -230,8 +231,13 @@ window.KPL = (function () {
       var sub = g.sub.length ? '<div class="nsub">' + g.sub.map(function (s) {
         return '<a href="' + s[1] + '"' + (s[1] === real ? ' class="subon"' : "") + ">" + esc(s[0]) + "</a>";
       }).join("") + "</div>" : "";
-      return '<div class="ngrp' + (on ? " on" : "") + '">' +
-        '<a class="ntop" href="' + g.href + '">' + g.label + (sub ? '<i class="caret"></i>' : "") + "</a>" + sub + "</div>";
+      // 有子菜单的顶级项只做“展开菜单”，不再跳转；主页面放在下拉第一项。
+      var top = sub
+        ? '<button class="ntop" type="button" data-href="' + g.href +
+          '" aria-haspopup="true" aria-expanded="false">' +
+          g.label + '<i class="caret"></i></button>'
+        : '<a class="ntop" href="' + g.href + '" data-href="' + g.href + '">' + g.label + "</a>";
+      return '<div class="ngrp' + (on ? " on" : "") + '">' + top + sub + "</div>";
     }).join("");
   }
   function topbar(page, real) {
@@ -378,17 +384,50 @@ window.KPL = (function () {
       btn.setAttribute("aria-label", open ? "关闭导航" : "打开导航");
       btn.innerHTML = open ? closeIcon : openIcon;
     }
+    function closeGroups(except) {
+      nav.querySelectorAll(".ngrp.open").forEach(function (g) {
+        if (g === except) return;
+        g.classList.remove("open");
+        var b = g.querySelector("button.ntop");
+        if (b) b.setAttribute("aria-expanded", "false");
+      });
+    }
     btn.addEventListener("click", function (e) {
       e.stopPropagation();
       setOpen(!nav.classList.contains("open"));
     });
-    nav.addEventListener("click", function (e) { if (e.target.closest("a")) setOpen(false); });
-    document.addEventListener("click", function (e) {
-      if (!nav.contains(e.target) && !btn.contains(e.target)) setOpen(false);
+    nav.addEventListener("click", function (e) {
+      var parent = e.target.closest("button.ntop");
+      if (parent) {
+        e.preventDefault();
+        var grp = parent.parentNode;
+        var was = grp.classList.contains("open");
+        closeGroups(null);
+        if (!was) {
+          grp.classList.add("open");
+          parent.setAttribute("aria-expanded", "true");
+        }
+        return;
+      }
+      if (e.target.closest("a")) setOpen(false);
     });
-    document.addEventListener("keydown", function (e) { if (e.key === "Escape") setOpen(false); });
+    document.addEventListener("click", function (e) {
+      if (!nav.contains(e.target) && !btn.contains(e.target)) {
+        setOpen(false);
+        closeGroups(null);
+      }
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") {
+        setOpen(false);
+        closeGroups(null);
+      }
+    });
     window.addEventListener("resize", function () {
-      if (window.innerWidth > 900) setOpen(false);
+      if (window.innerWidth > 900) {
+        setOpen(false);
+        closeGroups(null);
+      }
     });
   }
 

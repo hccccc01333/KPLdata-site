@@ -475,7 +475,7 @@ async function main() {
       var g = document.querySelectorAll('#siteNav .ngrp.on');
       return { over: de.scrollWidth - window.innerWidth, bad: bad,
                lanes: document.querySelectorAll('#lanes .hn-lane').length,
-               onN: g.length, onHref: g.length ? g[0].querySelector('a.ntop').getAttribute('href') : '' };
+               onN: g.length, onHref: g.length ? g[0].querySelector('.ntop').getAttribute('data-href') : '' };
     })()`);
     check(w + "px 荣誉中心无横向溢出", hOver && hOver.over <= 1, hOver && hOver.over + "px");
     check(w + "px 荣誉中心五路数据条已渲染", hOver && hOver.lanes === 5, hOver && hOver.lanes);
@@ -558,7 +558,7 @@ async function main() {
   const navSix = await evaluate(`(function(){
     var nav = document.getElementById('siteNav');
     var g = nav ? nav.querySelectorAll('.ngrp') : [];
-    var hrefs = [].map.call(g, function (x) { return x.querySelector('a.ntop').getAttribute('href'); });
+    var hrefs = [].map.call(g, function (x) { return x.querySelector('.ntop').getAttribute('data-href'); });
     return { n: g.length, hrefs: hrefs,
              sub: nav ? nav.querySelectorAll('.nsub a').length : 0,
              honorsIdx: hrefs.indexOf('honors.html'),
@@ -760,8 +760,8 @@ async function main() {
       var dims = [].map.call(document.querySelectorAll('#cmpTable tbody tr td:first-child'), function(t){ return t.textContent.trim(); });
       var sels = document.querySelectorAll('#pickers select').length;
       var on = document.querySelectorAll('#siteNav .ngrp.on').length;
-      var onHref = (document.querySelector('#siteNav .ngrp.on a.ntop')||{}).getAttribute
-        ? document.querySelector('#siteNav .ngrp.on a.ntop').getAttribute('href') : '';
+      var onTop = document.querySelector('#siteNav .ngrp.on .ntop');
+      var onHref = onTop ? onTop.getAttribute('data-href') : '';
       return { polys: polys, rows: rows, heads: heads, dims: dims, sels: sels,
                on: on, onHref: onHref, url: location.search };
     })()`);

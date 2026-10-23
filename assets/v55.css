@@ -32,13 +32,13 @@ html.v55 .topbar{background:var(--deep) !important;border-bottom:1px solid rgba(
 html.v55 .brand-mark{background:var(--brand) !important;color:#fff !important;border-radius:7px !important;
   box-shadow:none !important;font-weight:900}
 html.v55 .brand-name{color:var(--d-ink) !important;font-weight:700 !important}
-html.v55 .nav a{color:var(--d-ink2) !important;border-radius:0 !important;padding:8px 12px !important}
+html.v55 .nav a{color:var(--d-muted) !important;border-radius:0 !important;padding:8px 12px !important}
 html.v55 .nav a:hover{color:#fff !important;background:none !important}
 html.v55 .nav a.on{color:#fff !important;background:none !important;box-shadow:none !important;font-weight:700 !important}
 html.v55 .nav a.on::after{background:var(--brand) !important;height:2px !important;border-radius:1px}
 html.v55 .nsub{background:var(--deep2) !important;border:1px solid rgba(255,255,255,.10) !important;
   box-shadow:0 18px 40px rgba(10,11,15,.35) !important}
-html.v55 .nsub a{color:var(--d-ink2) !important}
+html.v55 .nsub a{color:var(--d-muted) !important}
 html.v55 .nsub a:hover{color:#fff !important;background:rgba(255,255,255,.06) !important}
 html.v55 .nsub a.subon{color:#fff !important}
 html.v55 .nav-toggle{background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.14) !important;color:#fff !important}
@@ -337,7 +337,7 @@ html.v55 .cov-bar .c{background:var(--brand)}
 }
 
 /* ---------------- 导航激活态（.ngrp.on 结构） ---------------- */
-html.v55 .nav .ngrp > .ntop{color:var(--d-ink2) !important}
+html.v55 .nav .ngrp > .ntop{color:var(--d-muted) !important}
 html.v55 .nav .ngrp.on > .ntop{color:#fff !important}
 html.v55 .nav .ngrp.on > .ntop::after{background:var(--brand) !important}
 html.v55 .nav .ngrp:hover > .ntop{color:#fff !important}
