@@ -783,7 +783,10 @@ window.KPL = (function () {
     if (!/\.html$/.test(real)) real = page;
     var h = document.getElementById("siteHeader");
     var f = document.getElementById("siteFooter");
-    if (h) h.innerHTML = topbar(page, real);
+    if (h) {
+      h.classList.add("topbar");
+      h.innerHTML = topbar(page, real);
+    }
     if (f) f.innerHTML = footer();
     initSearch();
     initNav();
