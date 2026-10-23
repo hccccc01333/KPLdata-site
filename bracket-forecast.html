@@ -1,34 +1,41 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="v55">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>冠军预测 · 双败淘汰赛 · KPL 数据中心</title>
+<link rel="stylesheet" href="assets/style.css?v=78">
+<link rel="stylesheet" href="assets/pages.css?v=78">
+<link rel="stylesheet" href="assets/v55.css?v=78">
 <style>
-  :root { --paper:#f6f2ea; --paper2:#fbf8f2; --ink:#2c2a26; --muted:#8b8275; --line:#e4dbcb;
-           --gold:#d3a24a; --gold-soft:#f7e4bd; --blue:#6f93c4; --blue-soft:#dce7f5; --navy:#101a2b; }
+  .bf-page { --paper:#f6f2ea; --paper2:#fbf8f2; --ink:#2c2a26; --muted:#8b8275; --line:#e4dbcb;
+           --gold:#d3a24a; --gold-soft:#f7e4bd; --blue:#6f93c4; --blue-soft:#dce7f5; --navy:#101a2b;
+           background:var(--paper); color:var(--ink); font-size:15px; line-height:1.7;
+           font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; }
+  body { margin:0; background:#f6f2ea; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--paper); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; }
-  .wrap { max-width:1240px; margin:0 auto; padding:28px 20px 60px; }
-  .hero { display:grid; grid-template-columns:1.05fr 1fr; gap:18px; align-items:stretch; }
-  .hcopy { padding:10px 4px; }
-  .kick { color:var(--gold); font-size:12px; letter-spacing:1.6px; }
-  h1 { font-size:30px; margin:8px 0 8px; letter-spacing:.5px; }
-  .sub { color:var(--muted); font-size:13px; line-height:1.9; }
-  .hcard { background:var(--navy); color:#fff; border-radius:18px; padding:20px 22px; box-shadow:0 14px 30px #101a2b22; }
-  .hcard .ck { color:#e6c578; font-size:11px; letter-spacing:1.4px; }
-  .hcard .cname { font-size:30px; font-weight:800; margin:2px 0; }
-  .hcard .cp { color:#e6c578; font-size:38px; font-weight:800; line-height:1.1; }
-  .hcard .cs { color:#9fb0c6; font-size:12px; }
-  .bars { margin-top:14px; display:grid; gap:7px; }
-  .brow { display:grid; grid-template-columns:82px 1fr 52px; gap:9px; align-items:center; font-size:12px; color:#cdd8e6; }
-  .bar { height:8px; background:#223049; border-radius:99px; overflow:hidden; }
-  .bar i { display:block; height:100%; background:linear-gradient(90deg,#a9772a,#e6c578); border-radius:99px; }
+  .bf-wrap { max-width:1240px; margin:0 auto; padding:22px 20px 60px; }
+  .bf-crumb { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:12px; margin-bottom:14px; }
+  .bf-crumb a { color:var(--muted); }
+  .bf-hero { display:grid; grid-template-columns:1.05fr 1fr; gap:18px; align-items:stretch; }
+  .bf-hcopy { padding:10px 4px; }
+  .bf-kick { color:var(--gold); font-size:12px; letter-spacing:1.6px; }
+  .bf-page h1 { font-size:30px; margin:8px 0 8px; letter-spacing:.5px; }
+  .bf-sub { color:var(--muted); font-size:13px; line-height:1.9; }
+  .bf-hcard { background:var(--navy); color:#fff; border-radius:18px; padding:20px 22px; box-shadow:0 14px 30px #101a2b22; }
+  .bf-hcard .bf-ck { color:#e6c578; font-size:11px; letter-spacing:1.4px; }
+  .bf-hcard .bf-cname { font-size:30px; font-weight:800; margin:2px 0; }
+  .bf-hcard .bf-cp { color:#e6c578; font-size:38px; font-weight:800; line-height:1.1; }
+  .bf-hcard .bf-cs { color:#9fb0c6; font-size:12px; }
+  .bf-bars { margin-top:14px; display:grid; gap:7px; }
+  .bf-brow { display:grid; grid-template-columns:82px 1fr 52px; gap:9px; align-items:center; font-size:12px; color:#cdd8e6; }
+  .bf-bar { height:8px; background:#223049; border-radius:99px; overflow:hidden; }
+  .bf-bar i { display:block; height:100%; background:linear-gradient(90deg,#a9772a,#e6c578); border-radius:99px; }
   .brow b { text-align:right; color:#fff; font-weight:600; }
-  .brhead { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin:30px 0 10px; }
-  .brhead h2 { font-size:18px; margin:0; }
-  .brhead .sub { font-size:12px; }
-  .brhead a { color:var(--blue); font-size:12px; }
+  .bf-brhead { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin:30px 0 10px; }
+  .bf-brhead h2 { font-size:18px; margin:0; }
+  .bf-brhead .bf-sub { font-size:12px; }
+  .bf-brhead a { color:var(--blue); font-size:12px; }
   .bracket-scroll { overflow-x:auto; border:1px solid var(--line); border-radius:16px; background:linear-gradient(180deg,#fbf8f2,#f4efe5); }
   .bracket { position:relative; width:1180px; height:1060px; margin:0 auto; }
   .bracket::before { content:""; position:absolute; left:0; right:0; top:720px; border-top:1px dashed #ddcfb8; }
@@ -57,38 +64,42 @@
   .mfoot b { color:#6f675c; }
   .lower-sec { position:absolute; left:0; right:0; top:720px; height:1px; }
   .tablewrap { margin-top:22px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:6px 14px; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  th,td { padding:9px 6px; border-bottom:1px solid #f1ebdf; text-align:left; }
-  th { color:var(--muted); font-weight:500; font-size:12px; }
-  td.num { text-align:right; font-variant-numeric:tabular-nums; }
-  .note { margin-top:20px; color:#8d8272; font-size:12px; line-height:1.9; }
-  .note b { color:#5f584d; }
-  @media (max-width:900px) { .hero { grid-template-columns:1fr; } h1 { font-size:24px; } }
+  .bf-page table { width:100%; border-collapse:collapse; font-size:13px; }
+  .bf-page th, .bf-page td { padding:9px 6px; border-bottom:1px solid #f1ebdf; text-align:left; }
+  .bf-page th { color:var(--muted); font-weight:500; font-size:12px; }
+  .bf-page td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .bf-note { margin-top:20px; color:#8d8272; font-size:12px; line-height:1.9; }
+  .bf-note b { color:#5f584d; }
+  .bf-page a { color:var(--blue); }
+  @media (max-width:900px) { .bf-hero { grid-template-columns:1fr; } .bf-page h1 { font-size:24px; } }
 </style>
 </head>
-<body>
-<div class="wrap">
-  <div class="hero">
-    <div class="hcopy">
-      <div class="kick">2026 KPL 年度总决赛 · 双败淘汰</div>
+<body data-page="bracket-forecast.html">
+<header id="siteHeader"></header>
+<div class="bf-page">
+<div class="bf-wrap">
+  <div class="bf-crumb"><a href="schedule.html">← 返回赛程</a><span>·</span><a href="bracket.html">官方赛事进程</a><span>·</span><a href="forecast.html">首轮对阵</a></div>
+  <div class="bf-hero">
+    <div class="bf-hcopy">
+      <div class="bf-kick">2026 KPL 年度总决赛 · 双败淘汰</div>
       <h1>冠军预测 · 8 队双败签表</h1>
-      <div class="sub">按官方比赛进程的胜者组 / 败者组框架，用 prematch_v2 逐场计算概率，再做 50,000 次双败模拟。<br>
+      <div class="bf-sub">按官方比赛进程的胜者组 / 败者组框架，用 prematch_v2 逐场计算概率，再做 50,000 次双败模拟。<br>
       金色 = 胜者组，蓝色 = 败者组；卡片右侧的百分比是系列赛（BO7）胜率。<br>
       生成时间 2026-10-23 12:19:00 · <a href="forecast.html">只看首轮对阵 →</a> · <a href="bracket.html">官方赛事进程 →</a></div>
     </div>
-    <div class="hcard">
-      <div class="ck">CHAMPION PICK</div>
-      <div class="cname">重庆狼队</div>
-      <div class="cp">35.8%</div>
-      <div class="cs">模拟冠军概率最高 · 50,000 次</div>
-      <div class="bars"><div class="brow"><span>重庆狼队</span><div class="bar"><i style="width:100.0%"></i></div><b>35.8%</b></div><div class="brow"><span>北京JDG</span><div class="bar"><i style="width:44.9%"></i></div><b>16.1%</b></div><div class="brow"><span>广州TTG</span><div class="bar"><i style="width:42.7%"></i></div><b>15.3%</b></div><div class="brow"><span>上海EDG.M</span><div class="bar"><i style="width:36.0%"></i></div><b>12.9%</b></div><div class="brow"><span>KSG</span><div class="bar"><i style="width:24.0%"></i></div><b>8.6%</b></div><div class="brow"><span>北京WB</span><div class="bar"><i style="width:21.3%"></i></div><b>7.6%</b></div><div class="brow"><span>杭州LGD.NBW</span><div class="bar"><i style="width:7.1%"></i></div><b>2.5%</b></div><div class="brow"><span>长沙TES.A</span><div class="bar"><i style="width:3.4%"></i></div><b>1.2%</b></div></div>
+    <div class="bf-hcard">
+      <div class="bf-ck">CHAMPION PICK</div>
+      <div class="bf-cname">重庆狼队</div>
+      <div class="bf-cp">35.8%</div>
+      <div class="bf-cs">模拟冠军概率最高 · 50,000 次</div>
+      <div class="bf-bars"><div class="bf-brow"><span>重庆狼队</span><div class="bf-bar"><i style="width:100.0%"></i></div><b>35.8%</b></div><div class="bf-brow"><span>北京JDG</span><div class="bf-bar"><i style="width:44.9%"></i></div><b>16.1%</b></div><div class="bf-brow"><span>广州TTG</span><div class="bf-bar"><i style="width:42.7%"></i></div><b>15.3%</b></div><div class="bf-brow"><span>上海EDG.M</span><div class="bf-bar"><i style="width:36.0%"></i></div><b>12.9%</b></div><div class="bf-brow"><span>KSG</span><div class="bf-bar"><i style="width:24.0%"></i></div><b>8.6%</b></div><div class="bf-brow"><span>北京WB</span><div class="bf-bar"><i style="width:21.3%"></i></div><b>7.6%</b></div><div class="bf-brow"><span>杭州LGD.NBW</span><div class="bf-bar"><i style="width:7.1%"></i></div><b>2.5%</b></div><div class="bf-brow"><span>长沙TES.A</span><div class="bf-bar"><i style="width:3.4%"></i></div><b>1.2%</b></div></div>
     </div>
   </div>
 
-  <div class="brhead">
+  <div class="bf-brhead">
     <div><h2>双败签表 · 最可能路径</h2>
-      <div class="sub">每场按模型优势方推进；冠军概率来自全部签表路径，不是这一条路径的必然结果。</div></div>
-    <div class="sub">BO7 · 总决赛单场</div>
+      <div class="bf-sub">每场按模型优势方推进；冠军概率来自全部签表路径，不是这一条路径的必然结果。</div></div>
+    <div class="bf-sub">BO7 · 总决赛单场</div>
   </div>
   <div class="bracket-scroll">
     <div class="bracket">
@@ -191,7 +202,7 @@
     </table>
   </div>
 
-  <div class="note">
+  <div class="bf-note">
     <b>口径：</b>官方签表为 8 队 BO7 双败；胜者组 R1/R2/决赛，败者组 R1/R2/R3/决赛，总决赛单场，无 bracket reset。<br>
     <b>败者组交叉：</b>按标准 8 队双败签表假设——10-31 胜者 vs 11-03 负者、11-01 胜者 vs 11-02 负者；11-06 负者进入 11-08。
     官方页面只给日期/槽位，不公布交叉；如果官方交叉不同，冠军概率会变。<br>
@@ -199,5 +210,11 @@
     页面结构参考官方比赛进程的视觉框架，预测数字由本站模型生成。
   </div>
 </div>
+</div>
+<footer id="siteFooter" class="footer"></footer>
+<script src="assets/data.js?v=78"></script>
+<script src="assets/schedule_all.js?v=78"></script>
+<script src="assets/common.js?v=78"></script>
+<script>KPL.init();</script>
 </body>
 </html>

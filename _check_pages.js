@@ -22,6 +22,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const PAGES = [
   ["index.html", "首页", ["#focusHero > *", "#replayPicks .rp-pick", "#stTop tr", "#heroTop > *", "#plTop > *", ".entry"]],
   ["schedule.html", "赛程", ["#fStatus option", "#schBody tr, .day-block, .sched-row"]],
+  ["bracket-forecast.html", "冠军预测", ["#siteHeader #siteNav", ".bf-page .mcard", ".bf-page .bracket", "#siteFooter .footer-in"]],
   ["teams.html", "战队榜", ["#teamGrid > *, .tcard, .team-card", ".champ", ".pw b"]],
   ["team.html?id=重庆狼队", "战队详情", ["#teamHead, .page-hero", ".tstat-grid, .panel", ".cmp-radar svg, .radar-wrap .empty-tip"]],
   ["players.html", "选手榜", ["#plBody tr, .player, .pl-card"]],
@@ -41,6 +42,7 @@ const PAGES = [
   ["comeback.html", "翻盘研究所", ["#cbKpi .hd-cell", "#cbRows tr", "#cbBins .cb-row", "#cbNote"]],
   ["h2h.html", "交手记录", ["main .panel, .h2h-panel"]],
   ["predict.html", "预测统计", ["#cpRows tr", "#kAccK"]],
+  ["sandbox.html", "胜率沙盘", ["#sbSurface svg", "#sbState .sb-hist", "#sbWhatIf input", "#sbPhases .sb-phase", "#sbWorst .sb-worst-row"]],
   ["picks.html", "精选对局", [".pick-card"]],
   ["query.html", "数据查询", ["#qBody a.cell"]],
   ["find.html", "智能找局", ["#fYear option", "#findBody tr", "#fCount"]],
