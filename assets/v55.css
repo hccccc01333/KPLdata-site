@@ -337,6 +337,7 @@ html.v55 .cov-bar .c{background:var(--brand)}
 }
 
 /* ---------------- 导航激活态（.ngrp.on 结构） ---------------- */
+html.v55 .nav .ngrp > .ntop{color:var(--d-ink2) !important}
 html.v55 .nav .ngrp.on > .ntop{color:#fff !important}
 html.v55 .nav .ngrp.on > .ntop::after{background:var(--brand) !important}
 html.v55 .nav .ngrp:hover > .ntop{color:#fff !important}
