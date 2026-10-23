@@ -130,6 +130,15 @@ async function get(url, wantBody) {
   return { status: 0, ct: "", body: "", via: "unreachable" };
 }
 
+const CORE_PAGES = [
+  "schedule.html",
+  "bracket.html",
+  "bracket-forecast.html",
+  "forecast.html",
+  "sandbox.html",
+  "predict.html",
+];
+
 const KEY_ASSETS = [
   ["index.html", "text/html"],
   ["assets/style.css", "css"],
@@ -158,6 +167,12 @@ async function main() {
     const r = await get(BASE + "/" + path, false);
     check(path + " 200", r.status === 200, r.status);
     check(path + " content-type 正确", r.status === 200 && r.ct.toLowerCase().includes(ctHint), r.ct || "(空)");
+  }
+
+  console.log("\n=== 核心页面可访问 ===");
+  for (const path of CORE_PAGES) {
+    const r = await get(BASE + "/" + path, false);
+    check(path + " 200", r.status === 200, r.status);
   }
 
   console.log("\n=== 版本一致性（防新旧缓存混用）===");
