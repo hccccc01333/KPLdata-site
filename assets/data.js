@@ -1,5 +1,5 @@
 window.SITE_DATA = {
- "generatedAt": "2026-10-24 19:03",
+ "generatedAt": "2026-10-24 21:30",
  "season": "2026 年度总决赛",
  "stats": {
   "matches": 173,
@@ -14,37 +14,44 @@ window.SITE_DATA = {
  "model": {
   "version": "V12",
   "name": "分阶段集成模型（早期 EarlyRF + 中期 MidRF）",
-  "trainedAt": "2026-10-22 20:17:59",
-  "holdoutAll": 0.17726796357883387,
-  "holdoutEarly": 0.23465655137525873,
-  "holdoutMid": 0.10174500183686395,
-  "holdoutLate": 0.20227079335831993,
+  "trainedAt": "2026-10-24 21:00:05",
+  "holdoutAll": 0.17684488418660968,
+  "holdoutEarly": 0.23453054446445684,
+  "holdoutMid": 0.10227922218964626,
+  "holdoutLate": 0.19896951794675616,
   "holdoutN": 20,
-  "split": {},
+  "split": {
+   "scheme": "time-ordered battle-level 3-way (train/calib/test)",
+   "train_battles": 145,
+   "calib_battles": 20,
+   "test_battles": 20,
+   "test_snapshots": 298,
+   "calib_snapshots": 280
+  },
   "auc": 0.8721,
   "aucScope": "独立测试段（test 20 局 / 298 帧，训练与校准均未接触）",
-  "trainDiagAuc": 0.9368,
+  "trainDiagAuc": 0.9363,
   "trainDiagAucScope": "训练段内诊断分（模型选型用，非能力指标；test 集不参与）",
   "compare": [
    {
     "phase": "early (≤8′)",
     "old": 0.117,
-    "new": 0.2347
+    "new": 0.2345
    },
    {
     "phase": "mid (9–15′)",
     "old": 0.129,
-    "new": 0.1017
+    "new": 0.1023
    },
    {
     "phase": "late (16′+)",
     "old": 0.231,
-    "new": 0.2023
+    "new": 0.199
    },
    {
     "phase": "all",
     "old": 0.143,
-    "new": 0.1773
+    "new": 0.1768
    }
   ],
   "sameSample": {
@@ -4011,7 +4018,7 @@ window.SITE_DATA = {
    },
    {
     "m": 8.1,
-    "p": 0.3128205128205128,
+    "p": 0.3044871794871795,
     "gd": -136.0
    },
    {
@@ -4021,22 +4028,22 @@ window.SITE_DATA = {
    },
    {
     "m": 10.1,
-    "p": 0.75,
+    "p": 0.6,
     "gd": 32.0
    },
    {
     "m": 11.95,
-    "p": 0.2,
+    "p": 0.1875,
     "gd": -994.0
    },
    {
     "m": 12.45,
-    "p": 0.75,
+    "p": 0.6,
     "gd": -138.0
    },
    {
     "m": 13.283333333333333,
-    "p": 0.5714285714285714,
+    "p": 0.5925925925925926,
     "gd": 520.0
    },
    {
@@ -4056,7 +4063,7 @@ window.SITE_DATA = {
    },
    {
     "m": 18.633333333333333,
-    "p": 0.5714285714285714,
+    "p": 0.5925925925925926,
     "gd": 1018.0
    },
    {
@@ -4076,12 +4083,12 @@ window.SITE_DATA = {
    },
    {
     "m": 22.15,
-    "p": 0.5714285714285714,
+    "p": 0.5946852385044298,
     "gd": 1332.0
    },
    {
     "m": 23.316666666666666,
-    "p": 0.2,
+    "p": 0.1875,
     "gd": -567.0
    }
   ],
@@ -4244,7 +4251,7 @@ window.SITE_DATA = {
      "td": 0.0,
      "rd": 0.0
     },
-    "prob_mean": 0.6157769720477191
+    "prob_mean": 0.5729670703092459
    },
    {
     "code": "late",
@@ -4263,14 +4270,14 @@ window.SITE_DATA = {
      "td": 0.0,
      "rd": 1.0
     },
-    "prob_mean": 0.6365424119951288
+    "prob_mean": 0.6405324980251137
    }
   ],
   "cards": [
    {
     "title": "胜率摆动拐点",
-    "value": "67%",
-    "headline": "第 9′ · 蓝方走强（31% → 98%，估算）",
+    "value": "68%",
+    "headline": "第 9′ · 蓝方走强（30% → 98%，估算）",
     "note": "伴随事件：推塔 · 重庆狼队、推塔 · 北京WB、暴君 · 北京WB",
     "source": "估算"
    },
