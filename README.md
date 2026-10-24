@@ -64,20 +64,15 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 
 ## 匿名统计（P0 基线）
 
-- 端点是同源 `POST /api/event`，由 `worker.js` 写入 Cloudflare Analytics Engine 数据集 `kpl_site_events`；不写 Cookie、不存 IP，不上报查询参数、战队名或选手名。
-- 事件只有 6 个：`page_view`（访问来源用 referrer 主机名）、`match_open`、`key_moment_click`、`timeline_drag`、`share_click`、`fav_add`；`s` 是 sessionStorage 里的随机会话 ID，关掉标签页即失效。
-- 示例查询（Cloudflare Dashboard → Analytics Engine）：
-  ```sql
-  SELECT blob1 AS event, count() AS n
-  FROM kpl_site_events
-  WHERE timestamp > NOW() - INTERVAL '7' DAY
-  GROUP BY event ORDER BY n DESC;
-  ```
-  ```sql
-  SELECT blob3 AS referrer_host, count() AS n
-  FROM kpl_site_events
-  WHERE blob1 = 'page_view' AND timestamp > NOW() - INTERVAL '7' DAY
-  GROUP BY referrer_host ORDER BY n DESC LIMIT 30;
+- 端点是同源 `POST /api/event`，由 `worker.js` 写入 Cloudflare KV 命名空间 `EVENTS_KV`；不写 Cookie、不存 IP，不上报查询参数、战队名或选手名。
+- 当前账号未启用 Analytics Engine（需在 Dashboard 手动开启），所以先用 KV：每条事件一个 `e:YYYY-MM-DD:事件:UUID` key，90 天自动过期。事件同名 key 不覆盖，可直接按前缀统计。
+- 事件只有 6 个：`page_view`（访问来源用 referrer 主机名）、`match_open`、`key_moment_click`、`timeline_drag`、`share_click`、`fav_add`；`s` 是 sessionStorage 里的随机会话 ID，关掉标签页即失效。本地 / GitHub Pages 镜像不发送。
+- 查看基线：
+  ```bash
+  # 按天+事件计数（key 名就带事件名）
+  npx wrangler kv key list --remote --namespace-id 7e4d698d5f5d405d85278bfe27f87f30     --prefix "e:2026-10-24:page_view:"
+  # 看来源主机名 / 路径（每条一个 JSON）
+  npx wrangler kv key get --remote --namespace-id 7e4d698d5f5d405d85278bfe27f87f30     "e:2026-10-24:page_view:<key后缀>"
   ```
 - Cloudflare Web Analytics 可在 Dashboard 额外开启；本站的 `page_view` 已能给出最小来源基线，不依赖第三方脚本。
 
