@@ -62,6 +62,7 @@
   }
 
   function fmtTime() {
+    if (window.KPL && KPL.todayCN && KPL.cnHM) return KPL.todayCN() + " " + KPL.cnHM();
     var d = new Date();
     function p(n) { return (n < 10 ? "0" : "") + n; }
     return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
@@ -141,10 +142,10 @@
     g.textAlign = "left";
     g.fillStyle = D_INK;
     g.font = font(28, 800);
-    g.fillText("KPL 数据中心", 124, 92);
+    g.fillText("峡谷有数", 124, 92);
     g.fillStyle = D_MUTED;
     g.font = font(19);
-    g.fillText("KING PRO LEAGUE · DATA CENTER", 124, 122);
+    g.fillText("KPL INSIGHT", 124, 122);
 
     if (spec.kind) {
       g.font = font(22, 600);
@@ -337,6 +338,7 @@
       btn.textContent = "生成分享图";
       btn.setAttribute("style", "margin-top:14px");
       btn.onclick = function () {
+        if (window.KPL && KPL.track) KPL.track("share_click");
         var spec;
         try { spec = specFn(); } catch (e) { spec = null; }
         if (!spec || !spec.title) { btn.textContent = "暂无可用数据"; return; }
@@ -345,6 +347,7 @@
       host.appendChild(btn);
     },
     open: function (spec, fileName) {
+      if (window.KPL && KPL.track) KPL.track("share_click");
       renderAsync(spec).then(function (cv) { preview(cv, fileName); });
     },
     render: draw

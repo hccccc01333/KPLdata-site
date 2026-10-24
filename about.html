@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>数据说明 · KPL 数据中心</title>
+<title>数据说明 · 峡谷有数</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=79">
-<link rel="stylesheet" href="assets/pages.css?v=79">
-<link rel="stylesheet" href="assets/v55.css?v=79">
+<link rel="stylesheet" href="assets/style.css?v=84">
+<link rel="stylesheet" href="assets/pages.css?v=84">
+<link rel="stylesheet" href="assets/v55.css?v=84">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="KPL 数据中心">
-<meta property="og:title" content="数据说明 · KPL 数据中心">
+<meta property="og:site_name" content="峡谷有数">
+<meta property="og:title" content="数据说明 · 峡谷有数">
 <meta property="og:description" content="KPL 赛事数据产品：赛程比分、战队/选手/英雄数据、BP 分析、逐局复盘与实时胜率预测。2019–2026 全历史。">
 <meta property="og:image" content="https://kpldata-site.hccccc01333.workers.dev/assets/shots/02-live.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -48,6 +48,7 @@
           <li><b>先看样本再看结论。</b>卡片上的浅色条表示真实胜率的合理浮动范围——比赛越多范围越窄；样本太少会标「样本不足」，不给结论色。</li>
           <li><b>哪些是「估算」。</b>模型算出来的数字（胜率曲线、模拟结果）都标「估算」；官方原始数据照抄官方，不做加工。</li>
           <li><b>未结算不计入。</b>胜负未确认的对局不计入任何榜单。</li>
+          <li><b>覆盖边界。</b>逐分钟胜率只覆盖 <span id="covProb">—</span> / <span id="covTotal">—</span> 局（<span id="covPct">—</span>）；其余只展示赛果、BP 与选手数据，不用赛后重放曲线冒充直播判断。</li>
         </ul>
       </div>
     </div>
@@ -131,10 +132,10 @@
           <li><b>用最新比赛当考卷。</b>只拿最近的比赛检验模型，不挑容易的数据，模拟真实的「预测下一场」。</li>
           <li><b>考卷和练习册分开。</b>训练 / 校准 / 考试三段按时间切开：校准器（把概率掰正的那层）只看校准段，
             考试段只用来报数字，谁都碰不到。早期版本是「同一批 8 局既调校准器又当考卷」，那批数字已作废重算。</li>
-          <li><b>同一批考卷比高低。</b>换了口径之后，新模型放回旧考卷复算是 0.135，与旧的 0.143 同量级——
-            说明数字变化来自考卷变宽，不是模型退步。</li>
-          <li><b>翻盘局单独看。</b>考试段 20 局里有 6 局是翻盘，early 阶段在这 6 局上准确率只有 15%，
-            而其余 14 局是 80%。这个差距不藏，页面直接写出来。</li>
+          <li><b>同一批考卷比高低。</b>换了口径之后，把新模型放回旧考卷复算，与旧口径同量级
+            （具体数值见下方脚注）——说明数字变化来自考卷变宽，不是模型退步。</li>
+          <li><b>翻盘局单独看。</b>考试段里翻盘局单独看，early 阶段明显更差；差距不藏，
+            <a href="predict.html" style="color:var(--gold)">逐局结果与数字在预测统计页公开 →</a></li>
           <li><b>异常数据隔离。</b>快照不完整的对局不参与训练与榜单。</li>
           <li><b>数字护栏。</b>当曲线与场上经济明显不符时，模型把数字拉回中间，避免误导性的极端胜率。</li>
         </ul>
@@ -162,7 +163,7 @@
         <ul class="rules">
           <li><b>预测档案。</b>每一局的直播预测 vs 实际结果逐条公开、可回看：
             <a href="predict.html" style="color:var(--gold)">预测与准确率 →</a></li>
-          <li><b>分阶段回测。</b>早期约 85% / 中期约 85% / 后期约 52%——后期双方经济咬死时最难判断，不粉饰。</li>
+          <li><b>分阶段回测。</b>各阶段误差与准确率见上表；后期双方经济咬死时最难判断，不粉饰。</li>
           <li><b>「趋势外推」是什么。</b>未来 3–5 分钟的胜率与金差预测，按当前走势线性推演并收敛处理，不是另一套模型，仅供参考。</li>
           <li><b>非官方预测。</b>所有胜率与预测均为模型估算，与官方无关。</li>
         </ul>
@@ -218,23 +219,38 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=79"></script>
-<script src="assets/details.js?v=79"></script>
-<script src="assets/seasons.js?v=79"></script>
-<script src="assets/common.js?v=79"></script>
+<script src="assets/data.js?v=84"></script>
+<script src="assets/site_totals.js?v=84"></script>
+<script src="assets/details.js?v=84"></script>
+<script src="assets/seasons.js?v=84"></script>
+<script src="assets/replay/index.js?v=84"></script>
+<script src="assets/common.js?v=84"></script>
 <script>
 (function () {
   "use strict";
   var D = KPL.data, K = KPL, $ = function (s) { return document.querySelector(s); };
   K.init();
   $("#kvClock").textContent = D.generatedAt;
-  var T = (window.KPL_SEASONS && KPL_SEASONS.scopes && KPL_SEASONS.scopes.all)
-    ? KPL_SEASONS.scopes.all.totals : { matches: D.stats.matches, battles: D.stats.battles };
-  $("#kvRange").textContent = "2019–2026 全历史 · 33 个赛事（联赛 / 世冠 / 挑战者杯 / 年度总决赛）· 已收录 " +
+  var T = (window.KPL_TOTALS && KPL_TOTALS.battles)
+    ? { matches: KPL_TOTALS.matches, battles: KPL_TOTALS.battles }
+    : ((window.KPL_SEASONS && KPL_SEASONS.scopes && KPL_SEASONS.scopes.all)
+      ? KPL_SEASONS.scopes.all.totals : { matches: D.stats.matches, battles: D.stats.battles });
+  $("#kvRange").textContent = "2019–2026 全历史 · " + ((window.KPL_TOTALS && KPL_TOTALS.leagues) || 33) +
+    " 个赛事（联赛 / 世冠 / 挑战者杯 / 年度总决赛）· 已收录 " +
     K.fmtInt(T.matches) + " 场比赛 / " + K.fmtInt(T.battles) + " 局";
 
+  // 覆盖数字同一来源：replay/index.js 里的 p 标记 + 全历史总局数，不在文案里手写。
+  var RPI = window.KPL_REPLAY_INDEX || {}, covN = 0;
+  Object.keys(RPI).forEach(function (mid) {
+    var e = RPI[mid] || {};
+    (e.p || []).forEach(function (v) { if (v) covN++; });
+  });
+  if ($("#covProb")) $("#covProb").textContent = K.fmtInt(covN);
+  if ($("#covTotal")) $("#covTotal").textContent = K.fmtInt(T.battles);
+  if ($("#covPct")) $("#covPct").textContent = T.battles ? (covN / T.battles * 100).toFixed(1) + "%" : "—";
+
   var stack = [
-    { k: "覆盖赛事", v: 33, s: "2019–2026 八个年度" },
+    { k: "覆盖赛事", v: (window.KPL_TOTALS && KPL_TOTALS.leagues) || 33, s: "2019–2026 八个年度" },
     { k: "收录比赛", v: T.matches, s: "大场 · 比分已核对" },
     { k: "收录对局", v: T.battles, s: "逐局 BP / 选手 / 出装" },
     { k: "局内快照", v: D.stats.snapshotDirs, s: "场次原始帧（实时链路）" }

@@ -102,6 +102,7 @@ async function main() {
       phases: document.querySelectorAll('#sbPhases .sb-phase').length,
       worst: document.querySelectorAll('#sbWorst .sb-worst-row').length,
       analogs: document.querySelectorAll('#sbAnalog .sb-analog-row').length,
+      analogNote: (document.querySelector('#sbAnalog .sb-analog-sum')||{}).textContent || '',
       brier: (document.querySelector('#sbKpiBrier')||{}).textContent,
       coverage: (document.querySelector('#sbKpiCoverage')||{}).textContent,
       curve: document.querySelectorAll('#sbCurve svg path').length,
@@ -114,6 +115,7 @@ async function main() {
   check("模型体检 4 个阶段卡", base && base.phases === 4, base && base.phases);
   check("最差对局表已渲染", base && base.worst >= 5, base && base.worst);
   check("同状态历史样例已渲染", base && base.analogs >= 3, base && base.analogs);
+  check("历史对照按独立对局计数（不再是帧）", base && /独立对局数/.test(base.analogNote), base && base.analogNote);
   check("V12 曲线已渲染", base && base.curve >= 1, base && base.curve);
   check("KPI Brier = 0.177", base && base.brier === "0.177", base && base.brier);
   check("KPI 覆盖 = 222 局", base && base.coverage === "222 局", base && base.coverage);
@@ -178,6 +180,16 @@ async function main() {
   })()`);
   check("随机一局可重绘", random && random.cells === 77, random && random.after);
   check("随机后页面无异常", errors.length === 0, errors.slice(0, 3).join(" | "));
+
+  // 从复盘故事深链进入沙盘
+  await visit(BASE + "sandbox.html?battle=1054884368_8_1792576862&m=10");
+  const deep = await evaluate(`(function(){
+    var n = document.getElementById('sbJumpNote');
+    return { hidden: n ? n.hidden : null, text: n ? n.textContent : '',
+             meta: (document.querySelector('#sbCurveMeta')||{}).textContent || '' };
+  })()`);
+  check("复盘故事可深链到沙盘同一局面", deep && deep.hidden === false &&
+    /从复盘跳转/.test(deep.text) && /长沙TES\.A vs 成都AG超玩会/.test(deep.meta), deep && deep.text);
 
   console.log("\n=== 响应式 390 / 768 / 1440 ===");
   for (const w of [390, 768, 1440]) {

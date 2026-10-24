@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KPL 数据中心 · 2026 赛事数据 · 赛程 / 战队 / 选手 / 英雄</title>
+<title>峡谷有数 · 2026 赛事数据 · 赛程 / 战队 / 选手 / 英雄</title>
 <meta name="description" content="KPL 赛事数据产品：按比赛日看赛程比分、战队与选手数据、英雄梯度、比赛复盘与胜负模拟。数据来自腾讯 KPL 公开赛事接口。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=79">
-<link rel="stylesheet" href="assets/pages.css?v=79">
-<link rel="stylesheet" href="assets/v55.css?v=79">
+<link rel="stylesheet" href="assets/style.css?v=84">
+<link rel="stylesheet" href="assets/pages.css?v=84">
+<link rel="stylesheet" href="assets/v55.css?v=84">
 <style>
 /* 我的 KPL：仅在存在收藏时出现，无收藏整块隐藏（不留空壳） */
 .myk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(258px,1fr));gap:12px}
@@ -25,8 +25,8 @@
 .myk-line span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="KPL 数据中心">
-<meta property="og:title" content="KPL 数据中心 · 2026 赛事数据 · 赛程 / 战队 / 选手 / 英雄">
+<meta property="og:site_name" content="峡谷有数">
+<meta property="og:title" content="峡谷有数 · 2026 赛事数据 · 赛程 / 战队 / 选手 / 英雄">
 <meta property="og:description" content="KPL 赛事数据产品：赛程比分、战队/选手/英雄数据、BP 分析、逐局复盘与实时胜率预测。2019–2026 全历史。">
 <meta property="og:image" content="https://kpldata-site.hccccc01333.workers.dev/assets/shots/02-live.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -171,15 +171,15 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=79"></script>
-<script src="assets/details.js?v=79"></script>
-<script src="assets/seasons.js?v=79"></script>
-<script src="assets/schedule_all.js?v=79"></script>
-<script src="assets/coverage.js?v=79"></script>
-<script src="assets/replay/index.js?v=79"></script>
-<script src="assets/updates.js?v=79"></script>
-<script src="assets/common.js?v=79"></script>
-<script src="assets/share.js?v=79"></script>
+<script src="assets/data.js?v=84"></script>
+<script src="assets/details.js?v=84"></script>
+<script src="assets/seasons.js?v=84"></script>
+<script src="assets/schedule_all.js?v=84"></script>
+<script src="assets/coverage.js?v=84"></script>
+<script src="assets/replay/index.js?v=84"></script>
+<script src="assets/updates.js?v=84"></script>
+<script src="assets/common.js?v=84"></script>
+<script src="assets/share.js?v=84"></script>
 <script>
 (function () {
   "use strict";
@@ -268,8 +268,8 @@
     /* index.html 不加载 players_detail.js，选手汇总从全量榜单取（与选手榜同口径） */
     var PMAP = {};
     ((K.scopeOf("all") || {}).players || []).forEach(function (p) { PMAP[p.name] = p; });
-    var todayIso = new Date().toISOString().slice(0, 10);
-    var nowKey = todayIso + "T" + new Date().toTimeString().slice(0, 5);
+    var todayIso = K.todayCN();
+    var nowKey = K.nowKeyCN();
 
     function isDone(r) { return r.st === 2 || r.done === true; }
     function byRecent(a, b) { return (b.date + (b.time || "")).localeCompare(a.date + (a.time || "")); }
@@ -399,7 +399,7 @@
   /* ---------- ① 首屏：赛事焦点（直播 > 今日/下一场 > 最近一场结果） ---------- */
   (function renderFocus() {
     var ALL = window.KPL_SCHEDULE_ALL || [];
-    var todayIso = new Date().toISOString().slice(0, 10);
+    var todayIso = K.todayCN();
     var live = ALL.filter(function (r) { return r.st === 1; })[0];
     var today = ALL.filter(function (r) { return r.date === todayIso; })
       .sort(function (a, b) { return String(a.time).localeCompare(String(b.time)); });
@@ -531,7 +531,7 @@
     var days = Object.keys(byDay).sort();
     if (!days.length) { el.innerHTML = '<div class="empty-tip">暂无赛程数据</div>'; return; }
 
-    var todayIso = new Date().toISOString().slice(0, 10);
+    var todayIso = K.todayCN();
     var idx = days.indexOf(todayIso);
     var win;
     if (idx >= 0) win = days.slice(Math.max(0, idx - 3), Math.min(days.length, idx + 4));

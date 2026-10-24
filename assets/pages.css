@@ -1,4 +1,4 @@
-/* KPL 数据中心 · 产品站组件（v3 深色，依赖 style.css 令牌） */
+/* 峡谷有数 · 产品站组件（v3 深色，依赖 style.css 令牌） */
 
 /* ---------------- 子页头 ---------------- */
 .page-hero{background:none;color:#fff;position:relative;overflow:hidden}
@@ -612,6 +612,69 @@ select:disabled{opacity:.55 !important;cursor:not-allowed}
 /* ---------------- 单局复盘工作台（V4 阶段二） ---------------- */
 .rp{display:flex;flex-direction:column;gap:14px}
 .rp-loading{color:var(--muted);font-size:13px;padding:18px 4px}
+/* 故事层：先给结论与三个转折，技术面板折叠在后 */
+.rp-story{position:relative;overflow:hidden;padding:20px 22px 15px;border-radius:14px;
+          border:1px solid rgba(190,150,45,.30);
+          background:linear-gradient(135deg,#FFFDF8 0%,#FFFAF0 52%,#F7F8FA 100%);
+          box-shadow:0 10px 28px rgba(38,31,18,.06)}
+.rp-story::after{content:"";position:absolute;right:-70px;top:-80px;width:220px;height:220px;border-radius:50%;
+                 background:radial-gradient(circle,rgba(246,192,33,.16),rgba(246,192,33,0) 70%);pointer-events:none}
+.rp-story-kicker{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.rp-story-kicker > .mono{letter-spacing:.08em;font-weight:800;color:#8A5A00;text-transform:uppercase}
+.rp-story-who{margin-left:auto;font-size:11.5px;color:var(--muted)}
+.rp-tag{display:inline-flex;align-items:center;padding:1px 6px;border-radius:5px;font-size:10.5px;
+        font-weight:700;line-height:1.6;letter-spacing:.02em;white-space:nowrap;font-style:normal}
+.rp-tag.official{background:#EAF3FF;color:#1F5FA8;border:1px solid #CDE2FA}
+.rp-tag.proxy{background:#FFF3DE;color:#8A5A00;border:1px solid #F2DCA9}
+.rp-tag.est{background:#F1EDFF;color:#5B45A8;border:1px solid #DDD4FA}
+.rp-tag.warn{background:#FDEBEA;color:#A62E2E;border:1px solid #F4C9C5}
+.rp-story-lead{margin:10px 0 15px;max-width:1100px;font-size:17.5px;line-height:1.78;color:var(--ink);font-weight:600;
+               letter-spacing:.005em}
+.rp-story-lead b{color:#8A5A00;font-weight:900}
+.rp-story-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.rp-moment{display:flex;flex-direction:column;gap:5px;min-width:0;text-align:left;cursor:pointer;
+           padding:11px 12px 10px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.88);
+           color:var(--ink2);font:inherit;transition:border-color .15s,box-shadow .15s,transform .15s}
+.rp-moment:hover{border-color:rgba(190,150,45,.6);box-shadow:0 6px 16px rgba(38,31,18,.08);transform:translateY(-1px)}
+.rp-moment.key{border-color:rgba(190,150,45,.62);background:linear-gradient(180deg,#FFFCF4,#FFF8E8)}
+.rp-moment-top{display:flex;align-items:center;gap:7px;min-width:0}
+.rp-moment-i{font-size:10.5px;font-weight:800;color:#B08A2E;letter-spacing:.08em}
+.rp-moment-t{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.rp-moment-key{margin-left:auto;padding:1px 6px;border-radius:4px;background:#F6C021;color:#231A05;
+               font-size:10px;font-weight:800;white-space:nowrap}
+.rp-moment-team{font-size:13px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-moment-main,.rp-moment-sub{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.rp-moment-main b,.rp-moment-sub b{font-size:13.5px;color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
+.rp-moment-main em{font-style:normal;font-size:11px;font-weight:800;color:#0F8A78}
+.rp-moment-main em.down{color:#D5374B}
+.rp-moment-ev{display:block;margin-top:2px;font-size:11px;line-height:1.55;color:var(--ink2);
+              overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.rp-moment-ev .rp-tag{margin-right:4px;vertical-align:1px}
+.rp-story-note{margin:11px 0 0;font-size:11.5px;line-height:1.65;color:var(--muted)}
+.rp-story-foot{display:flex;align-items:center;gap:9px 14px;flex-wrap:wrap;margin-top:12px;padding-top:11px;
+               border-top:1px dashed rgba(190,150,45,.26);font-size:11.5px;color:var(--muted)}
+.rp-cov{flex:1 1 100%;color:var(--muted);font-size:11px;line-height:1.6}
+.rp-legend{line-height:1.7}
+.rp-legend .rp-tag{margin:0 3px 0 0;vertical-align:1px}
+.rp-story-acts{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-left:auto}
+.rp-more,.rp-link{display:inline-flex;align-items:center;gap:5px;padding:7px 11px;border-radius:8px;
+                  font:inherit;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap}
+.rp-more{border:1px solid var(--ink);background:var(--ink);color:#fff}
+.rp-more:hover{background:#2B2D36}
+.rp-link{border:1px solid var(--line2);background:#fff;color:var(--ink2)}
+.rp-link:hover{border-color:rgba(190,150,45,.6);color:var(--ink)}
+.rp-detail{display:flex;flex-direction:column;gap:14px}
+.rp-detail[hidden]{display:none !important}
+@media(max-width:820px){
+  .rp-story{padding:16px 14px 13px}
+  .rp-story-who{display:none}
+  .rp-story-lead{font-size:15.5px;line-height:1.75;margin:9px 0 13px}
+  .rp-story-grid{grid-template-columns:1fr}
+  .rp-story-foot{align-items:flex-start}
+  .rp-story-acts{margin-left:0;width:100%}
+  .rp-legend{flex:1 1 100%}
+  .rp-more,.rp-link{flex:1 1 auto;justify-content:center}
+}
 .rp-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .rp-tabs{display:flex;gap:6px}
 .rp-tab{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;cursor:pointer;

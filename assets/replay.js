@@ -1,5 +1,5 @@
 var CP = (window.KPL && KPL.chartPalette) ? KPL.chartPalette() : {grid:'#E3E5EA',axis:'#D9DCE2',label:'#6E7480',line:'#2E6FD0',mark:'#F02F55',onLine:'#191B23',dot:'#FFFFFF'};
-/* KPL 数据中心 · 单局复盘工作台（V4 阶段二）
+/* 峡谷有数 · 单局复盘工作台（V4 阶段二）
    一条时间轴同时驱动：模型胜率 / 经济 / 资源 / 选手 / 邻近事件。
    数据由 build_replay_frames.py 预生成（assets/replay/<matchId>.json），按需加载。 */
 window.KPL_REPLAY = (function () {
@@ -151,6 +151,303 @@ window.KPL_REPLAY = (function () {
     return segs.slice(0, 3);
   }
 
+  /* ---------- 赛后故事层：一句话结论 + 三个转折 ----------
+     原则：
+       1. 只陈述数据里能直接读到的变化，不写因果；
+       2. 官方 / 代理 / 估算分开标注；
+       3. 没有直播胜率的局退回官方事件 + 经济快照，不拿赛后重放曲线做结论。 */
+  function teamName(b, side) { return side === 1 ? b.t1 : b.t2; }
+  function pOf(f, side) {
+    if (!f || f.p == null) return null;
+    return side === 1 ? f.p : 1 - f.p;
+  }
+  function gdOf(f, side) {
+    if (!f || f.gd == null) return null;
+    return side === 1 ? f.gd : -f.gd;
+  }
+  function minute(v) {
+    var x = Math.round(Number(v || 0) * 10) / 10;
+    return String(x).replace(/\.0$/, "");
+  }
+  function goldText(v) {
+    if (v == null || isNaN(v)) return "—";
+    var a = Math.abs(v);
+    var body = a >= 1000 ? (a / 1000).toFixed(1) + "k" : Math.round(a).toString();
+    return (v > 0 ? "+" : v < 0 ? "-" : "") + body;
+  }
+  function statDelta(fs, fe, key, side) {
+    if (!fs || !fe || !fs[key] || !fe[key]) return null;
+    var a = Number(fs[key][side - 1]), c = Number(fe[key][side - 1]);
+    if (!isFinite(a) || !isFinite(c)) return null;
+    return c - a;
+  }
+  function eventsNear(b, m0, m1, pad) {
+    var p = pad == null ? 0.8 : pad;
+    var seen = {}, out = [];
+    (b.events || []).forEach(function (e) {
+      if (e.m < m0 - p || e.m > m1 + p) return;
+      var key = e.l + "@" + e.m;
+      if (seen[key]) return;
+      seen[key] = 1;
+      out.push(e);
+    });
+    return out.sort(function (a, c) { return a.m - c.m; }).slice(0, 4);
+  }
+  function segmentList(b) {
+    var fr = b.frames || [], segs = [], cur = null;
+    for (var i = 1; i < fr.length; i++) {
+      var a = fr[i - 1].p, c = fr[i].p;
+      if (a == null || c == null) { if (cur) { segs.push(cur); cur = null; } continue; }
+      var d = c - a;
+      if (Math.abs(d) < 0.004) continue;
+      var dir = d > 0 ? 1 : -1;
+      if (cur && cur.dir === dir && cur.end === i - 1) {
+        cur.to = c; cur.end = i; cur.mag = Math.abs(c - cur.from);
+      } else {
+        if (cur) segs.push(cur);
+        cur = { dir: dir, from: a, to: c, start: i - 1, end: i, mag: Math.abs(d) };
+      }
+    }
+    if (cur) segs.push(cur);
+    segs = segs.filter(function (s) {
+      var m0 = fr[s.start].m, m1 = fr[s.end].m;
+      // 几秒钟内跳 8pp 以内更像采样噪声，不当作“转折”
+      return !(m1 - m0 < 0.75 && s.mag < 0.08);
+    });
+    segs.forEach(function (s) {
+      s.m0 = fr[s.start].m;
+      s.m1 = fr[s.end].m;
+      s.favored = s.dir > 0 ? 1 : 2;
+      s.p0 = pOf(fr[s.start], s.favored);
+      s.p1 = pOf(fr[s.end], s.favored);
+      s.g0 = gdOf(fr[s.start], s.favored);
+      s.g1 = gdOf(fr[s.end], s.favored);
+    });
+    return segs;
+  }
+  function decisiveSegment(b, segs) {
+    if (b.win !== 1 && b.win !== 2) return null;
+    var fav = segs.filter(function (s) { return s.favored === b.win; });
+    if (!fav.length) return null;
+    function heldToEnd(s) {
+      var pe = pOf(b.frames[s.end], b.win);
+      if (pe == null || pe < 0.5) return false;
+      for (var i = s.end + 1; i < b.frames.length; i++) {
+        var p = pOf(b.frames[i], b.win);
+        if (p != null && p < 0.5) return false;
+      }
+      return true;
+    }
+    var held = fav.filter(heldToEnd);
+    var out;
+    if (held.length) {
+      var startP = pOf(b.frames[0], b.win);
+      // 开局落后：取“第一次领先后再没交回去”的窗口；开局领先：取优势扩得最大的一段。
+      held.sort(startP != null && startP < 0.5
+        ? function (a, c) { return a.m0 - c.m0; }
+        : function (a, c) { return c.mag - a.mag; });
+      out = held[0];
+    } else {
+      // 整局有反复：取对赢家最有利的最大摆动，但明确不写“决定胜负”。
+      out = fav.slice().sort(function (a, c) { return c.mag - a.mag; })[0];
+    }
+    out.held = heldToEnd(out);
+    return out;
+  }
+  function recentCoverage() {
+    var sched = window.KPL_SCHEDULE_ALL || [], idx = window.KPL_REPLAY_INDEX || {};
+    var done = sched.filter(function (r) {
+      return r && (r.st === 2 || r.done === true) && r.date && r.matchId;
+    }).sort(function (a, c) { return (c.date + (c.time || "")).localeCompare(a.date + (a.time || "")); });
+    var rows = done.slice(0, 10), covered = 0;
+    rows.forEach(function (r) { if (idx[r.matchId]) covered++; });
+    return rows.length ? { n: rows.length, covered: covered } : null;
+  }
+  var _coverage = null;
+  function coverageStats() {
+    if (_coverage) return _coverage;
+    var idx = window.KPL_REPLAY_INDEX || {}, matches = 0, battles = 0, prob = 0;
+    Object.keys(idx).forEach(function (mid) {
+      var e = idx[mid] || {};
+      matches++;
+      var bs = e.b || [], ps = e.p || [];
+      battles += bs.length;
+      for (var i = 0; i < bs.length; i++) if (ps[i]) prob++;
+    });
+    var total = Number((window.KPL_TOTALS || {}).battles) || 0;
+    if (!total) {
+      try { total = Number(window.KPL_SEASONS.scopes.all.totals.battles) || 0; }
+      catch (e) { total = 0; }
+    }
+    _coverage = {
+      matches: matches, battles: battles, probBattles: prob, totalBattles: total,
+      recent: recentCoverage()
+    };
+    return _coverage;
+  }
+  function coverageText(b) {
+    var c = coverageStats(), parts = [];
+    parts.push("本局分钟级快照 " + (b.frames || []).length + " 帧");
+    if (c.probBattles && c.totalBattles) {
+      parts.push("全站有直播胜率 " + c.probBattles + " / " + fmtInt(c.totalBattles) +
+        " 局（" + (c.probBattles / c.totalBattles * 100).toFixed(1) + "%，其余仅基础数据）");
+    }
+    if (c.recent && c.recent.n >= 5) {
+      parts.push("最近 " + c.recent.n + " 场（实时监控期）" + c.recent.covered + "/" + c.recent.n + " 场可复盘");
+    }
+    return parts.join(" · ");
+  }
+  function storyCard(b, s, idx1, decisive) {
+    var evs = eventsNear(b, s.m0, s.m1, 0.8);
+    var evText = evs.length
+      ? evs.map(function (e) { return esc(e.l); }).join(" · ")
+      : "同段无结构性事件记录";
+    var dk = statDelta(b.frames[s.start], b.frames[s.end], "k", s.favored);
+    var dt = statDelta(b.frames[s.start], b.frames[s.end], "t", s.favored);
+    var bits = [];
+    if (dk != null) bits.push("击杀 " + (dk > 0 ? "+" : "") + dk);
+    if (dt != null) bits.push("推塔 " + (dt > 0 ? "+" : "") + dt);
+    return '<button type="button" class="rp-moment' + (decisive === s ? " key" : "") +
+      '" data-m="' + s.m0 + '" aria-label="跳到第 ' + minute(s.m0) + ' 分钟">' +
+      '<span class="rp-moment-top"><span class="rp-moment-i mono">0' + idx1 + '</span>' +
+      '<span class="rp-moment-t mono">' + minute(s.m0) + "′ → " + minute(s.m1) + "′</span>" +
+      (decisive === s ? '<span class="rp-moment-key">胜负窗口</span>' : "") + "</span>" +
+      '<span class="rp-moment-team">' + esc(teamName(b, s.favored)) + " 占优</span>" +
+      '<span class="rp-moment-main"><span>估算胜率</span><b class="mono">' + pct(s.p0) + " → " + pct(s.p1) +
+      '</b><em class="' + ((s.p1 - s.p0) >= 0 ? "up" : "down") + '">' +
+      signed((s.p1 - s.p0) * 100) + "pp</em></span>" +
+      '<span class="rp-moment-sub"><span>金差</span><b class="mono">' + goldText(s.g0) + " → " + goldText(s.g1) +
+      '</b><span class="rp-tag proxy">代理</span></span>' +
+      '<span class="rp-moment-ev"><span class="rp-tag official">官方</span>' + evText +
+      (bits.length ? " · " + bits.join(" · ") : "") + "</span></button>";
+  }
+  function storyFallbackCards(b) {
+    var fr = b.frames || [], win = b.win;
+    var candidates = [];
+    (b.events || []).forEach(function (e) {
+      var before = null, after = null;
+      for (var i = 0; i < fr.length; i++) {
+        if (fr[i].m <= e.m - 0.4) before = fr[i];
+        if (fr[i].m >= e.m + 0.4) { after = fr[i]; break; }
+      }
+      if (!before || !after) return;
+      var g0 = gdOf(before, win), g1 = gdOf(after, win);
+      if (g0 == null || g1 == null) return;
+      candidates.push({ e: e, g0: g0, g1: g1, d: Math.abs(g1 - g0) });
+    });
+    candidates.sort(function (a, c) { return c.d - a.d; });
+    var picked = [];
+    candidates.forEach(function (x) {
+      // 同一波团战里连续两条事件（推塔 / 拿龙）只留经济变化最大的一条
+      if (picked.some(function (p) { return Math.abs(p.e.m - x.e.m) < 2; })) return;
+      picked.push(x);
+    });
+    return picked.slice(0, 3).map(function (x, i) {
+      return '<button type="button" class="rp-moment" data-m="' + x.e.m + '" aria-label="跳到第 ' + minute(x.e.m) + ' 分钟">' +
+        '<span class="rp-moment-top"><span class="rp-moment-i mono">0' + (i + 1) + '</span>' +
+        '<span class="rp-moment-t mono">' + minute(x.e.m) + "′</span>" +
+        '<span class="rp-moment-key">官方事件</span></span>' +
+        '<span class="rp-moment-team">' + esc(teamName(b, win)) + " 视角</span>" +
+        '<span class="rp-moment-main"><span>金差</span><b class="mono">' + goldText(x.g0) + " → " + goldText(x.g1) +
+        '</b><span class="rp-tag proxy">代理</span></span>' +
+        '<span class="rp-moment-ev"><span class="rp-tag official">官方</span>' + esc(x.e.l) + "</span></button>";
+    }).join("");
+  }
+  function buildStory(b) {
+    var fr = b.frames || [], win = b.win;
+    var story = {
+      hasProb: b.src === "live" && fr.filter(function (f) { return f.p != null; }).length >= 3,
+      winner: win === 1 || win === 2 ? teamName(b, win) : "—",
+      duration: Number(b.dur || 0),
+      cards: "", sentence: "", note: "", decisive: null
+    };
+    if (win !== 1 && win !== 2) {
+      story.sentence = "本局结果未记录，无法生成胜负结论。可展开时间轴查看官方事件与经济快照。";
+      story.note = "官方结果缺失";
+      return story;
+    }
+    var finalP = null;
+    for (var fi = fr.length - 1; fi >= 0; fi--) {
+      if (fr[fi].p != null) { finalP = pOf(fr[fi], win); break; }
+    }
+    story.finalP = finalP;
+    story.modelAgrees = finalP == null ? null : finalP >= 0.5;
+    if (story.hasProb && fr.length >= 3 && story.modelAgrees === false) {
+      // 终局方向和官方结果相反：这局不能用胜率曲线讲“谁赢在哪一段”，
+      // 只保留官方事件与经济快照，并把模型未命中说清楚。
+      story.cards = storyFallbackCards(b);
+      story.sentence = "<b>" + esc(story.winner) + "</b> 最终在 " + minute(story.duration) +
+        "′ 结束比赛。但模型最后一帧只给 " + esc(story.winner) + " <b>" + pct(finalP) +
+        "</b> 的胜率，方向和官方结果相反，所以本页不拿这条曲线解释胜负；" +
+        (story.cards ? "下面按官方事件前后的经济快照列三个可核对的时间点。" : "下面只展示官方事件与完整时间轴。");
+      story.note = "模型终局判断与官方结果相反（" + pct(finalP) + "），不藏。此处只陈述官方事件与经济代理，不做胜负归因。";
+    } else if (story.hasProb && fr.length >= 3) {
+      var segs = segmentList(b);
+      var decisive = decisiveSegment(b, segs);
+      story.decisive = decisive;
+      var top = segs.slice().sort(function (a, c) { return c.mag - a.mag; }).slice(0, 3);
+      if (decisive && top.indexOf(decisive) < 0) {
+        if (top.length >= 3) top[2] = decisive; else top.push(decisive);
+      }
+      top.sort(function (a, c) { return a.m0 - c.m0; });
+      story.cards = top.map(function (s, i) { return storyCard(b, s, i + 1, decisive); }).join("");
+      if (decisive) {
+        var evs = eventsNear(b, decisive.m0, decisive.m1, 0.8);
+        var evText = evs.length
+          ? "同段官方事件为 " + evs.slice(0, 3).map(function (e) { return esc(e.l); }).join(" / ") + "。"
+          : "同段没有结构性事件记录。";
+        story.sentence = "<b>" + esc(story.winner) + "</b> 在第 " + minute(decisive.m0) + "–" +
+          minute(decisive.m1) + " 分钟把估算胜率从 <b>" + pct(decisive.p0) + "</b> 拉到 <b>" +
+          pct(decisive.p1) + "</b>（" + signed((decisive.p1 - decisive.p0) * 100) + "pp），" +
+          "同期金差从 " + goldText(decisive.g0) + " 到 " + goldText(decisive.g1) + "；" + evText +
+          (decisive.held ? "此后模型胜率未再低于 50%。" : "") +
+          "最终在 " + minute(story.duration) + "′ 结束比赛。";
+        story.note = decisive.held
+          ? "“胜负窗口”按模型胜率选择：该段结束后领先方再未被模型判为落后。只描述同段共现，不构成因果。"
+          : "“胜负窗口”按模型胜率变化幅度选择；该段结束后仍有反复，不写成“决定胜负”。";
+      } else {
+        story.sentence = "<b>" + esc(story.winner) + "</b> 最终在 " + minute(story.duration) +
+          "′ 结束比赛。整局没有出现方向明确、幅度足够大的模型胜率摆动，无法指出单一胜负窗口。";
+        story.note = "本局胜率曲线没有可判定的转折段。";
+      }
+    } else {
+      story.cards = storyFallbackCards(b);
+      story.sentence = "<b>" + esc(story.winner) + "</b> 最终在 " + minute(story.duration) +
+        "′ 结束比赛。本局没有直播期模型胜率记录，不能用胜率判断转折；" +
+        (story.cards ? "下面按官方事件前后的经济快照给出三个可核对的时间点。" : "下面只展示完整时间轴与经济快照。");
+      story.note = "没有直播胜率时，结论只依赖官方事件与经济代理，不写“胜率逆转”。";
+    }
+    return story;
+  }
+  function storyHTML(b) {
+    var s = buildStory(b);
+    var hasBp = !!document.querySelector(".bp-grid");
+    var hrefAnalog = "sandbox.html?battle=" + encodeURIComponent(b.battleId) +
+      "&m=" + encodeURIComponent(minute(s.decisive ? s.decisive.m0 : (b.frames[0] || {}).m || 0));
+    return '<div class="rp-story">' +
+      '<div class="rp-story-kicker"><span class="mono">本局结论 · G' + (b.seq || 1) + '</span>' +
+      '<span class="rp-tag official">官方结果</span>' +
+      (s.hasProb
+        ? (s.modelAgrees === false
+            ? '<span class="rp-tag warn">模型终局未命中</span>'
+            : '<span class="rp-tag est">模型估算</span>')
+        : '<span class="rp-tag proxy">无直播胜率</span>') +
+      '<span class="rp-story-who">' + esc(b.t1) + " vs " + esc(b.t2) + " · " + minute(b.dur) + "′</span></div>" +
+      '<div class="rp-story-lead">' + s.sentence + "</div>" +
+      (s.cards ? '<div class="rp-story-grid">' + s.cards + "</div>" : "") +
+      '<div class="rp-story-note">' + s.note + "</div>" +
+      '<div class="rp-story-foot"><span class="rp-cov mono">' + coverageText(b) + "</span>" +
+      '<span class="rp-legend"><span class="rp-tag official">官方</span>结果 / 击杀 / 推塔 / 资源　' +
+      '<span class="rp-tag proxy">代理</span>金差　<span class="rp-tag est">估算</span>模型胜率</span>' +
+      '<span class="rp-story-acts">' +
+      '<button type="button" class="rp-more" id="rpExpand" aria-expanded="false" aria-controls="rpDetail">展开完整时间轴与数据面板 ↓</button>' +
+      '<a class="rp-link" href="' + hrefAnalog + '">看历史上类似局面 →</a>' +
+      (hasBp
+        ? '<button type="button" class="rp-link" id="rpBp">看 BP 与选手 ↓</button>'
+        : '<a class="rp-link" href="game.html?id=' + encodeURIComponent(b.battleId) + '">看本局 BP 与选手 →</a>') +
+      "</span></div></div>";
+  }
+
   function tpPanel(b) {
     var head = '<div class="rp-pt">比赛转折 <em class="mono">模型胜率变点 · ' + b.frames.length + " 个采样点</em></div>";
     var tps = turningPoints(b);
@@ -238,7 +535,11 @@ window.KPL_REPLAY = (function () {
     el.innerHTML = '<div class="rp-loading mono">加载复盘数据…</div>';
     loadPackage(matchId, function (pkg) {
       if (!pkg || !(pkg.battles || []).length) {
-        el.innerHTML = '<div class="empty-tip">该场暂无分钟级复盘数据（只有基础比分 / BP / 选手明细）</div>';
+        var cov = coverageStats();
+        var covText = cov.totalBattles
+          ? "全站 " + cov.probBattles + " / " + fmtInt(cov.totalBattles) + " 局有直播胜率；其余只展示赛果、BP 与选手明细。"
+          : "仅有赛果、BP 与选手明细。";
+        el.innerHTML = '<div class="empty-tip">该场暂无分钟级复盘数据。' + covText + "</div>";
         return;
       }
       var battles = pkg.battles;
@@ -247,6 +548,8 @@ window.KPL_REPLAY = (function () {
         for (var i = 0; i < battles.length; i++) if (battles[i].battleId === opts.battleId) { bi = i; break; }
       }
       var frameIdx = 0;
+      // 分享深链直接指向某一分钟时展开技术面板；普通进入先看结论与三个转折。
+      var detailOpen = opts.initialMinute != null && !isNaN(Number(opts.initialMinute));
       var layerMode = "team";   // team = 队伍总量（默认答案）；lane = 同位置对位
       // 支持从链接直接回到某一分钟（?g=3&m=12）
       if (opts.initialMinute != null && !isNaN(Number(opts.initialMinute))) {
@@ -263,6 +566,16 @@ window.KPL_REPLAY = (function () {
       // 外壳只在切局时重建一次；拖动滑块只更新 paint() 里的几个区域。
       // 旧版 draw() 每次 input 都重写 el.innerHTML，滑块节点被销毁 →
       // 拖到一半指针捕获丢失，手柄不再跟随鼠标（桌面和手机都会中招）。
+      function applyDetail() {
+        var detail = document.getElementById("rpDetail");
+        var btn = document.getElementById("rpExpand");
+        if (detail) detail.hidden = !detailOpen;
+        if (btn) {
+          btn.setAttribute("aria-expanded", detailOpen ? "true" : "false");
+          btn.textContent = detailOpen ? "收起详细面板 ↑" : "展开完整时间轴与数据面板 ↓";
+        }
+      }
+
       function renderShell() {
         var b = battles[bi];
         el.innerHTML =
@@ -278,6 +591,8 @@ window.KPL_REPLAY = (function () {
           (b.src === "live" ? "胜率=直播当时预测" : "胜率=赛后重放") + "</span>" +
           ' <button type="button" class="rp-share" id="rpShare">复制本帧链接</button>' +
           "</div>" +
+          storyHTML(b) +
+          '<div class="rp-detail" id="rpDetail"' + (detailOpen ? "" : " hidden") + '>' +
           (b.src === "replay"
             ? '<div class="rp-warn">本局没有直播期预测记录，曲线是赛后用当前模型重放的结果，只作参考；复盘结论请以经济 / 资源等客观指标为主。</div>'
             : "") +
@@ -292,6 +607,7 @@ window.KPL_REPLAY = (function () {
           '<div class="rp-turn" id="rpTurn"></div>' +
           '<div class="rp-evs"><div class="rp-pt">关键事件 <em class="mono">点击跳到该分钟</em></div>' +
           '<div class="rp-events" id="rpEvents"></div></div>' +
+          "</div>" +
           "</div>";
 
         var evBox = document.getElementById("rpEvents");
@@ -303,6 +619,7 @@ window.KPL_REPLAY = (function () {
               }).join("")
             : '<div class="empty-tip">该局没有结构性事件记录</div>';
         }
+        applyDetail();
         bind();
         paint();
       }
@@ -349,10 +666,51 @@ window.KPL_REPLAY = (function () {
       }
 
       function bind() {
+        var expand = document.getElementById("rpExpand");
+        if (expand) {
+          expand.addEventListener("click", function () {
+            detailOpen = !detailOpen;
+            applyDetail();
+            if (detailOpen) {
+              var detail = document.getElementById("rpDetail");
+              if (detail) detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+          });
+        }
+        el.querySelectorAll(".rp-moment").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            detailOpen = true;
+            applyDetail();
+            if (window.KPL && KPL.track) KPL.track("key_moment_click");
+            var m = parseFloat(btn.getAttribute("data-m"));
+            var b = battles[bi], best = 0;
+            for (var i = 0; i < b.frames.length; i++) {
+              if (Math.abs(b.frames[i].m - m) < Math.abs(b.frames[best].m - m)) best = i;
+            }
+            setFrame(best);
+            var chart = document.getElementById("rpChart");
+            if (chart) chart.scrollIntoView({ behavior: "smooth", block: "center" });
+          });
+        });
+        var bpBtn = document.getElementById("rpBp");
+        if (bpBtn) {
+          bpBtn.addEventListener("click", function () {
+            var bp = document.querySelector(".bp-grid");
+            if (bp) bp.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }
         var r = document.getElementById("rpRange");
         if (r) {
           // 拖动中只重绘内容：滑块节点必须留着，否则指针捕获丢失、手柄不跟手
-          r.addEventListener("input", function () { frameIdx = parseInt(r.value, 10); paint(); });
+          var dragTracked = false;
+          r.addEventListener("input", function () {
+            frameIdx = parseInt(r.value, 10); paint();
+            if (!dragTracked && window.KPL && KPL.track) {
+              dragTracked = true;
+              KPL.track("timeline_drag");
+              setTimeout(function () { dragTracked = false; }, 30000);
+            }
+          });
           r.addEventListener("change", function () { frameIdx = parseInt(r.value, 10); paint(); });
           r.addEventListener("keydown", function (e) {
             if (e.key === "ArrowLeft") { e.preventDefault(); setFrame(frameIdx - 1); }
@@ -389,6 +747,7 @@ window.KPL_REPLAY = (function () {
         var share = document.getElementById("rpShare");
         if (share) {
           share.addEventListener("click", function () {
+            if (window.KPL && KPL.track) KPL.track("share_click");
             var b0 = battles[bi];
             var url = location.origin + location.pathname + "?id=" + encodeURIComponent(matchId) +
               "&g=" + (b0.seq || 1) + "&m=" + Math.round(b0.frames[frameIdx].m);

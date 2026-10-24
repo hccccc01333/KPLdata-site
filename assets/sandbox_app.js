@@ -122,19 +122,21 @@
       }
     }
     rows.sort(function (a, b) { return a.d - b.d; });
-    var top = rows.slice(0, 40);
+    // 统计口径：一局只取最接近的一帧，n = 独立对局数。
+    // 若按帧计数，同一局会在 n 里出现多次，Wilson 区间会被虚假地收窄。
+    var top = [], seenBattle = {};
+    for (var i = 0; i < rows.length && top.length < 40; i++) {
+      var x = rows[i];
+      if (seenBattle[x.bi]) continue;
+      seenBattle[x.bi] = 1;
+      top.push(x);
+    }
     var n = top.length;
     var wins = 0;
     top.forEach(function (x) { if (x.b.win === 1) wins++; });
     var rate = n ? wins / n : null;
     var ci = wilson(wins, n);
-    var examples = [], seen = {};
-    for (var i = 0; i < top.length && examples.length < 3; i++) {
-      var x = top[i];
-      if (seen[x.b.id]) continue;
-      seen[x.b.id] = 1;
-      examples.push(x);
-    }
+    var examples = top.slice(0, 3);
     return {
       n: n, wins: wins, rate: rate, lo: ci[0], hi: ci[1],
       examples: examples,
@@ -295,11 +297,11 @@
           content += "没有可参考的历史时刻";
         } else if (state.mode === "hist") {
           content += "历史上类似局面：左边队伍赢 <b>" + pct(cell.hist) + "</b><br>" +
-            "参考了 " + cell.n + " 个历史时刻 · 大致范围 " + pct(cell.lo) + "–" + pct(cell.hi) + "<br>" +
+            "参考了 " + cell.n + " 局独立对局 · 大致范围 " + pct(cell.lo) + "–" + pct(cell.hi) + "<br>" +
             "模型平均判断：" + pct(cell.model);
         } else {
           content += "模型平均判断：左边队伍赢 <b>" + pct(cell.model) + "</b><br>" +
-            "参考了 " + cell.n + " 个历史时刻<br>" +
+            "参考了 " + cell.n + " 局独立对局<br>" +
             "历史上类似局面：" + pct(cell.hist) + "（" + pct(cell.lo) + "–" + pct(cell.hi) + "）";
         }
         tip.innerHTML = content;
@@ -451,7 +453,7 @@
     var line2 = p == null ? "这一分钟模型没有有效判断。" :
       "模型认为 " + fav + " 更可能赢（" + pct(favP) + "）";
     if (a.rate != null) {
-      line2 += "；历史上最像的 " + a.n + " 个时刻里，" + histFav +
+      line2 += "；历史上最像的 " + a.n + " 局里，" + histFav +
         " 最终赢了 " + histWins + " 次（" + pct(histP) + "）";
     }
     line2 += "。";
@@ -515,7 +517,7 @@
         '<div class="sb-hist-top"><span class="k">历史上类似局面：左边赢的比例</span>' +
           '<span class="v">' + pct(a.rate) + "</span></div>" +
         '<div class="sb-hist-sub">大致范围 ' + pct(a.lo) + "–" + pct(a.hi) +
-          " · 从 " + D.coverage.replayBattles + " 局里挑了 " + a.n + " 个最像的时刻</div>" +
+          " · 从 " + D.coverage.replayBattles + " 局里挑了 " + a.n + " 局最像的局面</div>" +
         '<div class="sb-hist-gap' + lowCls + '">' +
           (gap == null ? "参考时刻不足，暂不比较。" :
             "模型比历史" + (gap >= 0 ? "高" : "低") + " <b>" +
@@ -606,7 +608,7 @@
       '<div><span class="big">' + pct(base.rate) + " → " + pct(after.rate) + "</span>" +
       (delta == null ? "" : ' <span class="delta ' + (delta >= 0 ? "pos" : "neg") + '">' +
         signedPct(delta) + "</span>") + "</div>" +
-      '<div style="margin-top:3px">参考了 ' + after.n + " 个最像的历史时刻" +
+      '<div style="margin-top:3px">参考了 ' + after.n + " 局最像的历史对局" +
         (after.n < 8 ? ' <span class="sb-low">（偏少，结果不稳定）</span>' : "") + "</div>";
 
     if (chips) {
@@ -637,7 +639,7 @@
     var host = $("#sbAnalog");
     if (!host) return;
     if (!a.n) {
-      host.innerHTML = '<div class="panel-title">历史上类似的局面 <em>挑了 40 个最像的时刻</em></div>' +
+      host.innerHTML = '<div class="panel-title">历史上类似的局面 <em>挑了 40 局最像的独立对局</em></div>' +
         '<div class="sb-empty">没有找到可比较的历史时刻。</div>';
       return;
     }
@@ -652,10 +654,10 @@
           (bb.win === 1 ? "左边赢" : "右边赢") + "</span></div>";
     }).join("");
     host.innerHTML =
-      '<div class="panel-title">历史上类似的局面 <em>挑了 40 个最像的时刻</em></div>' +
+      '<div class="panel-title">历史上类似的局面 <em>挑了 40 局最像的独立对局</em></div>' +
       '<div class="sb-analog-sum">从 ' + D.coverage.replayBattles + " 局里挑了 <b>" + a.n +
-        "</b> 个最像的时刻，左边队伍最后赢了 <b>" + a.wins + "</b> 次（<b>" + pct(a.rate) +
-        "</b>）。<br>点一行，可以跳到那局同一分钟。</div>" +
+        "</b> 局最像的对局，左边队伍最后赢了 <b>" + a.wins + "</b> 次（<b>" + pct(a.rate) +
+        "</b>）。<br>每局只取最接近的一帧，n 为独立对局数；点一行，可以跳到那局同一分钟。</div>" +
       '<div class="sb-analog-list">' + rows + "</div>";
     host.querySelectorAll(".sb-analog-row").forEach(function (row) {
       row.addEventListener("click", function () {
@@ -673,6 +675,14 @@
     var mb = $("#sbMetaBattles");
     if (mb) mb.textContent = D.coverage.replayBattles + " 局";
     $("#sbMetaUpdated").textContent = D.updatedAt || "—";
+    var mv = $("#sbModelVer"), mn = $("#sbModelN");
+    if (mv) mv.textContent = m.version || "—";
+    if (mn) mn.textContent = (m.testN == null ? "—" : m.testN + " 局");
+    var gb = $("#sbGlossaryBattles"), gbr = $("#sbGlossaryBrier");
+    if (gb) gb.textContent = D.coverage.replayBattles + " 局";
+    if (gbr) gbr.textContent = m.brier == null ? "—" : m.brier.toFixed(3);
+    var pn = $("#sbPhaseN");
+    if (pn) pn.textContent = m.testN + " 局考试";
     $("#sbKpiBrier").textContent = m.brier == null ? "—" : m.brier.toFixed(3);
     $("#sbKpiBrierS").textContent = "在 " + m.testN + " 局没见过的比赛上考试";
     $("#sbKpiAcc").textContent = pct(m.acc);
@@ -805,7 +815,8 @@
         '<span class="bar"><i style="width:' + clamp((r.brier || 0) / maxB * 100, 0, 100) +
         '%"></i></span><span class="v">' + (r.brier == null ? "—" : r.brier.toFixed(3)) +
         "</span></div>";
-    }).join("") + '<div class="sb-rel-note">红色是翻盘局（20 局里有 6 局）。' +
+    }).join("") + '<div class="sb-rel-note">红色是翻盘局（' + rows.length + " 局里有 " +
+      rows.filter(function (r) { return r.isComeback; }).length + " 局）。" +
       "条越短，这一局整体猜得越准；每局时刻数不同，不要只按单局排名。</div>";
   }
 
@@ -953,7 +964,33 @@
     renderAnalog(b, f, s, a);
   }
 
+  function applyDeepLink() {
+    var qs;
+    try { qs = new URLSearchParams(location.search); } catch (e) { return; }
+    var bid = qs.get("battle");
+    if (!bid) return;
+    var m = parseFloat(qs.get("m"));
+    var bi = -1;
+    for (var i = 0; i < D.battles.length; i++) {
+      if (D.battles[i].id === bid) { bi = i; break; }
+    }
+    var note = $("#sbJumpNote");
+    if (!note) return;
+    if (bi < 0) {
+      note.textContent = "复盘链接里的这局不在沙盘覆盖的 " + D.coverage.replayBattles +
+        " 局内；已载入默认对局。";
+    } else {
+      state.battle = bi;
+      var b = D.battles[bi];
+      state.frame = isFinite(m) ? nearestFrameIndex(b, m, false) : 0;
+      note.textContent = "从复盘跳转：第 " + b.seq + " 局 · 第 " +
+        b.frames[state.frame][0].toFixed(1) + " 分钟。下面就是这一刻的历史类似局面。";
+    }
+    note.hidden = false;
+  }
+
   function init() {
+    applyDeepLink();
     renderMatches();
     renderBattles();
     var slider = $("#sbMinute");

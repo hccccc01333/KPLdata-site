@@ -10,3 +10,7 @@ __pycache__
 
 # 构建缓存（不是给用户看的产物）
 assets/replay/.manifest.json
+
+# Worker 源码与本地配置不对外静态暴露
+worker.js
+wrangler.toml

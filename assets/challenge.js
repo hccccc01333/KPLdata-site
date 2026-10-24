@@ -24,10 +24,12 @@
   }
   function saveStore(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} }
   function nowStamp() {
+    if (window.KPL && KPL.todayCN) return KPL.todayCN();
     var d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
   function nowHM() {
+    if (window.KPL && KPL.cnHM) return KPL.cnHM();
     var d = new Date();
     return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
   }

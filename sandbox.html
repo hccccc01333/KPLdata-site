@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>这局谁更可能赢？· KPL 数据中心</title>
+<title>这局谁更可能赢？· 峡谷有数</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=79">
-<link rel="stylesheet" href="assets/pages.css?v=79">
-<link rel="stylesheet" href="assets/v55.css?v=79">
+<link rel="stylesheet" href="assets/style.css?v=84">
+<link rel="stylesheet" href="assets/pages.css?v=84">
+<link rel="stylesheet" href="assets/v55.css?v=84">
 <link rel="stylesheet" href="assets/sandbox.css?v=4">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="KPL 数据中心">
-<meta property="og:title" content="这局谁更可能赢？· KPL 数据中心">
+<meta property="og:site_name" content="峡谷有数">
+<meta property="og:title" content="这局谁更可能赢？· 峡谷有数">
 <meta property="og:description" content="选一局比赛，拖动时间条，看模型每一分钟怎么判断，再对照历史上类似局面最后谁赢了。">
 <meta property="og:image" content="https://kpldata-site.hccccc01333.workers.dev/assets/shots/sandbox.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -23,7 +23,7 @@
   <div class="wrap">
     <div class="ph-kicker mono">SANDBOX · 胜率沙盘</div>
     <h1>这局现在谁更可能赢？</h1>
-    <p>选一场比赛，拖到任意一分钟：右边会直接告诉你模型当时觉得谁更可能赢，以及历史上最像的 40 个时刻最后是谁赢了。
+    <p>选一场比赛，拖到任意一分钟：右边会直接告诉你模型当时觉得谁更可能赢，以及历史上最像的 40 局最后是谁赢了。
       页面不预测比分，也不承诺一定准，只把“当时的判断 + 类似局面的结果”摆出来。</p>
     <div class="sb-howto" aria-label="使用步骤">
       <span><b>1</b> 选一局</span>
@@ -33,17 +33,18 @@
     <div class="ph-meta mono">
       <span>能查历史的比赛 <b id="sbMetaBattles">—</b></span><i>/</i>
       <span>可以对照的时刻 <b id="sbMetaFrames">—</b></span><i>/</i>
-      <span>模型版本 <b>V12</b></span><i>/</i>
-      <span>模型考试 <b>20 局</b></span><i>/</i>
+      <span>模型版本 <b id="sbModelVer">—</b></span><i>/</i>
+      <span>模型考试 <b id="sbModelN">—</b></span><i>/</i>
       <span>数据更新 <b id="sbMetaUpdated">—</b></span>
     </div>
   </div>
 </header>
 
 <main class="wrap sb-main">
+  <div id="sbJumpNote" class="sb-jump-note" hidden></div>
   <div class="sb-plain" id="sbPlain">
     <div class="big">选一场比赛，拖一下时间条，就能看到这一刻的解释。</div>
-    <div class="sub">右边会直接告诉你：模型当时觉得谁更可能赢，以及历史上最像的 40 个时刻最后是谁赢了。</div>
+    <div class="sub">右边会直接告诉你：模型当时觉得谁更可能赢，以及历史上最像的 40 局最后是谁赢了。</div>
   </div>
 
   <details class="sb-adv-details">
@@ -77,8 +78,8 @@
     <div class="sb-glossary-body">
       <div><b>胜率</b>：模型估计这队最终赢的概率，不是比分预测。</div>
       <div><b>经济差</b>：左边总金币减右边总金币，正数就是左边领先。</div>
-      <div><b>类似局面</b>：从 222 局历史里找经济差、击杀、推塔、资源最接近的时刻；样本少时会不稳。</div>
-      <div><b>Brier（误差）</b>：越小越好；0.25 相当于瞎猜，0.177 比瞎猜好，但不是神预测。</div>
+      <div><b>类似局面</b>：从 <b id="sbGlossaryBattles">222 局</b>历史里找经济差、击杀、推塔、资源最接近的独立对局；样本少时会不稳。</div>
+      <div><b>Brier（误差）</b>：越小越好；0.25 相当于瞎猜，<b id="sbGlossaryBrier">0.177</b> 比瞎猜好，但不是神预测。</div>
       <div><b>翻盘</b>：前 8 分钟落后、最后反而赢了。</div>
       <div><b>参考区间</b>：历史结果的不确定范围，不是保证。</div>
     </div>
@@ -138,7 +139,7 @@
 
     <div class="sb-health-grid">
       <div class="panel">
-        <div class="panel-title">不同时间段的表现 <em>20 局考试</em></div>
+        <div class="panel-title">不同时间段的表现 <em id="sbPhaseN">—</em></div>
         <div id="sbPhases" class="sb-phases"></div>
       </div>
       <div class="panel">
@@ -150,7 +151,7 @@
 
     <div class="sb-health-grid">
       <div class="panel">
-        <div class="panel-title">20 局考试，每局错多少 <em>每根条是一局</em></div>
+        <div class="panel-title">模型考试，每局错多少 <em>每根条是一局</em></div>
         <div id="sbBrierStrip" class="sb-brier-strip"></div>
       </div>
       <div class="panel">
@@ -165,10 +166,10 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=79"></script>
-<script src="assets/seasons.js?v=79"></script>
+<script src="assets/data.js?v=84"></script>
+<script src="assets/seasons.js?v=84"></script>
 <script src="assets/sandbox.js?v=2"></script>
-<script src="assets/common.js?v=79"></script>
+<script src="assets/common.js?v=84"></script>
 <script src="assets/sandbox_app.js?v=4"></script>
 </body>
 </html>

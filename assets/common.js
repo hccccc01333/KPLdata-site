@@ -1,4 +1,4 @@
-/* KPL 数据中心 · 产品站公共层（v3）
+/* 峡谷有数 · 产品站公共层（v3）
    工具函数 / 图标 / 顶栏（含搜索）/ 页脚 / 动效 / 共用组件（曲线、对位、卡片、倒计时） */
 window.KPL = (function () {
   "use strict";
@@ -12,6 +12,40 @@ window.KPL = (function () {
     });
   }
   function fmtInt(n) { return Number(n || 0).toLocaleString("en-US"); }
+
+  /* ---------- 最小匿名事件 ----------
+     只上报事件名、路径、来源主机名和会话内随机 ID；不写 Cookie、不接收查询参数/选手名。
+     生产端点见 worker.js（Cloudflare Analytics Engine）。本地/镜像站点直接跳过。 */
+  var TRACK_EVENTS = {
+    page_view: 1, match_open: 1, key_moment_click: 1, timeline_drag: 1, share_click: 1, fav_add: 1
+  };
+  function track(event) {
+    try {
+      if (!TRACK_EVENTS[event]) return;
+      var host = location.hostname;
+      if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)) return;
+      var sid = "";
+      try {
+        sid = sessionStorage.getItem("kpl_sid") || "";
+        if (!sid) {
+          sid = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() :
+            (Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+          sessionStorage.setItem("kpl_sid", sid);
+        }
+      } catch (e) { sid = ""; }
+      var ref = "";
+      try { ref = document.referrer ? new URL(document.referrer).hostname : ""; } catch (e) { ref = ""; }
+      var body = JSON.stringify({
+        e: event, p: String(location.pathname || "").split("?")[0], r: ref, s: sid
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon("/api/event", new Blob([body], { type: "application/json" }));
+      } else if (window.fetch) {
+        fetch("/api/event", { method: "POST", body: body, keepalive: true,
+          headers: { "Content-Type": "application/json" } }).catch(function () {});
+      }
+    } catch (e) {}
+  }
   function pct(v, d) { return (Number(v) * 100).toFixed(d == null ? 1 : d) + "%"; }
   function signed(v, d) { var n = Number(v); return (n >= 0 ? "+" : "") + n.toFixed(d == null ? 0 : d); }
   var WD = ["日", "一", "二", "三", "四", "五", "六"];
@@ -23,6 +57,34 @@ window.KPL = (function () {
     var d = new Date(String(iso) + "T12:00:00");
     return isNaN(d) ? "" : "星期" + WD[d.getDay()];
   }
+  /* 站点面向国内观众：所有“今天 / 现在”一律按 Asia/Shanghai 计算。
+     直接用 toISOString() 会拿到 UTC 日期，北京时间 0–8 点会差一天。 */
+  var CN_TZ = "Asia/Shanghai";
+  function cnParts(d) {
+    d = d || new Date();
+    var out = {};
+    try {
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: CN_TZ, year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+      }).formatToParts(d).forEach(function (x) { out[x.type] = x.value; });
+    } catch (e) {
+      var pad = function (n) { return String(n).padStart(2, "0"); };
+      out = { year: String(d.getFullYear()), month: pad(d.getMonth() + 1), day: pad(d.getDate()),
+              hour: pad(d.getHours()), minute: pad(d.getMinutes()) };
+    }
+    return out;
+  }
+  function cnDate(d) {
+    var p = cnParts(d);
+    return p.year + "-" + p.month + "-" + p.day;
+  }
+  function cnHM(d) {
+    var p = cnParts(d);
+    return p.hour + ":" + p.minute;
+  }
+  function todayCN() { return cnDate(new Date()); }
+  function nowKeyCN() { var d = new Date(); return cnDate(d) + "T" + cnHM(d); }
   function tierOf(wr) { return wr >= 0.55 ? "S" : wr >= 0.50 ? "A" : wr >= 0.45 ? "B" : "C"; }
 
   /* ---------- 缺失值语义（全站统一） ----------
@@ -244,7 +306,7 @@ window.KPL = (function () {
     var links = navGroupHtml(page, real || page);
     return '<div class="wrap topbar-in">' +
       '<a class="brand" href="index.html"><span class="brand-mark">K</span>' +
-      '<span class="brand-name">KPL 数据中心</span></a>' +
+      '<span class="brand-name">峡谷有数</span><span class="brand-sub">KPL INSIGHT</span></a>' +
       '<div class="search-wrap"><div class="search-box">' + icon("search", 16) +
       '<input id="siteSearch" placeholder="搜索战队 / 选手 / 英雄" autocomplete="off" spellcheck="false"></div>' +
       '<div class="search-pop" id="searchPop"></div></div>' +
@@ -256,7 +318,7 @@ window.KPL = (function () {
   }
   function footer() {
     return '<div class="wrap footer-in"><div>' +
-      '<div class="foot-brand">KPL 数据中心 <span class="mono">/ KING PRO LEAGUE DATA CENTER</span></div>' +
+      '<div class="foot-brand">峡谷有数 <span class="mono">/ KPL INSIGHT</span></div>' +
       '<p class="foot-note">数据来自腾讯王者荣耀职业联赛公开接口，为个人搭建的赛事数据产品（非官方、与腾讯无关联）。' +
       '统计均为自算口径：胜率类为历史区间估计，赛程与比分以官方发布为准。' +
       '了解数据口径与更新方式 → <a href="about.html" style="color:var(--gold)">数据说明</a></p></div>' +
@@ -470,6 +532,7 @@ window.KPL = (function () {
         href: btn.getAttribute("data-href")
       };
       var nowOn = favToggle(item);
+      if (nowOn) track("fav_add");
       btn.classList.toggle("on", nowOn);
       btn.setAttribute("aria-pressed", nowOn ? "true" : "false");
       btn.textContent = nowOn ? "★ 已收藏" : "☆ 收藏";
@@ -793,6 +856,9 @@ window.KPL = (function () {
     initFav();
     scan();
     autoRefresh();
+    track("page_view");
+    var pathName = (location.pathname.split("/").pop() || "").toLowerCase();
+    if (/^(match|game)(\.html)?$/.test(pathName)) track("match_open");
   }
 
   /* ---------- CSV 导出 ---------- */
@@ -1000,9 +1066,10 @@ window.KPL = (function () {
 
   return {
     data: D, details: DT,
-    esc: esc, fmtInt: fmtInt, pct: pct, signed: signed,
+    esc: esc, fmtInt: fmtInt, pct: pct, signed: signed, track: track,
     mnum: mnum, mpct: mpct, mnumText: mnumText, mfrac: mfrac, chartPalette: chartPalette,
-    dateCN: dateCN, weekdayCN: weekdayCN, tierOf: tierOf, icon: icon,
+    dateCN: dateCN, weekdayCN: weekdayCN, cnDate: cnDate, cnHM: cnHM,
+    todayCN: todayCN, nowKeyCN: nowKeyCN, tierOf: tierOf, icon: icon,
     scheduleIndex: scheduleIndex, matchMeta: matchMeta, stageLabel: stageLabel, stageTags: stageTags,
     leagueRows: leagueRows, leagueInfo: leagueInfo, leagueStandings: leagueStandings,
     currentLeagueId: currentLeagueId, leagueShortName: leagueShortName,

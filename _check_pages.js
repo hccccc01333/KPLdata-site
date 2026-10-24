@@ -238,6 +238,60 @@ async function main() {
   })()`);
   check("复盘深链落到指定分钟", deep && deep.hasSlider && deep.value > 0, deep && deep.value + " · " + deep.time);
 
+  console.log("\n=== 复盘故事层：结论 / 三个转折 / 折叠 / 跳转 ===");
+  await visit(BASE + "game.html?id=1054884368_8_1792576862", 2600);
+  const story = await evaluate(`(function(){
+    var d = document.getElementById('rpDetail');
+    var lead = document.querySelector('.rp-story-lead');
+    var moments = document.querySelectorAll('.rp-moment');
+    return {
+      has: !!document.querySelector('.rp-story'),
+      lead: lead ? lead.textContent : '',
+      moments: moments.length,
+      detailHidden: d ? d.hasAttribute('hidden') : null,
+      expand: (document.getElementById('rpExpand') || {}).textContent || '',
+      cov: (document.querySelector('.rp-cov') || {}).textContent || '',
+      analog: (document.querySelector('a.rp-link[href*="sandbox"]') || {}).getAttribute
+        ? document.querySelector('a.rp-link[href*="sandbox"]').getAttribute('href') : '',
+      labels: document.querySelectorAll('.rp-tag.official, .rp-tag.proxy, .rp-tag.est').length
+    };
+  })()`);
+  check("复盘首屏有结论与三个转折", story && story.has && story.lead.length > 40 && story.moments === 3,
+    story && (story.moments + " 个转折 · 结论 " + story.lead.slice(0, 36)));
+  check("复盘详细面板默认折叠", story && story.detailHidden === true, story && story.expand);
+  check("复盘覆盖数字不回避（222 / 全历史）", story && /222\s*\/\s*11,138/.test(story.cov), story && story.cov.slice(0, 80));
+  check("复盘结论区分官方 / 代理 / 估算", story && story.labels >= 3, story && story.labels);
+  check("复盘提供历史类似局面入口", story && /sandbox\.html\?battle=/.test(story.analog), story && story.analog);
+  const expanded = await evaluate(`(function(){
+    var b = document.getElementById('rpExpand'); if (b) b.click();
+    var d = document.getElementById('rpDetail');
+    var m = document.querySelector('.rp-moment');
+    if (m) m.click();
+    var r = document.getElementById('rpRange');
+    return { hidden: d ? d.hasAttribute('hidden') : null, frame: r ? Number(r.value) : -1,
+             text: (document.getElementById('rpExpand') || {}).textContent || '' };
+  })()`);
+  check("展开后面板可见、转折可跳帧", expanded && expanded.hidden === false && expanded.frame > 0,
+    expanded && expanded.frame + " · " + expanded.text);
+
+  await visit(BASE + "game.html?id=1272988176_18_1782478925", 2600);
+  const miss = await evaluate(`(function(){
+    return { tag: (document.querySelector('.rp-tag.warn') || {}).textContent || '',
+             lead: (document.querySelector('.rp-story-lead') || {}).textContent || '',
+             note: (document.querySelector('.rp-story-note') || {}).textContent || '' };
+  })()`);
+  check("模型终局与官方相反时明确标注", miss && /模型终局未命中/.test(miss.tag) &&
+    /方向和官方结果相反/.test(miss.lead) && /不藏/.test(miss.note), miss && miss.tag);
+
+  const tz = await evaluate("KPL.cnDate(new Date('2026-10-23T17:30:00Z'))");
+  check("北京时间跨日按 Asia/Shanghai 计算", tz === "2026-10-24", tz);
+  const brand = await evaluate(`(function(){
+    return { name: (document.querySelector('.brand-name') || {}).textContent || '',
+             sub: (document.querySelector('.brand-sub') || {}).textContent || '' };
+  })()`);
+  check("品牌统一为峡谷有数 / KPL Insight", brand && brand.name === "峡谷有数" && /KPL INSIGHT/i.test(brand.sub),
+    brand && brand.name + " / " + brand.sub);
+
   console.log("\n=== 复盘交互（拖动 / 键盘 / 切局 / 点曲线 / 分享）===");
   await visit(BASE + "match.html?id=2026062603&g=3&m=13", 1600);
   const inter = await evaluate(`(function(){
@@ -447,6 +501,16 @@ async function main() {
     check(w + "px 复盘页无异常", e2.length === 0, e2.slice(0, 2).join(" | "));
     const mOver = await evaluate("document.documentElement.scrollWidth - window.innerWidth");
     check(w + "px 复盘页无横向溢出", mOver <= 1, mOver + "px");
+    await visit(BASE + "game.html?id=1054884368_8_1792576862");
+    const gameOver = await evaluate(`(function(){
+      var de = document.documentElement;
+      var s = document.querySelector('.rp-story');
+      var r = s ? s.getBoundingClientRect() : null;
+      return { over: de.scrollWidth - window.innerWidth,
+               storyRight: r ? Math.round(r.right) : -1, vw: window.innerWidth };
+    })()`);
+    check(w + "px 对局详情无横向溢出", gameOver && gameOver.over <= 1,
+      gameOver && (gameOver.over + "px · story右 " + gameOver.storyRight + "/" + gameOver.vw));
     // 赛事中心：4 层媒体中心（海报/赛段进程/赛季横滑）不能把页面撑出横向溢出
     const e3 = await visit(BASE + "schedule.html");
     check(w + "px 赛程页无异常", e3.length === 0, e3.slice(0, 2).join(" | "));

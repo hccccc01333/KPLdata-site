@@ -78,6 +78,21 @@ def main() -> None:
         raise SystemExit(f"README 缺少 {BEGIN} / {END} 标记，无法自动同步")
     end += len(END)
     README.write_text(text[:start] + block + text[end:], encoding="utf-8")
+
+    # 站点 UI 的“全历史总量”单一来源：与上面的 README 数字同一次构建写入，
+    # 页面不再各自从 schedule/seasons/games 里挑一个口径。
+    totals = {
+        "leagues": leagues,
+        "matches": matches,
+        "battles": battles,
+        "replayMatches": replay_matches,
+        "replayBattles": replay_battles,
+        "search": search_n,
+    }
+    (ASSETS / "site_totals.js").write_text(
+        "window.KPL_TOTALS = " + json.dumps(totals, ensure_ascii=False) + ";\n",
+        encoding="utf-8")
+
     print(f"README 数据规模已同步：赛事 {leagues} · 大场 {matches} · 小局 {battles} · "
           f"回放 {replay_matches} 场/{replay_battles} 局 · 搜索 {search_n}")
 

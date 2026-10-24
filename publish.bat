@@ -34,6 +34,10 @@ if /i "%MSG%"=="--deploy-only" goto deploy
 rem ---- 1) 选择性暂存 ----
 git add -u
 if exist assets git add assets
+rem 事件 Worker 与部署配置是站点代码，必须随代码提交，不能只留在本地
+if exist worker.js git add worker.js
+if exist wrangler.toml git add wrangler.toml
+if exist .assetsignore git add .assetsignore
 
 rem ---- 2) 未跟踪文件检查（拦住缓存 / 临时目录 / 陌生文件）----
 set TMPF=%TEMP%\kpl_publish_status.txt

@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>比赛详情 · KPL 数据中心</title>
+<title>比赛详情 · 峡谷有数</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=79">
-<link rel="stylesheet" href="assets/pages.css?v=79">
-<link rel="stylesheet" href="assets/v55.css?v=79">
+<link rel="stylesheet" href="assets/style.css?v=84">
+<link rel="stylesheet" href="assets/pages.css?v=84">
+<link rel="stylesheet" href="assets/v55.css?v=84">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="KPL 数据中心">
-<meta property="og:title" content="比赛详情 · KPL 数据中心">
+<meta property="og:site_name" content="峡谷有数">
+<meta property="og:title" content="比赛详情 · 峡谷有数">
 <meta property="og:description" content="KPL 赛事数据产品：赛程比分、战队/选手/英雄数据、BP 分析、逐局复盘与实时胜率预测。2019–2026 全历史。">
 <meta property="og:image" content="https://kpldata-site.hccccc01333.workers.dev/assets/shots/02-live.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -21,16 +21,17 @@
 <main class="wrap" id="main" style="margin-top:26px"></main>
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=79"></script>
-<script src="assets/details.js?v=79"></script>
-<script src="assets/schedule_all.js?v=79"></script>
-<script src="assets/games/index.js?v=79"></script>
-<script src="assets/seasons.js?v=79"></script>
-<script src="assets/replay/index.js?v=79"></script>
-<script src="assets/coverage.js?v=79"></script>
-<script src="assets/replay.js?v=79"></script>
-<script src="assets/common.js?v=79"></script>
-<script src="assets/share.js?v=79"></script>
+<script src="assets/data.js?v=84"></script>
+<script src="assets/site_totals.js?v=84"></script>
+<script src="assets/details.js?v=84"></script>
+<script src="assets/schedule_all.js?v=84"></script>
+<script src="assets/games/index.js?v=84"></script>
+<script src="assets/seasons.js?v=84"></script>
+<script src="assets/replay/index.js?v=84"></script>
+<script src="assets/coverage.js?v=84"></script>
+<script src="assets/replay.js?v=84"></script>
+<script src="assets/common.js?v=84"></script>
+<script src="assets/share.js?v=84"></script>
 <script>
 (function () {
   "use strict";
@@ -323,7 +324,7 @@
     var cache = window._KPL_HIST_SHARD || (window._KPL_HIST_SHARD = {});
     if (cache[matchId]) { cb(cache[matchId]); return; }
     var sc = document.createElement("script");
-    sc.src = "assets/live_hist/" + encodeURIComponent(matchId) + ".js?v=79";
+    sc.src = "assets/live_hist/" + encodeURIComponent(matchId) + ".js?v=84";
     sc.onload = function () {
       cache[matchId] = window.KPL_LIVE_HIST || [];
       sc.remove(); cb(cache[matchId]);
@@ -413,11 +414,13 @@
     var has = window.KPL_REPLAY && KPL_REPLAY.hasReplay(matchId);
     return '<div class="block-head"><h2><i></i>复盘工作台</h2>' +
       '<span class="block-note mono">' +
-      (has ? "拖动时间轴 · 同一时刻的经济 / 资源 / 选手 / 模型胜率同步刷新"
+      (has ? "先看一句话结论与三个转折 · 需要时再展开逐分钟时间轴"
            : "本场没有分钟级快照 · 只有基础比分 / BP / 选手明细") + "</span></div>" +
       '<div class="panel" style="padding:14px"><div id="replayWorkbench">' +
       (has ? "" : '<div class="empty-tip">该场暂无分钟级复盘数据（仅覆盖有逐分钟快照的 ' +
-        ((Object.keys(window.KPL_REPLAY_INDEX || {}).length) || 0) + " 场比赛）</div>") +
+        ((Object.keys(window.KPL_REPLAY_INDEX || {}).length) || 0) + " 场比赛）" +
+        (window.KPL_TOTALS ? "；全站 " + KPL_TOTALS.replayBattles + " / " + K.fmtInt(KPL_TOTALS.battles) +
+          " 局有直播胜率，其余只展示赛果 / BP / 选手明细" : "") + "。</div>") +
       "</div></div>";
   }
   function mountReplay(matchId, battleId) {

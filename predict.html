@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>预测与准确率 · KPL 数据中心</title>
+<title>预测与准确率 · 峡谷有数</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/style.css?v=79">
-<link rel="stylesheet" href="assets/pages.css?v=79">
-<link rel="stylesheet" href="assets/v55.css?v=79">
+<link rel="stylesheet" href="assets/style.css?v=84">
+<link rel="stylesheet" href="assets/pages.css?v=84">
+<link rel="stylesheet" href="assets/v55.css?v=84">
 <link rel="stylesheet" href="assets/challenge.css?v=1">
 <style>
 .pr-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-top:8px}
@@ -50,8 +50,8 @@
 }
 </style>
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="KPL 数据中心">
-<meta property="og:title" content="预测与准确率 · KPL 数据中心">
+<meta property="og:site_name" content="峡谷有数">
+<meta property="og:title" content="预测与准确率 · 峡谷有数">
 <meta property="og:description" content="KPL 赛事数据产品：赛程比分、战队/选手/英雄数据、BP 分析、逐局复盘与实时胜率预测。2019–2026 全历史。">
 <meta property="og:image" content="https://kpldata-site.hccccc01333.workers.dev/assets/shots/02-live.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -147,10 +147,10 @@
 
 <footer id="siteFooter" class="footer"></footer>
 
-<script src="assets/data.js?v=79"></script>
-<script src="assets/seasons.js?v=79"></script>
-<script src="assets/predict.js?v=79"></script>
-<script src="assets/common.js?v=79"></script>
+<script src="assets/data.js?v=84"></script>
+<script src="assets/seasons.js?v=84"></script>
+<script src="assets/predict.js?v=84"></script>
+<script src="assets/common.js?v=84"></script>
 <script src="assets/challenge.js?v=1"></script>
 <script>
 (function () {
@@ -232,7 +232,7 @@
     $("#rvlNote").textContent =
       "「直播」= 比赛当时写下的预测（旧模型 + 实时数据延迟）；「重放」= 当前模型拿同一批快照重算。" +
       "两者差 0.08 Brier 说明：上面那张分时点命中率是历史记录，不是当前模型的能力；" +
-      "反过来说，回测那 20 局也是重放口径，真到直播时大概会更差一些。" +
+      "反过来说，回测的那批局也是重放口径，真到直播时大概会更差一些。" +
       (rv.generatedAt ? " 数据：" + rv.generatedAt : "");
   })();
 

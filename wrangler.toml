@@ -1,8 +1,18 @@
 # Cloudflare Workers 静态资产配置（纯静态站，无构建）
 name = "kpldata-site"
+main = "worker.js"
 compatibility_date = "2026-10-17"
 
 [assets]
 directory = "."
+binding = "ASSETS"
 # 站点自带 404.html，交给静态资产路由处理
 not_found_handling = "404-page"
+# 只有事件端点先走 Worker，其余静态请求仍由资产层直接处理
+run_worker_first = ["/api/event"]
+
+# Analytics Engine 需要账号在 Dashboard 手动启用；当前账号未启用，
+# 先用 KV 记录最小匿名事件（每条一个短 TTL key，不覆盖、不读改写）。
+[[kv_namespaces]]
+binding = "EVENTS_KV"
+id = "7e4d698d5f5d405d85278bfe27f87f30"

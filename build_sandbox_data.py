@@ -2,7 +2,7 @@
 """生成胜率沙盘数据 assets/sandbox.js。
 
 输入：
-  assets/replay/*.json                      212 局逐分钟回放（曲线 / 金差 / 资源 / 事件）
+  assets/replay/*.json                      222 局逐分钟回放（曲线 / 金差 / 资源 / 事件）
   data/realtime/backtest_v9_report.json     V12 独立 test 段指标与最差对局
   data/realtime/predictions/*.csv           直播预测档案（用于校准形态，非 test）
   data/realtime/replay_cache/*.json         V12 重放缓存（优先复用，避免重复推理）
@@ -342,18 +342,30 @@ def build_surface(battles):
     for mi in range(len(MINUTE_EDGES) - 1):
         for gi in range(len(GOLD_EDGES) - 1):
             cells.append({"mi": mi, "gi": gi, "n": 0, "wins": 0, "sumP": 0.0})
+    minute_center = [(MINUTE_EDGES[i] + MINUTE_EDGES[i + 1]) / 2
+                     for i in range(len(MINUTE_EDGES) - 1)]
+    gold_center = [(GOLD_EDGES[i] + GOLD_EDGES[i + 1]) / 2
+                   for i in range(len(GOLD_EDGES) - 1)]
     for b in battles:
         label = 1 if b["win"] == 1 else 0
+        # 同一局在同一格（分钟段 × 金差段）可能留下好几帧；只取离格中心最近的一帧。
+        # n 必须是独立对局数，否则同一局重复计数会把 Wilson 区间压窄。
+        chosen = {}
         for f in b["frames"]:
             p = f[1]
             if p is None:
                 continue
             mi = clamp(bisect_right(MINUTE_EDGES, f[0]) - 1, 0, len(MINUTE_EDGES) - 2)
             gi = clamp(bisect_right(GOLD_EDGES, f[2]) - 1, 0, len(GOLD_EDGES) - 2)
+            d = abs(f[0] - minute_center[mi]) + abs(f[2] - gold_center[gi]) / 1000.0
+            key = (mi, gi)
+            if key not in chosen or d < chosen[key][0]:
+                chosen[key] = (d, float(p))
+        for (mi, gi), (_, p) in chosen.items():
             c = cells[mi * (len(GOLD_EDGES) - 1) + gi]
             c["n"] += 1
             c["wins"] += label
-            c["sumP"] += float(p)
+            c["sumP"] += p
     out = []
     for c in cells:
         n = c["n"]
