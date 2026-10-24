@@ -62,6 +62,25 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 
 辅助脚本：`sync_readme_stats.py` 把上面的「数据规模」与 `assets/*.js` 索引对齐。
 
+## 匿名统计（P0 基线）
+
+- 端点是同源 `POST /api/event`，由 `worker.js` 写入 Cloudflare Analytics Engine 数据集 `kpl_site_events`；不写 Cookie、不存 IP，不上报查询参数、战队名或选手名。
+- 事件只有 6 个：`page_view`（访问来源用 referrer 主机名）、`match_open`、`key_moment_click`、`timeline_drag`、`share_click`、`fav_add`；`s` 是 sessionStorage 里的随机会话 ID，关掉标签页即失效。
+- 示例查询（Cloudflare Dashboard → Analytics Engine）：
+  ```sql
+  SELECT blob1 AS event, count() AS n
+  FROM kpl_site_events
+  WHERE timestamp > NOW() - INTERVAL '7' DAY
+  GROUP BY event ORDER BY n DESC;
+  ```
+  ```sql
+  SELECT blob3 AS referrer_host, count() AS n
+  FROM kpl_site_events
+  WHERE blob1 = 'page_view' AND timestamp > NOW() - INTERVAL '7' DAY
+  GROUP BY referrer_host ORDER BY n DESC LIMIT 30;
+  ```
+- Cloudflare Web Analytics 可在 Dashboard 额外开启；本站的 `page_view` 已能给出最小来源基线，不依赖第三方脚本。
+
 ## 质量门禁
 
 发布前必须通过：
