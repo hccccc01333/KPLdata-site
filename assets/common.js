@@ -23,7 +23,7 @@ window.KPL = (function () {
     try {
       if (!TRACK_EVENTS[event]) return;
       var host = location.hostname;
-      if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)) return;
+      if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(host) || /\.github\.io$/i.test(host)) return;
       var sid = "";
       try {
         sid = sessionStorage.getItem("kpl_sid") || "";
