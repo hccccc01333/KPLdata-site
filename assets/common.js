@@ -313,8 +313,8 @@ window.KPL = (function () {
       '<nav class="nav" id="siteNav">' + links + "</nav>" +
       '<button class="nav-toggle" id="navToggle" type="button" aria-label="打开导航" ' +
       'aria-expanded="false" aria-controls="siteNav">' + icon("menu", 19) + "</button>" +
-      '<a class="gh-ico" href="https://github.com/hccccc01333/KPLdata" target="_blank" rel="noopener" ' +
-      'title="开源仓库" aria-label="GitHub 仓库">' + icon("github", 19) + "</a></div>";
+      '<a class="gh-ico" href="https://github.com/hccccc01333/kpl-insight" target="_blank" rel="noopener" ' +
+      'title="源码仓库" aria-label="GitHub 仓库">' + icon("github", 19) + "</a></div>";
   }
   function footer() {
     return '<div class="wrap footer-in"><div>' +
@@ -323,7 +323,7 @@ window.KPL = (function () {
       '统计均为自算口径：胜率类为历史区间估计，赛程与比分以官方发布为准。' +
       '了解数据口径与更新方式 → <a href="about.html" style="color:var(--gold)">数据说明</a></p></div>' +
       '<div class="foot-right mono"><div>数据更新 <b>' + esc(D ? D.generatedAt : "—") + "</b></div>" +
-      '<a href="https://github.com/hccccc01333/KPLdata" target="_blank" rel="noopener">开源仓库 ↗</a>' +
+      '<a href="https://github.com/hccccc01333/kpl-insight" target="_blank" rel="noopener">源码仓库 ↗</a>' +
       '<a href="updates.html">更新日志</a>' +
       '<a href="about.html">数据说明 · 免责</a></div></div>';
   }
