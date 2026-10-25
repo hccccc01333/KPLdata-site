@@ -1280,3 +1280,78 @@ select:disabled{opacity:.55 !important;cursor:not-allowed}
   .br-head .sel{margin-left:0}
   .br-cols{grid-auto-columns:minmax(210px,86vw)}
 }
+
+/* ---------------- 系列赛深度分析（Series Intelligence V1） ---------------- */
+.sr-block{margin-top:26px}
+.sr-card{position:relative;overflow:hidden;border:1px solid rgba(190,150,45,.30);border-radius:14px;
+         background:linear-gradient(135deg,#FFFDF8 0%,#FFFAF0 52%,#F7F8FA 100%);padding:20px 22px}
+.sr-card::after{content:"";position:absolute;right:-60px;top:-80px;width:220px;height:220px;border-radius:50%;
+                background:radial-gradient(circle,rgba(246,192,33,.15),rgba(246,192,33,0) 70%);pointer-events:none}
+.sr-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:#8A5A00;font-weight:800;
+           display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.sr-lead{font-size:17.5px;line-height:1.75;font-weight:700;color:var(--ink);margin:9px 0 12px;max-width:1100px}
+.sr-badges{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:11.5px;color:var(--muted)}
+.sr-badges b{color:var(--ink);font-size:13px}
+.sr-tag{display:inline-flex;align-items:center;padding:1px 6px;border-radius:5px;font-size:10.5px;font-weight:800;
+        border:1px solid var(--line2);background:#fff;color:var(--muted);white-space:nowrap}
+.sr-tag.ok{background:#EAF7EE;color:#1D6B3A;border-color:#BFE3CB}
+.sr-tag.warn{background:#FDEBEA;color:#A62E2E;border-color:#F4C9C5}
+.sr-tag.est{background:#F1EDFF;color:#5B45A8;border-color:#DDD4FA}
+.sr-tag.proxy{background:#FFF3DE;color:#8A5A00;border-color:#F2DCA9}
+.sr-warnings{margin-top:11px;font-size:11.5px;color:var(--muted)}
+.sr-warnings summary{cursor:pointer;font-weight:700;color:#A62E2E}
+.sr-warnings ul{margin:7px 0 0;padding-left:18px;line-height:1.7}
+.sr-games{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.sr-game{background:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 12px;min-width:0}
+.sr-game-hd{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.sr-g{font-family:var(--mono);font-size:11px;font-weight:900;color:#B08A2E}
+.sr-win{font-size:13.5px;font-weight:900;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-side{margin-left:auto;font-size:10.5px;color:var(--muted);white-space:nowrap}
+.sr-game-meta{margin-top:2px;font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-game-kv{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:11px;color:var(--muted)}
+.sr-game-kv b{color:var(--ink2);font-variant-numeric:tabular-nums}
+.sr-miniwin{margin-top:7px;padding-top:6px;border-top:1px dashed var(--line);font-size:10.5px;line-height:1.55;color:var(--ink2)}
+.sr-miniwin b{color:var(--ink)}
+.sr-partial{margin-top:6px;font-size:10.5px;line-height:1.55;color:#A62E2E}
+.sr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.sr-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.sr-panel{padding:13px 15px}
+.sr-comp{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.sr-comp > div{display:flex;justify-content:space-between;gap:12px}
+.sr-comp b{color:var(--ink);font-weight:700;text-align:right}
+.sr-comp .sr-wide{display:block}
+.sr-comp .sr-wide b{display:block;text-align:left;margin-top:2px;line-height:1.6}
+.sr-note{margin-top:7px;font-size:11px;line-height:1.6;color:var(--muted)}
+.sr-claims{display:flex;flex-direction:column;gap:8px}
+.sr-claim{display:flex;gap:7px;font-size:12px;line-height:1.7;color:var(--ink2)}
+.sr-claim p{margin:0}
+.sr-claim-dot{flex:none;width:5px;height:5px;border-radius:50%;background:var(--gold);margin-top:8px}
+.sr-claims.fact .sr-claim-dot{background:#2E7D4F}
+.sr-claims.inf .sr-claim-dot{background:#2E6FD0}
+.sr-claims.hyp .sr-claim-dot{background:#B08A2E}
+.sr-empty{font-size:11.5px;color:var(--muted)}
+.sr-limits{margin-top:11px;padding-top:10px;border-top:1px dashed var(--line);font-size:11px;line-height:1.7;color:var(--muted)}
+@media(max-width:900px){
+  .sr-games{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sr-grid,.sr-grid-3{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .sr-card{padding:16px 14px}
+  .sr-lead{font-size:15.5px}
+  .sr-games{grid-template-columns:1fr}
+  .sr-side{margin-left:0}
+}
+
+/* 系列赛/对局头图在窄屏的最小可用布局 */
+@media(max-width:560px){
+  .page-hero .wrap{padding-left:14px !important;padding-right:14px !important}
+  .mh-grid{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px}
+  .mh-team img{width:52px;height:52px}
+  .mh-team .n{font-size:13.5px;line-height:1.3;text-align:center;white-space:normal;word-break:break-word}
+  .mh-score{font-size:30px;letter-spacing:1px}
+  .mh-score small{font-size:9.5px;letter-spacing:.2px}
+  .battle-strip{justify-content:flex-start;flex-wrap:wrap;gap:6px}
+  .battle-chip{flex:0 0 auto;font-size:11px;padding:5px 8px}
+  .battle-chip .tag{font-size:9.5px;margin-left:4px}
+  .sr-game-meta{white-space:normal;line-height:1.45}
+}

@@ -31,6 +31,7 @@ const PAGES = [
   ["heroes.html", "英雄列表", ["#heroGrid > *, .hcard"]],
   ["hero.html?id=曹操", "英雄详情", ["#heroHead .page-hero, #heroHead .hd-top", "#main .panel", "#heroGrowthChart svg"]],
   ["match.html?id=2026062603&g=3&m=13", "比赛复盘", ["#rpRange", "#rpChart svg", "#rpGrid .rp-panel"]],
+  ["match.html?id=2026102201", "系列赛诊断", ["#seriesAnalysis", ".sr-game", ".sr-grid-3"]],
   // game.html 的 id 是 battle_id（不是 match_id），传错了会走空态
   ["game.html?id=1373651472_21_1779526666", "对局详情", ["#main .panel", "#main .bp-grid"]],
   ["bp.html", "BP 分析", ["#bpBody tr, .bp2-panel, main .panel"]],
@@ -501,6 +502,9 @@ async function main() {
     check(w + "px 复盘页无异常", e2.length === 0, e2.slice(0, 2).join(" | "));
     const mOver = await evaluate("document.documentElement.scrollWidth - window.innerWidth");
     check(w + "px 复盘页无横向溢出", mOver <= 1, mOver + "px");
+    await visit(BASE + "match.html?id=2026102201");
+    const srOver = await evaluate("document.documentElement.scrollWidth - window.innerWidth");
+    check(w + "px 系列赛诊断页无横向溢出", srOver <= 1, srOver + "px");
     await visit(BASE + "game.html?id=1054884368_8_1792576862");
     const gameOver = await evaluate(`(function(){
       var de = document.documentElement;
