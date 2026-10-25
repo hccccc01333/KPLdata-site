@@ -118,7 +118,7 @@ async function main() {
   check("历史对照按独立对局计数（不再是帧）", base && /独立对局数/.test(base.analogNote), base && base.analogNote);
   check("V12 曲线已渲染", base && base.curve >= 1, base && base.curve);
   check("KPI Brier = 0.177", base && base.brier === "0.177", base && base.brier);
-  check("KPI 覆盖 = 222 局", base && base.coverage === "222 局", base && base.coverage);
+  check("KPI 覆盖 = 221 局", base && base.coverage === "221 局", base && base.coverage);
   check("1440px 无横向溢出", base && base.overflow <= 1, base && base.overflow + "px");
 
   // 模式切换

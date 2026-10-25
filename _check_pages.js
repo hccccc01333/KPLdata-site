@@ -260,7 +260,7 @@ async function main() {
   check("复盘首屏有结论与三个转折", story && story.has && story.lead.length > 40 && story.moments === 3,
     story && (story.moments + " 个转折 · 结论 " + story.lead.slice(0, 36)));
   check("复盘详细面板默认折叠", story && story.detailHidden === true, story && story.expand);
-  check("复盘覆盖数字不回避（222 / 全历史）", story && /222\s*\/\s*11,138/.test(story.cov), story && story.cov.slice(0, 80));
+  check("复盘覆盖数字不回避（221 / 全历史）", story && /221\s*\/\s*11,138/.test(story.cov), story && story.cov.slice(0, 80));
   check("复盘结论区分官方 / 代理 / 估算", story && story.labels >= 3, story && story.labels);
   check("复盘提供历史类似局面入口", story && /sandbox\.html\?battle=/.test(story.analog), story && story.analog);
   const expanded = await evaluate(`(function(){

@@ -171,10 +171,15 @@ def build_battle(battle_id: str, meta: dict) -> dict | None:
         except Exception:
             prob_by_bin = {}
 
-    # 每帧字段：同分钟取最后一帧
+    # 每帧字段：同分钟取最后一帧。
+    # status=2 是官方终局摘要，不是普通局内帧：它的推塔/资源字段会切换成另一套
+    # 语义（例如 G1 从 9:5 变成 6:6），混进时间轴会造成累计值回退。
+    # 胜方仍从终局快照/Index 取；时间轴只保留 status=1 的实时快照。
     by_bin: dict[int, dict] = {}
     for s in snaps:
         try:
+            if int(s.get("status") or 0) == 2:
+                continue
             mb = int(s.get("minute_bin") or 0) or int(float(s.get("minute") or 0)) or 1
         except (TypeError, ValueError):
             continue
