@@ -4,7 +4,7 @@
     "name": "kpl-insight-series",
     "version": "0.2.0"
   },
-  "generated_at": "2026-10-25T17:36:40",
+  "generated_at": "2026-10-25T18:25:32",
   "series": {
     "match_id": "2026102201",
     "date": "2026-10-22",
@@ -106,7 +106,7 @@
         ]
       },
       {
-        "text": "四局资源累计（末帧求和）：杭州LGD.NBW 暴君/黑暗暴君/主宰/风暴龙王 = 3/4/4/0；南通Hero久竞 = 5/2/3/0。",
+        "text": "资源累计（4 局有效末帧求和）：杭州LGD.NBW 暴君/黑暗暴君/主宰/风暴龙王 = 3/4/4/0；南通Hero久竞 = 5/2/3/0。",
         "level": "descriptive_inference",
         "evidence": [
           {
@@ -766,6 +766,7 @@
         "风暴龙王": 0
       }
     },
+    "objective_games": 4,
     "side_sequence": [
       {
         "seq": 1,
