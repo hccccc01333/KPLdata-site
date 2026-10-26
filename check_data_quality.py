@@ -6,6 +6,8 @@
 用法：
     python check_data_quality.py            # 检查 + 写报告；有严重问题 → exit 1
     python check_data_quality.py --warn-only  # 只看报告，不阻断（排查用）
+    python check_data_quality.py --skip-cross-page  # 比赛日快速链路：seasons 已刷新、
+                                                    # players_detail 尚未刷新时跳过跨页比对
 
 检查对象：assets/seasons.js / players_detail.js / honors.js（发布给前端的真实资产）
 报告位置：../02-KPL实时胜率预测系统/reports/data_quality_report.json
@@ -157,6 +159,7 @@ def check_cross_page(rep: Report, seasons: dict, players: dict):
 
 def main() -> int:
     warn_only = "--warn-only" in sys.argv
+    skip_cross = "--skip-cross-page" in sys.argv
     rep = Report()
 
     seasons = load_asset("seasons.js", "KPL_SEASONS")
@@ -169,7 +172,10 @@ def main() -> int:
 
     check_missing_as_zero(rep, seasons, players, honors)
     check_honor_fields(rep, honors)
-    check_cross_page(rep, seasons, players)
+    if skip_cross:
+        print("  快速链路：跳过 seasons / players_detail 跨页比对（等待全量链路刷新）")
+    else:
+        check_cross_page(rep, seasons, players)
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     report = {

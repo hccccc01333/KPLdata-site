@@ -13,7 +13,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-from kpl_series import battle_winner_team, team_name_of
+from kpl_series import battle_winner_team, summarize_match, team_name_of
 
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
@@ -32,10 +32,6 @@ def num(v, default=0.0):
         return x if x == x else default
     except (TypeError, ValueError):
         return default
-
-
-def team_of(battle: dict, camp: int) -> str:
-    return str((battle.get(f"camp{camp}") or {}).get("team_name") or "")
 
 
 def secs(dur) -> float:
@@ -87,26 +83,16 @@ def main() -> None:
         except Exception:
             continue
         m = o.get("match") or {}
-        raw_bs = [b for b in (o.get("battles") or []) if b.get("win_camp") in (1, 2)]
-        if not raw_bs:
+        # 统一走 kpl_series：按 battle_id 去重、过滤串场小局，并按真实逐局胜方结算。
+        # 历史数据存在不同小局共用 battle_seq 的情况，不能再按 seq 去重。
+        res = summarize_match(o, fallback_id=f.stem)
+        if res is None:
             continue
-        # 同一局号可能重复出现：优先保留有选手数据的那条
-        by_seq = {}
-        for b in raw_bs:
-            seq = int(b.get("battle_seq") or 0)
-            if seq <= 0:
-                continue
-            if seq not in by_seq or len(b.get("battle_player_list") or []) > len(by_seq[seq].get("battle_player_list") or []):
-                by_seq[seq] = b
-        bs = [by_seq[k] for k in sorted(by_seq)]
-        if not bs:
-            continue
-        t1, t2 = team_of(bs[0], 1), team_of(bs[0], 2)
-        if not t1 or not t2:
-            continue
-        mid = str(m.get("match_id") or f.stem)
-        lid = str(m.get("league_id") or "")
-        date = str(m.get("start_time") or "")[:10]
+        bs = list(res.battles)
+        t1, t2 = res.team1, res.team2
+        mid = res.match_id
+        lid = res.league_id
+        date = res.date[:10]
         year = date[:4]
         if not year.isdigit():
             continue
@@ -115,19 +101,14 @@ def main() -> None:
         if lid in good_leagues:
             scope_ids.append(lid)
 
-        team_wins = Counter()
-        for b in bs:
-            bw = battle_winner_team(b)
-            if bw in (t1, t2):
-                team_wins[bw] += 1
         bo = int(m.get("bo") or 0)
         need = bo // 2 + 1 if bo > 0 else 0
-        tie = team_wins[t1] == team_wins[t2]
         # 只有「完整且官方赛制明确」的系列赛才参与系列纪录；对局纪录不受影响
-        series_ok = (not tie) and bo >= 3 and max(team_wins.values()) == need and len(bs) >= need
-        winner = "" if tie else (t1 if team_wins[t1] > team_wins[t2] else t2)
-        loser = "" if tie else (t2 if winner == t1 else t1)
-        score = f"{team_wins[t1]}:{team_wins[t2]}"
+        series_ok = (res.battle_complete and bo >= 3 and need > 0
+                     and max(res.score) == need and len(bs) >= need)
+        winner = res.winner
+        loser = res.loser
+        score = f"{res.team1_wins}:{res.team2_wins}"
 
         if series_ok:
             total_sec = 0.0
@@ -144,7 +125,7 @@ def main() -> None:
                     "t1": t1, "t2": t2, "w": winner, "score": score, "bo": bo,
                 })
             push(scope_ids, "series_margin", {
-                "v": abs(team_wins[t1] - team_wins[t2]), "d": date, "mid": mid, "lid": lid,
+                "v": abs(res.team1_wins - res.team2_wins), "d": date, "mid": mid, "lid": lid,
                 "t1": t1, "t2": t2, "w": winner, "score": score, "bo": bo,
             })
             push(scope_ids, "series_games", {
@@ -158,7 +139,7 @@ def main() -> None:
 
         for b in bs:
             games += 1
-            bt1, bt2 = team_of(b, 1), team_of(b, 2)
+            bt1, bt2 = team_name_of(b, 1), team_name_of(b, 2)
             if not bt1 or not bt2:
                 continue
             dur = secs(b.get("game_duration"))

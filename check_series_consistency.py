@@ -22,6 +22,8 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
+from kpl_series import summarize_match
+
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
 
@@ -501,16 +503,79 @@ def compare_players_detail(rep: Report, deep: dict) -> int:
     return compared
 
 
+def _player_battle_trace(names: set[str]) -> dict[str, dict[str, set[str]]]:
+    """复算统一口径与旧 seq 去重口径的局集合，供不一致选手追溯 battle_id。
+
+    只在门禁失败时调用；正常情况下不增加扫描成本。
+    """
+    trace = {n: {"canon": set(), "legacy": set()} for n in names}
+
+    def add(bt: dict, mid: str, bucket: set[str]) -> None:
+        key = f"{mid}/{str(bt.get('battle_id') or int0(bt.get('battle_seq')))}"
+        for p in bt.get("battle_player_list") or []:
+            if not isinstance(p, dict):
+                continue
+            nm = str(p.get("player_name") or p.get("actual_player_name") or "").strip()
+            if nm in trace:
+                trace[nm][bucket].add(key)
+
+    for f in sorted(HIST.glob("*/matches/*.json")):
+        try:
+            obj = json.loads(f.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        m = obj.get("match") if isinstance(obj, dict) else None
+        if not isinstance(m, dict):
+            continue
+        mid = str(m.get("match_id") or f.stem)
+        res = summarize_match(obj, fallback_id=f.stem)
+        if res is not None:
+            for bt in res.battles:
+                add(bt, mid, "canon")
+
+        # 旧 build_player_deep 口径：按 battle_seq 保留首局、跳过平局大场。
+        raw = [b for b in (obj.get("battles") or [])
+               if isinstance(b, dict) and int0(b.get("win_camp")) in (1, 2)]
+        by_seq = {}
+        for b in raw:
+            seq = int0(b.get("battle_seq"))
+            if seq > 0 and seq not in by_seq:
+                by_seq[seq] = b
+        bs = [by_seq[k] for k in sorted(by_seq)]
+        if not bs:
+            continue
+        t1, t2 = team_of(bs[0], 1), team_of(bs[0], 2)
+        if not t1 or not t2:
+            continue
+        wins = Counter(winner_of(b) for b in bs)
+        if wins[t1] == wins[t2]:
+            continue
+        for b in bs:
+            add(b, mid, "legacy")
+    return trace
+
+
 def compare_player_deep(rep: Report, exp: dict) -> None:
-    """player_deep.js 尚未修复时只告警，不阻断系列赛门禁。"""
+    """player_deep.js 的生涯 g/w 必须与统一结算口径一致，差异阻断发布。"""
     try:
         pd = load_asset(PLAYER_DEEP, "KPL_PLAYER_DEEP")
     except Exception as e:
-        rep.warn("player_deep.js 不可解析", str(e))
+        rep.severe("player_deep.js 不可解析", str(e))
         return
     if not isinstance(pd, dict):
+        rep.severe("player_deep.js 不是有效的 KPL_PLAYER_DEEP 对象", "无法做选手侧交叉校验")
         return
     got = pd.get("players") or {}
+    want_names = set(exp["players"])
+    got_names = set(got)
+    missing = sorted(want_names - got_names)
+    extra = sorted(got_names - want_names)
+    if missing:
+        rep.severe("player_deep 缺少选手",
+                   f"{len(missing)} 名达到出场门槛的选手未进入 player_deep.js", missing[:8])
+    if extra:
+        rep.severe("player_deep 多出选手",
+                   f"{len(extra)} 名选手不在统一结算的出场门槛内", extra[:8])
     bad = []
     for name, row in got.items():
         want = exp["players"].get(name)
@@ -519,9 +584,24 @@ def compare_player_deep(rep: Report, exp: dict) -> None:
         if row.get("g") != want["g"] or row.get("w") != want["w"]:
             bad.append((name, row.get("g"), want["g"], row.get("w"), want["w"]))
     if bad:
-        rep.warn("player_deep 仍按阵营累计逐局胜负",
-                 f"player_deep.js 有 {len(bad)} 名选手的 g/w 与逐局战队口径不一致（等待选手侧修复）",
-                 [f"{x[0]} g {x[1]}→{x[2]} w {x[3]}→{x[4]}" for x in bad[:8]])
+        trace = _player_battle_trace({x[0] for x in bad})
+        details = []
+        for name, dg, wg, dw, ww in bad[:8]:
+            t = trace.get(name) or {}
+            canon = t.get("canon") or set()
+            legacy = t.get("legacy") or set()
+            missing = sorted(canon - legacy)
+            extra = sorted(legacy - canon)
+            bits = [f"{name}: player_deep {dg}局/{dw}胜 → 复算 {wg}局/{ww}胜"]
+            if missing:
+                bits.append("统一口径多出 " + ", ".join(missing[:3]))
+            if extra:
+                bits.append("旧口径多出 " + ", ".join(extra[:3]))
+            if not missing and not extra:
+                bits.append("涉及局样例 " + ", ".join(sorted(canon)[:3]))
+            details.append("；".join(bits))
+        rep.severe("player_deep 与逐局战队口径不一致",
+                   f"player_deep.js 有 {len(bad)} 名选手的 g/w 与统一结算不一致", details)
 
 
 def main() -> int:
@@ -548,10 +628,14 @@ def main() -> int:
         players_compared = 0
     else:
         compare_deep(rep, exp, deep)
-        # 快速链路只重建 deep.js，players_detail 可能还是上一次全量的版本；
-        # 此时跳过交叉校验，避免把"尚未刷新"误报成"口径回退"。
-        players_compared = 0 if skip_cross else compare_players_detail(rep, deep)
-    compare_player_deep(rep, exp)
+        # 快速链路只重建 deep.js，players_detail / player_deep 可能还是上一次全量的版本；
+        # 此时跳过跨资产校验，避免把"尚未刷新"误报成"口径回退"。
+        if skip_cross:
+            print("  快速链路：跳过 players_detail / player_deep 交叉校验（等待全量链路刷新）")
+            players_compared = 0
+        else:
+            players_compared = compare_players_detail(rep, deep)
+            compare_player_deep(rep, exp)
 
     report = {
         "generatedAt": datetime.now(CN).strftime("%Y-%m-%d %H:%M:%S"),

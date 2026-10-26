@@ -15,6 +15,8 @@ import json
 import sys
 from pathlib import Path
 
+from kpl_series import clean_battles, team_name_of
+
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
 
@@ -138,10 +140,13 @@ def main() -> None:
                 continue
             match = obj.get("match") or {}
             mid = str(match.get("match_id") or f.stem)
+            official_teams = {team_name_of(match, 1), team_name_of(match, 2)} - {""}
+            if len(official_teams) != 2:
+                official_teams = set()
             rows = []
-            for det in obj.get("battles") or []:
-                if not isinstance(det, dict):
-                    continue
+            # 与 deep.js / 纪录中心共用同一清洗口径：过滤串场局、按 battle_id 去重；
+            # 局详情额外保留进行中的 status=1 小局。
+            for det in clean_battles(obj.get("battles") or [], official_teams, include_live=True):
                 slim = slim_battle(det, match)
                 if slim is None:
                     continue

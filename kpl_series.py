@@ -93,17 +93,24 @@ class SeriesResult:
         return self.battles[-1]
 
 
-def _clean_battles(raw: list[Any], official_teams: set[str]) -> list[dict]:
+def clean_battles(raw: list[Any], official_teams: set[str],
+                  include_live: bool = False) -> list[dict]:
     """按官方大场队名过滤 + 按 battle_id 去重，剔除串场/占位小局。
 
     注意：历史数据里存在同一场两个来源的 battle_id 共用一个 battle_seq 的情况
     （2021-11-18 TTG/DRG、2021-04-21 EDG/RNG）。它们不是重复局，而是局号字段损坏；
     因此这里只按 battle_id 去重，排序时用 battle_id 尾部的 Unix 时间戳作为局号并列时的
     真实先后依据。若按 seq 去重，会丢掉一整局并把 3:1 算成 3:0。
+
+    ``include_live=True`` 供局详情构建使用：保留 status=1 的进行中局（无 win_camp），
+    但同样要求两队队名完整且属于官方大场，避免把串场局带进前端。
     """
     rows: list[tuple[int, int, int, int, dict]] = []
     for i, b in enumerate(raw):
-        if not isinstance(b, dict) or _int(b.get("win_camp")) not in (1, 2):
+        if not isinstance(b, dict):
+            continue
+        if _int(b.get("win_camp")) not in (1, 2) and not (
+                include_live and _int(b.get("status")) == 1):
             continue
         teams = battle_team_set(b)
         if len(teams) != 2:
@@ -153,7 +160,7 @@ def summarize_match(obj: dict, fallback_id: str = "") -> SeriesResult | None:
     if len(official_teams) != 2:
         official_teams = set()
 
-    battles = _clean_battles(raw, official_teams)
+    battles = clean_battles(raw, official_teams)
     if not battles:
         return None
 

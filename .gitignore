@@ -13,6 +13,9 @@ Thumbs.db
 # 复盘构建缓存
 assets/replay/.manifest.json
 
+# 沙盘 V12 重放补齐缓存（本地生成，按模型 mtime 失效）
+.sandbox_v12_cache.json
+
 # 浏览器无头测试的临时 profile（测试脚本用 --user-data-dir 生成，勿入库）
 .edge-tmp*/
 

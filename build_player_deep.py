@@ -49,10 +49,6 @@ def num(v, default=0.0):
         return default
 
 
-def team_of(battle: dict, camp: int) -> str:
-    return str((battle.get(f"camp{camp}") or {}).get("team_name") or "")
-
-
 def pct_rank(sorted_vals: list[float], v: float) -> float:
     """在数组中的百分位（0-100）。"""
     if not sorted_vals:
@@ -81,43 +77,22 @@ def main() -> None:
             o = json.loads(f.read_text(encoding="utf-8"))
         except Exception:
             continue
-        m = o.get("match") or {}
-        raw_bs = [b for b in (o.get("battles") or []) if b.get("win_camp") in (1, 2)]
-        if not raw_bs:
+        res = summarize_match(o, fallback_id=f.stem)
+        if res is None:
             continue
-        by_seq = {}
-        for b in raw_bs:
-            seq = int(b.get("battle_seq") or 0)
-            if seq > 0 and seq not in by_seq:
-                by_seq[seq] = b
-        bs = [by_seq[k] for k in sorted(by_seq)]
-        if not bs:
-            continue
-        t1, t2 = team_of(bs[0], 1), team_of(bs[0], 2)
-        if not t1 or not t2:
-            continue
-        team_wins = Counter()
-        for b in bs:
-            bw = battle_winner_team(b)
-            if bw in (t1, t2):
-                team_wins[bw] += 1
-        if team_wins[t1] == team_wins[t2]:
-            continue
-        winner = t1 if team_wins[t1] > team_wins[t2] else t2
-        loser = t2 if winner == t1 else t1
-        bo = int(m.get("bo") or 0) or (len(bs) * 2 - 1)
-        date = str(m.get("start_time") or "")
-        mid = str(m.get("match_id") or f.stem)
-        need = (bo // 2) + 1
-        complete = max(team_wins.values()) == need
-        dec_seq = -1
-        if complete and bo >= 3 and team_wins[winner] == need and team_wins[loser] == need - 1 and len(bs) == bo:
-            dec_seq = int(bs[-1].get("battle_seq") or 0)
-
-        matches.append((date, mid, t1, t2, winner, bo))
+        bs = list(res.battles)
+        t1, t2 = res.team1, res.team2
+        bo = res.bo
+        date = res.date
+        mid = res.match_id
+        # 决胜局按对象身份判断：历史数据里存在不同小局共用 battle_seq 的情况，
+        # 用局号比较会把更早的那一局误标成决胜局。
+        dec_battle = res.decisive_battle
+        if res.resolved:
+            matches.append((date, mid, t1, t2, res.winner, bo))
 
         for b in bs:
-            bt1, bt2 = team_of(b, 1), team_of(b, 2)
+            bt1, bt2 = team_name_of(b, 1), team_name_of(b, 2)
             if not bt1 or not bt2:
                 bt1, bt2 = t1, t2
             bw = battle_winner_team(b)
@@ -131,7 +106,7 @@ def main() -> None:
             dur_min = dur_raw / 60000.0 if dur_raw > 100000 else (dur_raw / 60.0 if dur_raw > 1000 else 0)
             if dur_min <= 0 or dur_min > 60:
                 dur_min = None
-            is_dec = bool(dec_seq and int(b.get("battle_seq") or 0) == dec_seq)
+            is_dec = b is dec_battle
             bid = str(b.get("battle_id") or (mid + "_" + str(b.get("battle_seq") or 0)))
             for camp0, tname in ((1, bt1), (2, bt2)):
                 members = [x for x in plist if int(x.get("camp") or 0) == camp0]
