@@ -21,7 +21,7 @@ window.KPL_COMPARE = (function () {
   var LANES = ["对抗路", "打野", "中路", "发育路", "游走"];
   var TRENDABLE = { hero: 1, team: 1 };   // 只有英雄 / 战队有逐年 by 数据，选手 / 位置无趋势
 
-  var K, $, baseMode, trendView, mode, curScope, picked, posFilter = "all", booted = false;
+  var K, $, baseMode, trendView, mode, curScope, picked, posFilter = "all", posNorm = "pos", booted = false;
 
   /* ---------- 位置（分路）聚合 ----------
      把当前数据范围里的选手，按「实际出场位置」聚成 5 条分路画像；
@@ -97,7 +97,7 @@ window.KPL_COMPARE = (function () {
         { label: "MVP 率", get: function (x) { return x.mvp / Math.max(1, x.games) * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
         { label: "参团率", get: function (x) { return x.part; }, fmt: function (v) { return K.mpct(v, 1); } },
         { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return K.mpct(v, 1); } },
-        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return K.mnumText(v, 0); } }
+        { label: "出场局数", get: function (x) { return x.games; }, weight: function () { return 1; }, fmt: function (v) { return K.mnumText(v, 0); } }
       ]
     },
     team: {
@@ -111,10 +111,10 @@ window.KPL_COMPARE = (function () {
       target: "teams.html",
       dims: [
         { label: "单局胜率", get: function (x) { return x.wr * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
-        { label: "大场胜率", get: function (x) { return x.mWin / Math.max(1, x.matches) * 100; }, fmt: function (v) { return K.mpct(v, 1); } },
+        { label: "大场胜率", get: function (x) { return x.mWin / Math.max(1, x.matches) * 100; }, weight: function (x) { return x.matches || 0; }, fmt: function (v) { return K.mpct(v, 1); } },
         { label: "场均金差", get: function (x) { return x.goldDiff; }, fmt: function (v) { var n = K.mnum(v); return n === null ? "—" : (n > 0 ? "+" : "") + Math.round(n); } },
         { label: "场均击杀差", get: function (x) { return x.killDiff; }, fmt: function (v) { var n = K.mnum(v); return n === null ? "—" : (n > 0 ? "+" : "") + n.toFixed(1); } },
-        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return K.mnumText(v, 0); } }
+        { label: "出场局数", get: function (x) { return x.games; }, weight: function () { return 1; }, fmt: function (v) { return K.mnumText(v, 0); } }
       ]
     },
     lane: {
@@ -129,7 +129,7 @@ window.KPL_COMPARE = (function () {
         { label: "MVP 率", get: function (x) { return x.mvpRate; }, fmt: function (v) { return K.mpct(v, 1); } },
         { label: "参团率", get: function (x) { return x.part; }, fmt: function (v) { return K.mpct(v, 1); } },
         { label: "输出伤害", get: function (x) { return x.dmg; }, fmt: function (v) { return K.mpct(v, 1); } },
-        { label: "出场局数", get: function (x) { return x.games; }, fmt: function (v) { return K.mnumText(v, 0); } }
+        { label: "出场局数", get: function (x) { return x.games; }, weight: function () { return 1; }, fmt: function (v) { return K.mnumText(v, 0); } }
       ]
     }
   };
@@ -158,6 +158,7 @@ window.KPL_COMPARE = (function () {
     if (baseMode !== "player" || posFilter === "all") return rows;
     return rows.filter(function (x) { return x.pos === posFilter; });
   }
+  function samePosMode() { return baseMode === "player" && posNorm === "pos"; }
   function currentList() { return byPos(conf().list(K.scopeOf(curScope))); }
   function currentUniverse() {
     var c = conf();
@@ -228,7 +229,7 @@ window.KPL_COMPARE = (function () {
   }
 
   /* 相对范围均值的优势 / 短板摘要：用分位差，跨指标可读 */
-  function renderInsights(series, dims) {
+  function renderInsights(series, dims, samePos) {
     var table = document.getElementById("cmpTable");
     if (!table || !table.parentNode) return;
     var box = document.getElementById("cmpInsights");
@@ -247,8 +248,8 @@ window.KPL_COMPARE = (function () {
       var rows = dims.map(function (dim) {
         return {
           label: dim.label,
-          delta: dim.values[ci].score - dim.avgScore,
-          ok: dim.values[ci].raw !== null && dim.avgRaw !== null
+          delta: dim.values[ci].score - (samePos ? 50 : dim.avgScore),
+          ok: dim.values[ci].raw !== null && (samePos || dim.avgRaw !== null)
         };
       }).filter(function (x) { return x.ok; });
       var up = rows.filter(function (x) { return x.delta > 0; })
@@ -348,23 +349,43 @@ window.KPL_COMPARE = (function () {
       return { name: M.name(obj), obj: obj, color: COLORS[ci] };
     });
     var universe = currentUniverse();
+    var samePos = samePosMode();
+    function weightOf(dim, x) {
+      if (dim.weight) return Math.max(0, Number(dim.weight(x)) || 0);
+      return Math.max(0, Number(x.games) || 0);
+    }
     var dims = M.dims.map(function (dim) {
       // 分位与均值都基于「当前范围内全部合格对象」，不是只取候选列表的前 90 个
       var sorted = universe.map(function (x) { return K.mnum(dim.get(x, d)); })
         .filter(function (v) { return v !== null; })
         .sort(function (a, b) { return a - b; });
-      var avgRaw = sorted.length
-        ? sorted.reduce(function (a, b) { return a + b; }, 0) / sorted.length
-        : null;
+      var avgRaw = null;
+      if (!samePos) {
+        var sw = 0, sv = 0;
+        universe.forEach(function (x) {
+          var v = K.mnum(dim.get(x, d));
+          if (v === null) return;
+          var w = weightOf(dim, x);
+          if (w > 0) { sv += v * w; sw += w; }
+        });
+        avgRaw = sw ? sv / sw : null;
+      }
       return {
         label: dim.label,
         fmt: dim.fmt,
         avgRaw: avgRaw,
-        avgScore: avgRaw === null ? 0 : Math.max(4, Math.min(100, pctRank(avgRaw, sorted))),
+        avgScore: samePos ? 50 : (avgRaw === null ? 0 : Math.max(4, Math.min(100, pctRank(avgRaw, sorted)))),
         values: series.map(function (se) {
           var v = K.mnum(dim.get(se.obj, d));
           if (v === null) return { raw: null, score: 0 };   // 无有效样本 → 雷达顶点落圆心、表格显示 —
-          var rank = pctRank(v, sorted);
+          var own = sorted;
+          if (samePos) {
+            own = universe.filter(function (x) { return x.pos === se.obj.pos; })
+              .map(function (x) { return K.mnum(dim.get(x, d)); })
+              .filter(function (x) { return x !== null; })
+              .sort(function (a, b) { return a - b; });
+          }
+          var rank = pctRank(v, own);
           return { raw: v, score: Math.max(4, Math.min(100, rank === null ? 50 : rank)) };
         })
       };
@@ -405,9 +426,10 @@ window.KPL_COMPARE = (function () {
           '<title>' + K.esc(tip) + '</title></circle>';
       });
     });
-    if (dims.every(function (dim) { return dim.avgRaw !== null; })) {
+    if (samePos || dims.every(function (dim) { return dim.avgRaw !== null; })) {
       var avgPts = dims.map(function (dim, i) {
-        return pt(i, R * dim.avgScore / 100).map(function (v) { return v.toFixed(1); }).join(",");
+        var r = samePos ? 50 : dim.avgScore;
+        return pt(i, R * r / 100).map(function (v) { return v.toFixed(1); }).join(",");
       }).join(" ");
       s += '<polygon points="' + avgPts + '" fill="none" stroke="' + CP.label +
         '" stroke-width="1.5" stroke-dasharray="5 5" stroke-linejoin="round" opacity=".9"/>';
@@ -420,8 +442,8 @@ window.KPL_COMPARE = (function () {
       return "<span><i style=\"background:" + se.color + '"></i>' +
         (ic ? '<img src="' + K.esc(ic) + '" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover">' : "") +
         K.esc(se.name) + "</span>";
-    }).join("") + (dims.every(function (dim) { return dim.avgRaw !== null; })
-      ? '<span class="cmp-avg"><i class="dash"></i>范围均值</span>' : "");
+    }).join("") + (samePos || dims.every(function (dim) { return dim.avgRaw !== null; })
+      ? '<span class="cmp-avg"><i class="dash"></i>' + (samePos ? "同位置中位 P50" : "范围均值") + '</span>' : "");
 
     /* 对照表 */
     var linkOf = function (se) {
@@ -436,8 +458,8 @@ window.KPL_COMPARE = (function () {
       return '<th><span class="cmp-head">' +
         (href ? '<a href="' + K.esc(href) + '" style="color:inherit;display:inline-flex;align-items:center;gap:6px">' + nameHTML + "</a>" : nameHTML) +
         "</span></th>";
-    }).join("") + '<th class="num cmp-avg-h" title="当前范围内全部合格对象的等权平均">范围均值</th>' +
-      (series.length === 2 ? '<th class="num">差（1−2）</th>' : "") + "</tr></thead>";
+    }).join("") + (samePos ? "" : '<th class="num cmp-avg-h" title="按局数/场次加权">范围均值</th>') +
+      (series.length === 2 ? '<th class="num">' + (samePos ? "差（分位）" : "差（1−2）") + "</th>" : "") + "</tr></thead>";
     var body = "<tbody>" + dims.map(function (dim) {
       var raws = dim.values.map(function (v) { return v.raw; });
       var nums = raws.filter(function (v) { return v !== null; });   // 缺失值既不评最高/最低，也不参与差值
@@ -446,12 +468,17 @@ window.KPL_COMPARE = (function () {
       var cells = dim.values.map(function (v) {
         if (v.raw === null) return '<td><b style="color:var(--muted)">—</b></td>';
         var color = v.raw === best ? "var(--gold)" : (v.raw === worst && best !== worst ? "var(--muted)" : "");
-        return "<td><b" + (color ? ' style="color:' + color + '"' : "") + ">" + dim.fmt(v.raw) + "</b></td>";
+        var pct = samePos ? '<small class="cmp-pct">P' + Math.round(v.score) + "</small>" : "";
+        return "<td><b" + (color ? ' style="color:' + color + '"' : "") + ">" + dim.fmt(v.raw) + "</b>" + pct + "</td>";
       }).join("");
       var diff = "";
       if (series.length === 2) {
         if (raws[0] === null || raws[1] === null) {
           diff = '<td class="num mono" style="color:var(--muted)">—</td>';
+        } else if (samePos) {
+          var ds = dim.values[0].score - dim.values[1].score;
+          diff = '<td class="num mono" style="color:' + (ds >= 0 ? "#1F8A53" : "#D5374B") + '">' +
+            (ds >= 0 ? "+" : "−") + Math.abs(Math.round(ds)) + " 分位</td>";
         } else {
           var dv = raws[0] - raws[1];
           // 指标格式可能自带符号（如 +1289），这里先剥掉再统一加差值的正负号
@@ -460,20 +487,22 @@ window.KPL_COMPARE = (function () {
             (dv >= 0 ? "+" : "−") + absTxt + "</td>";
         }
       }
-      var avgCell = dim.avgRaw === null
+      var avgCell = samePos ? "" : (dim.avgRaw === null
         ? '<td class="num cmp-avg-cell" title="当前范围没有有效样本">—</td>'
-        : '<td class="num mono cmp-avg-cell" title="当前范围内全部合格对象的等权平均">' +
-          dim.fmt(dim.avgRaw) + "</td>";
+        : '<td class="num mono cmp-avg-cell" title="按局数/场次加权">' +
+          dim.fmt(dim.avgRaw) + "</td>");
       return "<tr><td>" + K.esc(dim.label) + "</td>" + cells + avgCell + diff + "</tr>";
     }).join("") + "</tbody>";
     $("#cmpTable").innerHTML = head + body;
-    renderInsights(series, dims);
+    renderInsights(series, dims, samePos);
 
     var hasNull = dims.some(function (dim) {
       return dim.values.some(function (v) { return v.raw === null; });
     });
-    var tip = "雷达位置 = 该指标在「" + K.scopeName(curScope) + "」全部 " + universe.length +
-      " 个合格对象中的百分位（0–100，外圈 = 更强）；虚线 = 范围均值所在分位，表内「范围均值」按对象等权平均，缺失值不参与。表格每行最高值金色、最低值灰色；选 2 个对象时多一列差值，表头可点进详情页。";
+    var tip = samePos
+      ? "雷达位置 = 每名选手在自己位置内的百分位（0–100，外圈 = 更强）；虚线 = 同位置中位 P50；表格原始值下方的 Pxx 为同位置分位，选 2 个对象时的差值为分位差，缺失值不参与。表格每行最高值金色、最低值灰色；表头可点进详情页。"
+      : "雷达位置 = 该指标在「" + K.scopeName(curScope) + "」全部 " + universe.length +
+        " 个合格对象中的百分位（0–100，外圈 = 更强）；虚线 = 范围均值所在分位，表内「范围均值」按局数/场次加权（出场局数按对象等权），缺失值不参与。表格每行最高值金色、最低值灰色；选 2 个对象时多一列差值，表头可点进详情页。";
     if (hasNull) tip += " 表格里的「—」表示该对象在这一指标上没有有效样本，不参与最高/最低与差值计算，雷达图对应顶点落在圆心。";
     if (mode === "lane") {
       var cov = chosen.map(function (o) { return o.name + " " + o.n + " 人 / " + K.fmtInt(o.games) + " 局"; }).join("；");
@@ -481,9 +510,12 @@ window.KPL_COMPARE = (function () {
         "）。注意五种分路职责不同，KDA / 输出等原始值的天然区间不一样，只能读作「分路画像」，不能直接当成强弱排序；跨分路均值只作形状参考。";
     }
     if (mode === "player") {
-      tip += posFilter === "all"
-        ? " 当前是跨位置分位：KDA / 输出会受位置影响，跨位置只读作个人画像；选「位置」后可做同位置比较。"
-        : " 当前按位置「" + posFilter + "」归一化：候选、分位与均值都只在该位置内计算。";
+      if (samePos) {
+        tip += " 当前为同位置分位：每名选手只和同位置选手比；切「跨位置」可看全选手口径。";
+      } else {
+        tip += " 当前为跨位置分位：KDA / 输出会受位置影响，跨位置只读作个人画像；切「同位置」可做公平对比。";
+      }
+      if (posFilter !== "all") tip += " 位置筛选：「" + posFilter + "」。";
     }
     $("#cmpTip").textContent = tip;
   }
@@ -493,7 +525,8 @@ window.KPL_COMPARE = (function () {
     try {
       var q = "?items=" + picked.filter(Boolean).map(encodeURIComponent).join(",") +
         (trendView && TRENDABLE[baseMode] ? "&trend=1" : "") +
-        (baseMode === "player" && posFilter !== "all" ? "&pos=" + encodeURIComponent(posFilter) : "");
+        (baseMode === "player" && posFilter !== "all" ? "&pos=" + encodeURIComponent(posFilter) : "") +
+        (baseMode === "player" && posNorm === "all" ? "&posnorm=all" : "");
       history.replaceState(null, "", location.pathname + q + location.hash);
     } catch (e) {}
   }
@@ -508,6 +541,12 @@ window.KPL_COMPARE = (function () {
         posFilter = pos;
         var sel = document.getElementById("posFilter");
         if (sel) sel.value = pos;
+      }
+      var pn = sp.get("posnorm");
+      if (pn === "all") {
+        posNorm = "all";
+        var psel = document.getElementById("posNorm");
+        if (psel) psel.value = "all";
       }
     }
   }
@@ -547,6 +586,12 @@ window.KPL_COMPARE = (function () {
       render();
       syncUrl();
     });
+    var pn = document.getElementById("posNorm");
+    if (pn) pn.addEventListener("change", function () {
+      posNorm = this.value === "all" ? "all" : "pos";
+      render();
+      syncUrl();
+    });
   }
 
   function init(baseModeIn) {
@@ -558,6 +603,7 @@ window.KPL_COMPARE = (function () {
     trendView = false;
     mode = baseMode;
     posFilter = "all";
+    posNorm = baseMode === "player" ? "pos" : "all";
     picked = [null, null, null, null];
     K.init();
     wire();
@@ -606,8 +652,9 @@ window.KPL_COMPARE = (function () {
       sub: K.scopeName(curScope) + " · 相对水平雷达口径",
       stats: stats,
       note: "卡片数值为各对象原始值；雷达位置是「" + K.scopeName(curScope) +
-        "」全部合格对象中的相对百分位（越外越强），虚线为范围均值。" +
-        (baseMode === "player" && posFilter !== "all" ? "当前按位置「" + posFilter + "」归一化。" : "") +
+        "」范围内相对水平（越外越强）。" +
+        (samePosMode() ? "当前为同位置分位，虚线为 P50。" : "当前为跨位置分位，虚线为加权范围均值。") +
+        (baseMode === "player" && posFilter !== "all" ? "位置筛选：「" + posFilter + "」。" : "") +
         "来源：KPL 官方赛事数据。" +
         (baseMode === "lane" ? "分路按选手实际出场位置聚合、按局数加权。" : ""),
       url: location.href
