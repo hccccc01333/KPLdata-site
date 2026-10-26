@@ -16,7 +16,7 @@
   function num(v, d) { var n = K.mnum(v); return n == null ? "—" : n.toFixed(d == null ? 1 : d); }
   function pct(v, d) { var n = K.mnum(v); return n == null ? "—" : n.toFixed(d == null ? 1 : d) + "%"; }
   function pClass(p) { return p == null ? "low" : p >= 75 ? "high" : p >= 50 ? "mid" : "low"; }
-  function pBadge(p) { return p == null ? "" : '<span class="hp-p ' + pClass(p) + '">P' + Math.round(p) + "</span>"; }
+  function pBadge(p) { return p == null ? "" : '<span class="hp-p ' + pClass(p) + '">P' + Math.min(100, Math.round(p)) + "</span>"; }
   function sampleTag(row) { return (row.series < 3 || row.games < 10) ? '<span class="hp-tag">小样本</span>' : ""; }
 
   function playerEntry(name) {
