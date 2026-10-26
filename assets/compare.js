@@ -468,7 +468,8 @@ window.KPL_COMPARE = (function () {
       var cells = dim.values.map(function (v) {
         if (v.raw === null) return '<td><b style="color:var(--muted)">—</b></td>';
         var color = v.raw === best ? "var(--gold)" : (v.raw === worst && best !== worst ? "var(--muted)" : "");
-        var pct = samePos ? '<small class="cmp-pct">P' + Math.round(v.score) + "</small>" : "";
+        var pct = samePos && dim.label !== "出场局数"
+          ? '<small class="cmp-pct">P' + Math.round(v.score) + "</small>" : "";
         return "<td><b" + (color ? ' style="color:' + color + '"' : "") + ">" + dim.fmt(v.raw) + "</b>" + pct + "</td>";
       }).join("");
       var diff = "";
