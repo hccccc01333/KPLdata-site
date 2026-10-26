@@ -6,7 +6,7 @@
 <title>赛事纪录 · 峡谷有数</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2317181E'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='16' font-weight='bold' fill='%23F02F55' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css?v=85">
-<link rel="stylesheet" href="assets/pages.css?v=20261026b">
+<link rel="stylesheet" href="assets/pages.css?v=20261026c">
 <link rel="stylesheet" href="assets/v55.css?v=87">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="峡谷有数">
@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="assets/arena-world.css?v=20261026">
 <script src="assets/arena-world.js?v=1" type="module"></script>
 <link rel="stylesheet" href="assets/card-motion.css?v=1">
+<link rel="stylesheet" href="assets/records-page.css?v=20261026">
 <script src="assets/card-motion.js?v=1" type="module"></script>
 </head>
 <body data-page="records.html">
@@ -32,8 +33,13 @@
 <main class="wrap" style="margin-top:24px">
   <div class="scopebar" id="scopeBar"></div>
 
-  <div class="filterbar">
-    <div class="seg" id="recTabs">
+  <aside class="records-coverage" aria-label="纪录数据覆盖范围">
+    <span class="coverage-label">数据覆盖</span>
+    <div><strong>当前纪录榜：2016–2026</strong><p id="recordsCoverage">正在读取历史数据覆盖范围…</p></div>
+  </aside>
+
+  <div class="filterbar records-controls">
+    <div class="seg" id="recTabs" role="group" aria-label="纪录分类">
       <button data-g="game" class="on">对局</button>
       <button data-g="player">选手</button>
       <button data-g="team">战队</button>
@@ -44,28 +50,30 @@
     <label class="fld grow" id="metricWrap"><span>纪录类型</span>
       <select id="recMetric"></select>
     </label>
-    <div class="seg" id="recDir">
+    <div class="seg" id="recDir" role="group" aria-label="排序方向">
       <button data-d="max" class="on">最高</button>
       <button data-d="min">最低</button>
     </div>
     <button class="btn ghost sm" id="recRandom" type="button">随机一条</button>
     <div id="themeWrap" style="display:none;flex:1 1 100%;margin-top:4px">
-      <div class="theme-chips" id="themeChips"></div>
+      <div class="theme-chips" id="themeChips" role="group" aria-label="主题合集"></div>
     </div>
   </div>
 
-  <div class="brief" id="recBrief"></div>
+  <div class="brief" id="recBrief" role="status" aria-live="polite"></div>
   <div class="rec-list" id="recList"></div>
 
   <div class="panel" style="margin-top:20px">
     <div class="panel-title">口径说明</div>
     <div class="block-note">
-      1. 纪录来自官方逐局结果，按单局或完整系列赛统计；<br>
+      1. 当前榜单合并 2019–2026 主归档与 2016–2018 补充集，仅纳入质量合格场次；早期数据来自玩加 / ScoreGG；<br>
       2. 单局时长已排除 6 分钟以下、45 分钟以上的异常记录；经济类纪录已剔除异常记录；<br>
       3. 系列赛纪录只统计完整且赛制明确的 BO3 及以上系列赛；<br>
       4. 同一类型的「最低」会包含 0 次击杀、0 次死亡这类真实极值，属于正常数据；<br>
       5. 主题合集是同一批指标的预置视角，点开可继续在单项纪录里切换范围与方向；<br>
-      6. 生涯 / 队史纪录为全历史口径，不随数据范围变化；赛季纪录按联赛赛季统计，样本不足不入选。
+      6. 生涯 / 队史纪录按已收录有效历史统计，不随范围变化；队名与选手名保留来源口径，未强行合并历史别名；<br>
+      7. 2017–2018 ScoreGG 场次无选手经济、输出、承伤，时长为分钟精度；2016–2018 补充集无 MVP 字段。缺失字段不参与相应纪录；<br>
+      8. 早期赛程应有 587 场，已索引 584 场，3 场未索引；7 场比分待核对与 1 场无逐局不计入榜单。连胜 / 连败仅代表已收录记录。
     </div>
   </div>
 </main>
@@ -74,7 +82,7 @@
 
 <script src="assets/data.js?v=85"></script>
 <script src="assets/seasons.js?v=85"></script>
-<script src="assets/records.js?v=85"></script>
+<script src="assets/records.js?v=20261026-history"></script>
 <script src="assets/share.js?v=85"></script>
 <script src="assets/common.js?v=20261026"></script>
 <script>
@@ -89,7 +97,13 @@
 
   var SEASON_NAMES = {};
   ((window.KPL_SEASONS || {}).leagues || []).forEach(function (l) { SEASON_NAMES[l.id] = l.name; });
+  ((R || {}).earlyLeagues || []).forEach(function (l) { SEASON_NAMES[l.id] = l.name; });
   function seasonName(id) { return SEASON_NAMES[id] || id || "—"; }
+  function recordScopeName(id) { return SEASON_NAMES[id] || K.scopeName(id); }
+  if (R && R.coverage) {
+    $("#recordsCoverage").textContent = "2016–2018 新增 " + K.fmtInt(R.coverage.earlyMatches) + " 场有效比赛 / " +
+      K.fmtInt(R.coverage.earlyGames) + " 局，已计入全部年份与生涯统计。8 场质量异常已排除，3 场尚未索引；各指标仅使用有值样本。";
+  }
 
   var METRICS = {
     game_dur: { group: "game", kind: "game", label: "单局时长", unit: "分钟", dec: 1 },
@@ -208,6 +222,10 @@
       sub = "全历史 · " + r.g + " 局";
       href = "player.html?id=" + encodeURIComponent(r.p);
     }
+    if (r.early) {
+      href = r.url;
+      sub += " · " + (r.source === "scoregg" ? "ScoreGG · 时长分钟精度" : "玩加");
+    }
     var openable = !!(r.bid && r.lid);
     return '<a class="rec-row' + (i === 0 ? " top1" : "") + (openable ? " openable" : "") +
       '" data-i="' + i + '" href="' + href + '">' +
@@ -217,6 +235,9 @@
   }
 
   function render() {
+    document.querySelectorAll("#recTabs button, #recDir button, #themeChips button").forEach(function (b) {
+      b.setAttribute("aria-pressed", b.classList.contains("on") ? "true" : "false");
+    });
     if (!R) {
       $("#recList").innerHTML = '<div class="empty-tip">纪录数据尚未生成</div>';
       return;
@@ -236,10 +257,10 @@
       if (GROUP === "career") scopeId = "all";
     }
     var mk = Object.keys(METRICS).filter(function (k) { return METRICS[k] === m; })[0];
-    var scope = R.scopes[scopeId] || R.scopes.all;
+    var scope = R.scopes[scopeId] || {};
     var cell = scope[mk] || { max: [], min: [] };
     CURRENT = (dir === "max" ? cell.max : cell.min) || [];
-    var scopeLabel = GROUP === "career" ? "全历史" : K.scopeName(scopeId);
+    var scopeLabel = GROUP === "career" ? "全历史" : recordScopeName(scopeId);
     $("#recBrief").innerHTML = '<span class="ico">▍</span><div>当前范围：<b>' +
       K.esc(scopeLabel) + "</b> · " + K.esc(title) +
       (desc ? "（" + K.esc(desc) + "）" : "") +
@@ -274,8 +295,9 @@
   }
 
   function loadLeague(lid) {
+    if (lid.indexOf("history_") === 0) lid = "history";
     if (GAME_CACHE[lid]) return Promise.resolve(GAME_CACHE[lid]);
-    return fetch("assets/games/" + encodeURIComponent(lid) + ".json")
+    return fetch(lid === "history" ? "assets/records-history-games.json?v=20261026" : "assets/games/" + encodeURIComponent(lid) + ".json")
       .then(function (r) { return r.json(); })
       .then(function (j) { GAME_CACHE[lid] = j; return j; });
   }
@@ -287,10 +309,10 @@
         (p.pi ? '<img src="' + K.esc(p.pi) + '" alt="" loading="lazy">' : "") +
         "<span>" + K.esc(p.n) + "<small> " + K.esc(p.h) + "</small></span></span></td>" +
         '<td>' + (p.k || 0) + "/" + (p.d || 0) + "/" + (p.a || 0) + "</td>" +
-        '<td>' + K.fmtInt(p.g || 0) + "</td>" +
+        '<td>' + (p.g == null ? "—" : K.fmtInt(p.g)) + "</td>" +
         '<td>' + (p.dmg == null ? "—" : p.dmg.toFixed(1) + "%") + "</td>" +
         '<td>' + (p.bh == null ? "—" : p.bh.toFixed(1) + "%") + "</td>" +
-        '<td>' + (p.mvp ? "★" : "—") + "</td></tr>";
+        '<td>' + (p.mvp == null ? "—" : (p.mvp ? "★" : "—")) + "</td></tr>";
     }).join("");
   }
 
@@ -319,6 +341,10 @@
       var foot = '<div class="rm-foot">' +
         '<button class="btn ghost sm" id="recShare" type="button">生成分享图</button>' +
         '<a class="btn primary sm" href="game.html?id=' + encodeURIComponent(r.bid) + '">打开对局页 →</a></div>';
+      if (r.early) {
+        head += '<p class="rm-sub">来源：' + K.esc(g.source) + ' · 时长精度：' + K.esc(g.precision) + ' · 缺失字段显示 —</p>';
+        foot = '<div class="rm-foot"><a class="btn primary sm" target="_blank" rel="noopener noreferrer" href="' + K.esc(g.url || r.url) + '">查看来源对局 →</a></div>';
+      }
       body.innerHTML = head + table + foot;
       var sb = document.getElementById("recShare");
       if (sb && window.SHARE) {
@@ -358,7 +384,7 @@
 
   function renderThemeChips() {
     $("#themeChips").innerHTML = THEMES.map(function (t) {
-      return '<button type="button" data-t="' + t.id + '" class="' + (t.id === THEME ? "on" : "") + '">' +
+      return '<button type="button" data-t="' + t.id + '" class="' + (t.id === THEME ? "on" : "") + '" title="' + K.esc(t.desc) + '">' +
         K.esc(t.label) + "</button>";
     }).join("");
   }
@@ -435,7 +461,40 @@
     render();
   });
 
-  SCOPE = K.scopeBar("#scopeBar", function (id) { SCOPE = id; render(); });
+  // Records owns its scope list: early data is not injected into unrelated pages.
+  function recordsScopeBar() {
+    var leagues = ((window.KPL_SEASONS || {}).leagues || []).concat(R.earlyLeagues || []);
+    var years = Object.keys(R.scopes).filter(function (s) { return /^\d{4}$/.test(s); }).sort().reverse();
+    var saved = "all";
+    try { saved = localStorage.getItem("kpl_records_scope_v1") || localStorage.getItem("kpl_scope_v1") || "all"; } catch (e) {}
+    if (!R.scopes[saved]) saved = "all";
+    var selectedLeague = leagues.filter(function (l) { return l.id === saved; })[0];
+    var year = selectedLeague ? String(selectedLeague.year) : (/^\d{4}$/.test(saved) ? saved : "all");
+    $("#scopeBar").innerHTML = '<div class="scope-lab">数据范围</div>' +
+      '<label class="fld"><span>年份</span><select id="scopeYear"><option value="all">全部年份</option>' +
+      years.map(function (y) { return '<option value="' + y + '">' + y + ' 年</option>'; }).join("") +
+      '</select></label><label class="fld"><span>赛事</span><select id="scopeLeague"></select></label><span class="scope-meta mono" id="scopeMeta"></span>';
+    $("#scopeYear").value = year;
+    function fill() {
+      var y = $("#scopeYear").value;
+      $("#scopeLeague").innerHTML = '<option value="">该年全部赛事</option>' + leagues.filter(function (l) {
+        return String(l.year) === y && R.scopes[l.id];
+      }).map(function (l) { return '<option value="' + K.esc(l.id) + '">' + K.esc(l.name) + '</option>'; }).join("");
+      $("#scopeLeague").disabled = y === "all";
+    }
+    function update() {
+      SCOPE = $("#scopeLeague").value || $("#scopeYear").value;
+      var c = (R.scopeCounts || {})[SCOPE];
+      $("#scopeMeta").textContent = c ? K.fmtInt(c.matches) + " 场有效比赛 · " + K.fmtInt(c.battles) + " 局" : "";
+      try { localStorage.setItem("kpl_records_scope_v1", SCOPE); } catch (e) {}
+    }
+    fill();
+    if (selectedLeague) $("#scopeLeague").value = selectedLeague.id;
+    update();
+    $("#scopeYear").addEventListener("change", function () { fill(); update(); render(); });
+    $("#scopeLeague").addEventListener("change", function () { update(); render(); });
+  }
+  if (R) recordsScopeBar();
   setThemeMode(false);
   fillMetrics();
   render();
