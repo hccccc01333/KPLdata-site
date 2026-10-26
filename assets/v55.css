@@ -1,5 +1,5 @@
 /* ==================================================================
-   KPLdata V5.5 · 竞技媒体白（方案 A）
+   KPLdata V5.5 · 竞技媒体基础层（Arena 深色适配）
    ----------------------------------------------------------------
    底色 #F5F5F7 / 卡片 #FFFFFF / 赛事深色 #17181E / 品牌红 #F02F55 / 正文 #191B23
    规则：本文件只作用于 <html class="v55"> 的页面（样板页先行，其余页面阶段 04 推广）。
@@ -8,7 +8,7 @@
 
 html.v55{
   --bg:#F5F5F7; --bg2:#EFF0F3; --card:#FFFFFF; --card2:#F7F8FA; --inset:#F0F1F4;
-  --line:rgba(25,27,35,.10); --line2:rgba(25,27,35,.20);
+  --line:rgba(224,232,248,.10); --line2:rgba(224,232,248,.20);
   --ink:#191B23; --ink2:#3F444E; --muted:#6E7480; --faint:#A2A7B1;
   /* 旧变量名统一映射到品牌红：主按钮 / 强调 / 当前态自动转红 */
   --gold:#F02F55; --gold-d:#C81E40; --brand:#F02F55; --brand-d:#C81E40;
@@ -17,14 +17,14 @@ html.v55{
   /* 深色区（顶栏 / 页首 / 赛事头图）专用 */
   --deep:#17181E; --deep2:#20222B;
   --d-ink:#FFFFFF; --d-ink2:#B9BDC6; --d-muted:#8A8F9B; --d-line:rgba(255,255,255,.10);
-  color-scheme:light;
+  color-scheme:dark;
 }
 html.v55 body{background:var(--bg) !important;color:var(--ink)}
 html.v55 body::before,html.v55 body::after{display:none !important}
 html.v55 ::selection{background:rgba(240,47,85,.20)}
 html.v55 ::-webkit-scrollbar{width:11px;height:11px}
-html.v55 ::-webkit-scrollbar-thumb{background:rgba(25,27,35,.18);border-radius:6px;border:3px solid transparent;background-clip:content-box}
-html.v55 ::-webkit-scrollbar-thumb:hover{background:rgba(25,27,35,.32);background-clip:content-box}
+html.v55 ::-webkit-scrollbar-thumb{background:rgba(224,232,248,.18);border-radius:6px;border:3px solid transparent;background-clip:content-box}
+html.v55 ::-webkit-scrollbar-thumb:hover{background:rgba(224,232,248,.32);background-clip:content-box}
 
 /* ---------------- 顶栏 / 页脚：深色框架 ---------------- */
 html.v55 .topbar{background:var(--deep) !important;border-bottom:1px solid rgba(255,255,255,.07) !important;
@@ -50,7 +50,7 @@ html.v55 .search-box:focus-within{border-color:rgba(255,255,255,.34) !important;
 html.v55 .search-box input{color:#fff !important}
 html.v55 .search-box input::placeholder{color:var(--d-muted) !important}
 html.v55 .search-box svg{color:var(--d-muted)}
-html.v55 .search-pop{background:#fff !important;border:1px solid var(--line) !important;
+html.v55 .search-pop{background:var(--card) !important;border:1px solid var(--line) !important;
   box-shadow:0 20px 44px rgba(23,24,30,.18) !important;border-radius:12px !important}
 html.v55 .search-pop a{color:var(--ink) !important}
 html.v55 .search-pop a:hover{background:var(--card2) !important}
@@ -92,14 +92,14 @@ html.v55 .empty-tip{color:var(--muted)}
 html.v55 .panel,html.v55 .tcard,html.v55 .hcard,html.v55 .combo-card,html.v55 .player,
 html.v55 .bp2-panel,html.v55 .cmp-radar,html.v55 .cmp-table,html.v55 .pr-kpi,html.v55 .live-card,
 html.v55 .h2h-panel,html.v55 .champ,html.v55 .entry,html.v55 .q-wrap,html.v55 .stat-strip{
-  background:#fff !important;border:1px solid var(--line) !important;border-radius:12px !important;
+  background:var(--card) !important;border:1px solid var(--line) !important;border-radius:12px !important;
   box-shadow:none !important;
 }
 html.v55 .panel{border-bottom:1px solid var(--line) !important;padding:22px !important}
 html.v55 .panel:hover{border-color:var(--line2) !important}
 html.v55 .tcard:hover,html.v55 .hcard:hover,html.v55 .combo-card:hover,html.v55 .player:hover,html.v55 .entry:hover,
 html.v55 .tcard:hover,html.v55 .champ:hover{
-  background:#fff !important;border-color:var(--line2) !important;box-shadow:0 10px 26px rgba(23,24,30,.07) !important;
+  background:var(--card) !important;border-color:var(--line2) !important;box-shadow:0 10px 26px rgba(23,24,30,.07) !important;
   transform:translateY(-2px) !important;
 }
 html.v55 .panel-title{color:var(--ink)}
@@ -112,7 +112,7 @@ html.v55 .btn{border-radius:8px !important;font-weight:700 !important}
 html.v55 .btn.primary{background:var(--brand) !important;color:#fff !important;border:1px solid var(--brand) !important;
   box-shadow:none !important;transform:none !important}
 html.v55 .btn.primary:hover{background:var(--brand-d) !important;border-color:var(--brand-d) !important}
-html.v55 .btn.ghost{background:#fff !important;border:1px solid var(--line2) !important;color:var(--ink) !important}
+html.v55 .btn.ghost{background:var(--card) !important;border:1px solid var(--line2) !important;color:var(--ink) !important}
 html.v55 .btn.ghost:hover{border-color:var(--ink) !important;color:var(--ink) !important;background:var(--card2) !important}
 
 /* ---------------- 表格 ---------------- */
@@ -133,7 +133,7 @@ html.v55 .tier{color:#fff !important;border-radius:4px !important}
 html.v55 .tier.S,html.v55 .tier.A{background:var(--brand) !important;color:#fff !important}
 html.v55 .tier.B{background:#3F444E !important;color:#fff !important}
 html.v55 .tier.C{background:#C9CDD5 !important;color:var(--ink) !important}
-html.v55 .chip{color:var(--muted) !important;border:1px solid var(--line2) !important;border-radius:5px !important;background:#fff !important}
+html.v55 .chip{color:var(--muted) !important;border:1px solid var(--line2) !important;border-radius:5px !important;background:var(--card) !important}
 html.v55 .chip.done{color:var(--ink2) !important;border-color:var(--line2) !important;background:var(--card2) !important}
 html.v55 .chip.next{color:var(--brand) !important;border-color:rgba(240,47,85,.35) !important;background:rgba(240,47,85,.05) !important}
 html.v55 .cov-i{border-radius:5px !important}
@@ -141,20 +141,20 @@ html.v55 .cov-i.on{color:var(--brand) !important;border-color:rgba(240,47,85,.32
 html.v55 .cov-i.off{color:var(--faint) !important;border-color:var(--line) !important;border-style:dashed !important}
 html.v55 .demo-tag{color:var(--brand) !important;background:rgba(240,47,85,.07) !important;
   border:1px solid rgba(240,47,85,.28) !important;border-radius:5px !important}
-html.v55 .stag,html.v55 .bo{color:var(--muted) !important;border-color:var(--line2) !important;background:#fff !important}
+html.v55 .stag,html.v55 .bo{color:var(--muted) !important;border-color:var(--line2) !important;background:var(--card) !important}
 
 /* ---------------- 简报 / 筛选栏 / 数据范围 ---------------- */
-html.v55 .brief{background:#fff !important;border:1px solid var(--line) !important;border-radius:12px !important;
+html.v55 .brief{background:var(--card) !important;border:1px solid var(--line) !important;border-radius:12px !important;
   padding:14px 18px !important;border-bottom:1px solid var(--line) !important}
 html.v55 .brief b{color:var(--ink)}
 html.v55 .brief .ico{color:var(--brand) !important}
-html.v55 .filterbar,html.v55 .scopebar{background:#fff !important;border:1px solid var(--line) !important;
+html.v55 .filterbar,html.v55 .scopebar{background:var(--card) !important;border:1px solid var(--line) !important;
   border-radius:12px !important;padding:14px 18px !important;margin-bottom:22px}
 html.v55 .scopebar .scope-lab{color:var(--brand) !important}
 html.v55 .fld span{color:var(--ink2)}
-html.v55 .fld select,html.v55 .search,html.v55 select,html.v55 select.search{background:#fff !important;color:var(--ink) !important;
-  border:1px solid var(--line2) !important;border-radius:8px !important;color-scheme:light !important}
-html.v55 select option,html.v55 select optgroup{background:#fff !important;color:var(--ink) !important}
+html.v55 .fld select,html.v55 .search,html.v55 select,html.v55 select.search{background:var(--card) !important;color:var(--ink) !important;
+  border:1px solid var(--line2) !important;border-radius:8px !important;color-scheme:dark !important}
+html.v55 select option,html.v55 select optgroup{background:var(--card) !important;color:var(--ink) !important}
 html.v55 select option:checked{background:rgba(240,47,85,.10) !important;color:var(--ink) !important}
 html.v55 .fld select:focus,html.v55 .search:focus{outline:none !important;border-color:var(--brand) !important;
   box-shadow:0 0 0 3px rgba(240,47,85,.14) !important}
@@ -183,7 +183,7 @@ html.v55 #focusBlock .tm-seg.now::before{background:var(--brand)}
 html.v55 #focusBlock .tm-seg:hover{background:rgba(255,255,255,.04)}
 html.v55 #focusBlock .tm-seg:last-child{border-right:none}
 /* 头图里的焦点对阵用白卡，保证数据可读 */
-html.v55 #focusBlock .fh{background:#fff;border-radius:14px;padding:20px 22px;margin:0}
+html.v55 #focusBlock .fh{background:var(--card);border-radius:14px;padding:20px 22px;margin:0}
 html.v55 #focusBlock .fh-kicker{color:var(--brand) !important}
 html.v55 #focusBlock .fh-note{color:var(--muted) !important}
 html.v55 #focusBlock .fh-next{color:var(--muted) !important}
@@ -196,8 +196,8 @@ html.v55 .focus-hero #focusBlock .fh-tcard:hover{border-color:var(--brand)}
 }
 
 /* ---------------- 首页：比赛日 / 最新结果 / 看点 / 精选 ---------------- */
-html.v55 .day-group{background:#fff !important;border:1px solid var(--line) !important;border-radius:12px !important}
-html.v55 .day-group.today{border-color:rgba(240,47,85,.42) !important;background:#fff !important}
+html.v55 .day-group{background:var(--card) !important;border:1px solid var(--line) !important;border-radius:12px !important}
+html.v55 .day-group.today{border-color:rgba(240,47,85,.42) !important;background:var(--card) !important}
 html.v55 .dg-head{border-bottom:1px solid var(--line)}
 html.v55 .dg-head b{color:var(--ink)}
 html.v55 .dg-head em{color:var(--brand);border-color:rgba(240,47,85,.36);border-radius:4px}
@@ -211,16 +211,16 @@ html.v55 .result-list .row{border-bottom:1px solid var(--line)}
 html.v55 .result-list .row:hover{background:var(--card2)}
 html.v55 .result-list .score .w{color:var(--ink)}
 html.v55 .result-list .score{color:var(--muted)}
-html.v55 .hot-card{background:#fff !important;border:1px solid var(--line) !important;border-radius:12px !important}
-html.v55 .hot-card:hover{border-color:var(--line2) !important;background:#fff !important}
+html.v55 .hot-card{background:var(--card) !important;border:1px solid var(--line) !important;border-radius:12px !important}
+html.v55 .hot-card:hover{border-color:var(--line2) !important;background:var(--card) !important}
 html.v55 .hot-card .hc-k{color:var(--muted) !important}
 html.v55 .hot-card .hc-v{color:var(--ink) !important}
 html.v55 .hot-card .hc-s{color:var(--muted) !important}
 html.v55 .hot-card .hc-go{color:var(--brand) !important}
-html.v55 .rp-pick{background:#fff !important;border:1px solid var(--line) !important;border-radius:12px !important}
+html.v55 .rp-pick{background:var(--card) !important;border:1px solid var(--line) !important;border-radius:12px !important}
 html.v55 .rp-pick:hover{border-color:var(--line2) !important}
 html.v55 .rp-pick .go{color:var(--brand) !important}
-html.v55 .myk-card{background:#fff;border:1px solid var(--line);border-radius:12px}
+html.v55 .myk-card{background:var(--card);border:1px solid var(--line);border-radius:12px}
 html.v55 .myk-card:hover{border-color:var(--line2);background:var(--card2)}
 html.v55 .myk-line b.w{color:var(--teal)} html.v55 .myk-line b.l{color:var(--red)}
 html.v55 .p-ava{border:1px solid var(--line2) !important;background:var(--card2) !important}
@@ -230,11 +230,11 @@ html.v55 .hcard img{border:2px solid var(--line) !important}
 html.v55 .hcard .minibar{background:var(--inset) !important}
 html.v55 .hero-grid .hcard:hover,html.v55 .player:hover{border-color:var(--line2) !important}
 html.v55 .tier-badge,html.v55 .seg button.on{background:var(--brand) !important;color:#fff !important}
-html.v55 .seg{border:1px solid var(--line2) !important;border-radius:8px !important;background:#fff !important}
+html.v55 .seg{border:1px solid var(--line2) !important;border-radius:8px !important;background:var(--card) !important}
 html.v55 .seg button{color:var(--muted) !important}
 
 /* ---------------- 赛程中心 ---------------- */
-html.v55 .ev-poster{background:#fff !important;border:1px solid var(--line) !important;border-radius:14px !important}
+html.v55 .ev-poster{background:var(--card) !important;border:1px solid var(--line) !important;border-radius:14px !important}
 html.v55 .ev-poster .ep-k{color:var(--muted)}
 html.v55 .ev-poster .ep-score{color:var(--ink)}
 html.v55 .ev-poster .ep-cd{color:var(--ink2)}
@@ -244,11 +244,11 @@ html.v55 .st-step span{color:var(--faint) !important}
 html.v55 .st-step.on{background:rgba(240,47,85,.04) !important}
 html.v55 .st-step.on b{color:var(--ink) !important}
 html.v55 .st-step.on .st-go{color:var(--brand) !important}
-html.v55 .stage-track{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-html.v55 .season-card{background:#fff !important;border:1px solid var(--line) !important;border-radius:12px !important}
+html.v55 .stage-track{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+html.v55 .season-card{background:var(--card) !important;border:1px solid var(--line) !important;border-radius:12px !important}
 html.v55 .season-card:hover{border-color:var(--line2) !important;box-shadow:0 8px 22px rgba(23,24,30,.06) !important}
 html.v55 .season-card b{color:var(--ink)} html.v55 .season-card .sc{color:var(--brand)}
-html.v55 .mrow{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
+html.v55 .mrow{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:8px}
 html.v55 .mrow:hover{background:var(--card2) !important;border-color:var(--line2)}
 html.v55 .mrow .mt{color:var(--muted)}
 html.v55 .mrow .score{color:var(--ink)}
@@ -260,7 +260,7 @@ html.v55 .mrow .go.off{color:var(--faint) !important}
 html.v55 .br-head h1{color:var(--ink)}
 html.v55 .br-head .sub{color:var(--muted)}
 html.v55 .br-head .sub b{color:var(--ink2)}
-html.v55 .br-head .sel select{background:#fff;border:1px solid var(--line2);color:var(--ink)}
+html.v55 .br-head .sel select{background:var(--card);border:1px solid var(--line2);color:var(--ink)}
 html.v55 .br-champ{border-top:1px solid var(--line2);border-bottom:1px solid var(--line)}
 html.v55 .br-champ .ct{color:var(--brand)}
 html.v55 .br-champ b{color:var(--ink)}
@@ -284,7 +284,7 @@ html.v55 .br-m.tbd .mt .nm{color:var(--muted)}
 html.v55 .br-note{color:var(--muted)}
 /* 赛事进程页复用首页头图的段推进条（在浅底上重新着色） */
 html.v55 .br-rail,html.v55 #brRail{border-bottom:1px solid var(--line)}
-html.v55 #brRail{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+html.v55 #brRail{border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden}
 html.v55 #brRail .tm-seg{border-right:1px solid var(--line)}
 html.v55 #brRail .tm-seg .sg-n{color:var(--ink)}
 html.v55 #brRail .tm-seg .sg-d{color:var(--faint)}
@@ -296,7 +296,7 @@ html.v55 #brRail .tm-seg:hover{background:var(--card2)}
 
 /* ---------------- 战队详情 ---------------- */
 html.v55 .hd-top img.hd-ava,
-html.v55 .hd-ava{border:1px solid var(--line2) !important;background:#fff !important}
+html.v55 .hd-ava{border:1px solid var(--line2) !important;background:var(--card) !important}
 html.v55 .hd-name{color:#fff}
 html.v55 .hd-sub{color:var(--d-ink2) !important}
 html.v55 .hd-stats{border-top:1px solid var(--line) !important;border-bottom:1px solid var(--line) !important}
@@ -305,7 +305,7 @@ html.v55 .hd-cell .k{color:var(--muted) !important}
 html.v55 .hd-cell .v{color:var(--ink) !important}
 html.v55 .hd-cell .s{color:var(--faint) !important}
 html.v55 .hd-cell.hl .v{color:var(--brand) !important}
-html.v55 .cmp-radar{background:#fff !important}
+html.v55 .cmp-radar{background:var(--card) !important}
 html.v55 .radar-side .block-note{color:var(--muted)}
 html.v55 .pwbar .pb{background:var(--inset) !important;border:1px solid var(--line) !important}
 html.v55 .pwbar .pb i{background:var(--brand) !important}
@@ -317,16 +317,16 @@ html.v55 .hn-cand a{border-bottom:1px solid var(--line)}
 html.v55 .hn-trow{border-bottom:1px solid var(--line)}
 html.v55 .hn-trow:hover{background:var(--card2)}
 html.v55 .hn-win:hover{background:var(--card2)}
-html.v55 .hn-ava{border:1px solid var(--line2) !important;background:#fff !important}
+html.v55 .hn-ava{border:1px solid var(--line2) !important;background:var(--card) !important}
 html.v55 .hn-ava-t{background:var(--inset) !important;color:var(--ink2) !important}
 html.v55 .hn-wt b{color:var(--ink)}
 html.v55 .hn-ws b{color:var(--ink)}
 html.v55 .hn-kv{border-top:1px solid var(--line);color:var(--ink2)}
-html.v55 .hn-lanes a{background:#fff !important;border:1px solid var(--line) !important}
+html.v55 .hn-lanes a{background:var(--card) !important;border:1px solid var(--line) !important}
 html.v55 .hn-lanes a:hover{border-color:var(--line2) !important}
 
 /* ---------------- 图表容器 ---------------- */
-html.v55 .wr-chart{background:#fff;border:1px solid var(--line);border-radius:12px}
+html.v55 .wr-chart{background:var(--card);border:1px solid var(--line);border-radius:12px}
 html.v55 .live-chart{background:var(--card2);border:1px solid var(--line);border-radius:10px}
 html.v55 .cov-bar .t{background:var(--inset)}
 html.v55 .cov-bar .c{background:var(--brand)}
@@ -351,7 +351,7 @@ html.v55 .fh-tcard .sc{color:var(--ink) !important}
 html.v55 .gold-t{color:var(--brand) !important}
 html.v55 .silver-t{color:var(--ink2) !important}
 html.v55 .lead-t{color:var(--muted) !important}
-html.v55 .hcard .minibar i{background:linear-gradient(90deg, rgba(25,27,35,.35), var(--ink)) !important}
+html.v55 .hcard .minibar i{background:linear-gradient(90deg, rgba(224,232,248,.35), var(--ink)) !important}
 html.v55 #brRail .tm-seg.done{opacity:.62}
 html.v55 .pl-trend svg text,html.v55 .yr-trend{color:var(--muted)}
 html.v55 .yr-row .bar i{background:var(--ink) !important}
@@ -438,7 +438,7 @@ html.v55 .pd-spark{margin-top:16px}
 html.v55 .pd-spark svg{width:100%;height:auto;display:block}
 html.v55 .pd-sim{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
 html.v55 .pd-sim a{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--line);
-  border-radius:10px;background:#fff;min-width:0}
+  border-radius:10px;background:var(--card);min-width:0}
 html.v55 .pd-sim a:hover{border-color:var(--line2);background:var(--card2)}
 html.v55 .pd-sim img{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none;border:1px solid var(--line)}
 html.v55 .pd-sim .n{min-width:0}
@@ -463,7 +463,7 @@ html.v55 .pd-drift-sum .down{color:#D5374B}
 html.v55 .chem-grid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:0 26px}
 html.v55 .chem-col{min-width:0}
 html.v55 .chem-col h4{font-size:12px;color:var(--muted);font-weight:600;margin:0 0 6px;padding-bottom:6px;border-bottom:1px solid var(--line)}
-html.v55 .chem-row{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid rgba(25,27,35,.06);font-size:12.5px;min-width:0}
+html.v55 .chem-row{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid rgba(224,232,248,.06);font-size:12.5px;min-width:0}
 html.v55 .chem-row:last-child{border-bottom:none}
 html.v55 .chem-row .nm{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
 html.v55 .chem-row .nums{font-family:var(--mono);color:var(--muted);font-size:11px;white-space:nowrap;flex:none}
@@ -532,7 +532,7 @@ html.v55 .up-list li::before{content:"";position:absolute;left:0;top:12px;width:
 }
 
 /* ---------------- 赛事纪录 ---------------- */
-html.v55 .rec-list{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+html.v55 .rec-list{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 html.v55 .rec-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:14px;align-items:center;
   padding:14px 18px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
 html.v55 .rec-row:last-child{border-bottom:none}
@@ -557,18 +557,18 @@ html.v55 .rec-row.top1 .rec-val{color:var(--brand)}
 /* 赛事纪录：主题筛选 */
 html.v55 .theme-chips{display:flex;gap:7px;flex-wrap:wrap}
 html.v55 .theme-chips button{font-family:inherit;font-size:12.5px;padding:6px 12px;border-radius:999px;
-  border:1px solid var(--line2);background:#fff;color:var(--ink2);cursor:pointer}
+  border:1px solid var(--line2);background:var(--card);color:var(--ink2);cursor:pointer}
 html.v55 .theme-chips button:hover{border-color:var(--ink2);color:var(--ink)}
 html.v55 .theme-chips button.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
 
 /* 赛事纪录：可点开条目 */
-html.v55 .rec-row.openable .rec-who b{border-bottom:1px dashed rgba(25,27,35,.28)}
+html.v55 .rec-row.openable .rec-who b{border-bottom:1px dashed rgba(224,232,248,.28)}
 html.v55 .rec-row.openable:hover .rec-who b{border-bottom-color:var(--brand)}
 /* 同场十人抽屉 */
 .rec-modal{position:fixed;inset:0;z-index:130;display:none}
 .rec-modal.on{display:block}
 .rec-modal-bg{position:absolute;inset:0;background:rgba(23,24,30,.48);backdrop-filter:blur(2px)}
-.rec-modal-panel{position:relative;max-width:860px;margin:5vh auto;background:#fff;border-radius:14px;
+.rec-modal-panel{position:relative;max-width:860px;margin:5vh auto;background:var(--card);border-radius:14px;
   box-shadow:0 30px 80px rgba(23,24,30,.28);max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
 .rec-modal-head{position:relative;padding:20px 24px 14px;border-bottom:1px solid var(--line)}
 .rec-modal-head h3{font-size:20px;font-weight:900;color:var(--ink);margin:5px 0 4px}
