@@ -157,3 +157,33 @@ html.v55 .studio-tabs button.active { background:#e0e7f3; color:#121923; }
   .arena-data-intro span:last-child { max-width:150px; text-align:right; font-size:10px; }
 }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto!important; } .arena-art { transform:none!important; will-change:auto; } .arena-particles { display:none; } .arena-link { transition:none; } }
+
+/* Real WebGL hero: solid geometry and surface-sampled particles share one world. */
+.arena-hero { background:radial-gradient(ellipse at 75% 46%,#16243a 0%,#10131d 31%,#080a0e 66%); }
+.arena-webgl { position:absolute; right:0; top:0; width:64%; height:100%; z-index:0; display:block; cursor:grab; touch-action:pan-y; outline:none; }
+.arena-webgl.dragging { cursor:grabbing; }
+.arena-webgl:focus-visible { outline:1px solid #91bcea; outline-offset:-12px; }
+.arena-inner { z-index:1; pointer-events:none; }
+.arena-copy,.arena-bottom { pointer-events:auto; }
+.arena-copy { width:43%; }
+.arena-art { transition:opacity .4s; }
+.arena-3d-ready .arena-art { opacity:0; visibility:hidden; }
+.arena-motion { flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+.arena-hint { flex-basis:100%; justify-content:flex-end; margin-bottom:4px; font-size:9px; }
+.arena-burst,.arena-reset { border:1px solid #3b475a; background:rgba(9,11,15,.65); color:#c0cada; padding:7px 10px; cursor:pointer; font-family:inherit; font-size:10px; border-radius:2px; }
+.arena-burst { border-color:#5783b5; color:#b4d6ff; }
+.arena-burst[aria-pressed="true"] { background:#1c3454; }
+.arena-burst:hover,.arena-reset:hover,.arena-toggle:hover { border-color:#9dbce4; background:#1c293b; }
+.arena-motion button:focus-visible { outline:2px solid #8cc5ff; outline-offset:4px; }
+.arena-scroll { align-self:flex-end; }
+@media(max-width:900px) { .arena-copy { width:48%; } .arena-webgl { right:-5%; width:68%; } .arena-motion { max-width:280px; } }
+@media(max-width:600px) {
+  .arena-webgl { right:0; width:100%; height:420px; top:0; }
+  .arena-hero { min-height:850px; }
+  .arena-inner { padding-top:425px; padding-bottom:150px; min-height:850px; }
+  .arena-copy { width:100%; }
+  .arena-bottom { flex-wrap:wrap; gap:14px; bottom:22px; }
+  .arena-motion { width:100%; max-width:none; justify-content:flex-start; }
+  .arena-hint { display:none; }
+  .arena-burst,.arena-reset,.arena-toggle { font-size:10px; }
+}
