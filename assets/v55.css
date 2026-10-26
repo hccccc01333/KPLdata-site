@@ -57,7 +57,18 @@ html.v55 .search-pop a:hover{background:var(--card2) !important}
 html.v55 .search-pop .k{color:var(--muted) !important}
 @media(max-width:900px){
   html.v55 .nav{background:var(--deep) !important;border-bottom:1px solid rgba(255,255,255,.1) !important;
-    box-shadow:0 22px 44px rgba(10,11,15,.4) !important}
+    box-shadow:0 22px 44px rgba(10,11,15,.4) !important;
+    /* 手机抽屉内容高于视口：必须内部纵向滚动，否则底部入口不可达 */
+    max-height:calc(100vh - 78px);
+    max-height:calc(100dvh - 78px);
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:600px){
+  html.v55 .nav{max-height:calc(100vh - 64px);max-height:calc(100dvh - 64px)}
 }
 html.v55 .footer{background:var(--deep) !important;border-top:1px solid rgba(255,255,255,.07) !important}
 html.v55 .foot-brand{color:var(--d-ink) !important}
