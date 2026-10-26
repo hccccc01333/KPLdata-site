@@ -142,6 +142,7 @@ async function main() {
     return errors.concat(Array.isArray(unhandled) ? unhandled : []);
   }
 
+  if (!process.argv.includes('--ui-only')) {
   console.log("=== 逐页：未捕获异常 / 未处理 Promise 拒绝 + 关键区块渲染 ===");
   for (const [path, label, sels] of PAGES) {
     const errs = await visit(BASE + path, path === "find.html" ? 3600 : 1400);
@@ -891,8 +892,9 @@ async function main() {
   check("战队入口保留逐年趋势开关", tTeam === true, tTeam);
   check("选手入口无逐年趋势开关（无逐年数据）", tPlayer === false, tPlayer);
 
-  console.log("\n=== V5.5 · 全站 UI 与数据可信度专项 ===");
-  // (A) 原生选择控件：V5.5 竞技媒体白要求「浅底深字」。
+  }
+  console.log("\n=== Arena · 全站 UI 与数据可信度专项 ===");
+  // (A) 原生选择控件：主题可切换，前景与背景的对比度须达到 4.5:1。
   //     诚实说明：无头浏览器无法真正展开系统原生弹出层，这里校验的是浏览器实际计算出的
   //     select / option 背景与前景色（深底 + 深字 = 文字不可见）；真实弹出层观感仍需在
   //     桌面与手机上人工确认。
@@ -907,44 +909,52 @@ async function main() {
         if (!m) return null;
         var a = m[4] === undefined ? 1 : parseFloat(m[4]);
         var r = +m[1], g = +m[2], b = +m[3];
-        // 半透明前景按"叠加在浅色页面上"近似成较高亮度
-        if (a < 1) { r = 255 - (255 - r) * a; g = 255 - (255 - g) * a; b = 255 - (255 - b) * a; }
-        return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+        if (a < 1) return null;
+        function linear(v){ v /= 255; return v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }
+        return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
       }
       var sels = [].slice.call(document.querySelectorAll('select'));
       var opts = 0, badOpt = [], emptyOpt = 0, badSel = [];
       sels.forEach(function(sel){
         var cs = getComputedStyle(sel);
         var bg = lum(cs.backgroundColor), fg = lum(cs.color);
-        if (bg === null || fg === null || bg < 0.55 || fg > 0.55) badSel.push(sel.id || sel.className || 'select');
+        if (bg === null || fg === null || (Math.max(bg,fg)+.05)/(Math.min(bg,fg)+.05) < 4.5) badSel.push(sel.id || sel.className || 'select');
         var os = [].slice.call(sel.options || []);
         opts += os.length;
         os.forEach(function(o){
           if (!(o.text || '').trim()) emptyOpt++;
           var oc = getComputedStyle(o);
           var obg = lum(oc.backgroundColor), ofg = lum(oc.color);
-          if (obg === null || ofg === null || obg < 0.55 || ofg > 0.55) {
+          if (obg === null || ofg === null || (Math.max(obg,ofg)+.05)/(Math.min(obg,ofg)+.05) < 4.5) {
             if (badOpt.length < 4) badOpt.push((sel.id || '') + ':' + (o.text || '').slice(0, 6));
           }
         });
       });
       return { n: sels.length, opts: opts, badSel: badSel, badOpt: badOpt, emptyOpt: emptyOpt };
     })()`);
-    check(sp + " 选择框本体为浅底深字", s && s.n > 0 && s.badSel.length === 0,
+    check(sp + " 选择框文字对比度 ≥4.5:1", s && s.n > 0 && s.badSel.length === 0,
       s && (s.n + " 个" + (s.badSel.length ? " / 异常 " + s.badSel.join(",") : " / 全部合规")));
-    check(sp + " 选择框选项为浅底深字", s && s.opts > 0 && s.badOpt.length === 0,
+    check(sp + " 选择框选项对比度 ≥4.5:1", s && s.opts > 0 && s.badOpt.length === 0,
       s && (s.opts + " 项" + (s.badOpt.length ? " / 异常 " + s.badOpt.join(",") : " / 全部合规")));
     check(sp + " 选择框选项均有文字", s && s.emptyOpt === 0, s && s.emptyOpt);
   }
 
+  if (!process.argv.includes('--ui-only')) {
   // (B) 荣誉中心候选行不得出现「假零」：候选同样带完整指标，缺失必须是 —，不是 0
   await visit(BASE + "honors.html", 1600);
-  // 默认周期可能是「进行中」且尚无达标样本，切到最近一个已完赛周期再验候选行
+  // 已完赛周期也可能没有达标选手；选择最近一个确有候选的周期。
   await evaluate(`(function(){
     var sel = document.getElementById('fPeriod');
     if (!sel) return;
     var opts = [].slice.call(sel.options);
-    var pick = opts.filter(function(o){ return o.textContent.indexOf('进行中') < 0; })[0] || opts[1] || opts[0];
+    var periods = (window.KPL_HONORS || {}).weeks || [];
+    var pick = opts.filter(function(o){
+      var p = periods.find(function(p){ return p.id === o.value; });
+      if (!p || p.ongoing) return false;
+      return Object.keys(p.lanes || {}).reduce(function(n, lane){
+        return n + ((p.lanes[lane] || {}).board || []).length;
+      }, 0) >= 5;
+    })[0];
     if (pick) { sel.value = pick.value; sel.dispatchEvent(new Event('change', {bubbles:true})); }
   })()`);
   await sleep(800);
@@ -1001,6 +1011,7 @@ async function main() {
   check("选手详情同位置对比：缺失标 —、不出现假 0.0%",
     pc && pc.n >= 4 && pc.bad.length === 0, pc && (pc.n + " 行 / " + (pc.bad.join(" | ") || "正常")));
 
+  }
   ws.close();
   proc.kill();
   await sleep(300);
