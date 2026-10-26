@@ -81,3 +81,9 @@ html[data-world-motion="paused"] .world-ribbon-track,html[data-world-motion="pau
   .world-ribbon span { font-size:10px; }
 }
 @media(prefers-reduced-motion:reduce) { .world-reveal { transition:none; transform:none; opacity:1; } .world-copy { transform:none; } .world-link { transition:none; } }
+
+/* Project participation: real source links, no unauthenticated star counter. */
+.project-strip{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:28px;margin:26px 0 32px;background:linear-gradient(110deg,rgba(13,36,63,.9),rgba(35,18,57,.88));border:1px solid rgba(138,192,244,.3);border-radius:14px}
+.project-label{font-size:10px;letter-spacing:.16em;color:#83e8ff}.project-strip h2{font-size:23px;color:#f1f5ff;margin:10px 0}.project-strip p{max-width:710px;margin:0;color:#bbc9e0;line-height:1.9;font-size:13px}
+.project-actions{display:flex;flex-direction:column;align-items:center;gap:15px;flex-shrink:0}.project-actions>a:last-child{color:#b9d8f5;font-size:12px}.project-actions a:focus-visible{outline:2px solid #87efff;outline-offset:5px}
+@media(max-width:700px){.project-strip{flex-direction:column;align-items:flex-start;padding:22px;gap:20px}.project-strip h2{font-size:21px}.project-actions{flex-direction:row;flex-wrap:wrap;gap:20px}}

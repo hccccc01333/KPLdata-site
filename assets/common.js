@@ -109,12 +109,12 @@ window.KPL = (function () {
 
   /* ---------- 图表调色板：随页面主题切换（v55 浅底页面用深色网格/更深的数据色） ---------- */
   function chartPalette() {
-    var light = document.documentElement.classList.contains("v55");
+    var light = getComputedStyle(document.documentElement).colorScheme === "light";
     return light
       ? { grid: "#E3E5EA", axis: "#D9DCE2", label: "#6E7480", band: "#2E6FD0",
           line: "#2E6FD0", area: "#2E6FD0", mark: "#F02F55", onLine: "#191B23", dot: "#FFFFFF" }
-      : { grid: "#1D2E47", axis: "#2C4568", label: "#6F84A3", band: "#9DB2CC",
-          line: "#9DB2CC", area: "#9DB2CC", mark: "#FFFFFF", onLine: "#FFFFFF", dot: "#0A111C" };
+      : { grid: "#283141", axis: "#41516B", label: "#A8B5C9", band: "#6EAFFF",
+          line: "#6EAFFF", area: "#6EAFFF", mark: "#F07483", onLine: "#EDF0F7", dot: "#11141B" };
   }
 
   /* ---------- 全量赛程索引（assets/schedule_all.js）+ 赛段 / 赛制标签 ---------- */
@@ -314,7 +314,7 @@ window.KPL = (function () {
       '<button class="nav-toggle" id="navToggle" type="button" aria-label="打开导航" ' +
       'aria-expanded="false" aria-controls="siteNav">' + icon("menu", 19) + "</button>" +
       '<a class="gh-ico" href="https://github.com/hccccc01333/kpl-insight" target="_blank" rel="noopener" ' +
-      'title="源码仓库" aria-label="GitHub 仓库">' + icon("github", 19) + "</a></div>";
+      'title="GitHub · 查看源码与 Star" aria-label="GitHub · 查看源码与 Star">' + icon("github", 19) + "</a></div>";
   }
   function footer() {
     return '<div class="wrap footer-in"><div>' +
@@ -323,7 +323,8 @@ window.KPL = (function () {
       '统计均为自算口径：胜率类为历史区间估计，赛程与比分以官方发布为准。' +
       '了解数据口径与更新方式 → <a href="about.html" style="color:var(--gold)">数据说明</a></p></div>' +
       '<div class="foot-right mono"><div>数据更新 <b>' + esc(D ? D.generatedAt : "—") + "</b></div>" +
-      '<a href="https://github.com/hccccc01333/kpl-insight" target="_blank" rel="noopener">源码仓库 ↗</a>' +
+      '<a href="https://github.com/hccccc01333/kpl-insight" target="_blank" rel="noopener">GitHub · Star ↗</a>' +
+      '<a href="https://github.com/hccccc01333/kpl-insight/issues" target="_blank" rel="noopener">反馈与贡献 ↗</a>' +
       '<a href="updates.html">更新日志</a>' +
       '<a href="about.html">数据说明 · 免责</a></div></div>';
   }

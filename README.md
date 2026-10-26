@@ -1,13 +1,31 @@
-# 峡谷有数 · KPL Insight 官网
+# 峡谷有数 · KPL Insight 交互网站
 
-KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / 英雄数据、BP 分析、逐局复盘、实时胜率、预测公开统计、精选对局、系列赛研究、荣誉与纪录。
+[峡谷有数 KPL Insight](https://github.com/hccccc01333/kpl-insight) 的交互网站与静态数据展示端：赛程比分、战队 / 选手 / 英雄数据、BP 分析、逐局复盘、实时胜率、预测公开统计、精选对局、系列赛研究、荣誉与纪录。
 
 - 数据来源：腾讯 KPL 官方公开接口（赛程 / 对局 / 局内快照）；个人搭建的赛事数据产品，**非官方、与腾讯无关联**
 - 技术：纯静态 HTML + 原生 JS，无框架、无构建步骤；数据由 Python 脚本离线生成为 `assets/*.js`
 - 实时链路：比赛日 1 秒粒度采集快照，实时页 30 秒刷新（胜率曲线 / 指标 / 趋势外推预测），逐局自动归档
-- 当前视觉：V5.5「竞技媒体白」——浅色页面、白色卡片、深色赛事头图、品牌红强调
-- 部署：Cloudflare Workers 主站，推送到仓库即自动发布（见「发布」）；GitHub Pages 国内镜像在数据更新后自动同步
+- 当前视觉：V6 沉浸式竞技场——深色玻璃界面、全页 3D 光带与粒子、指针与滚动联动；数据卡片支持滑动浏览、入场和悬停交互，兼容减少动态效果偏好
+- 部署：GitHub Pages 由 Actions 发布；Cloudflare Workers 通过 Wrangler 部署（见「发布」）
 - 在线地址：主站 <https://kpldata-site.hccccc01333.workers.dev> · 国内镜像 <https://hccccc01333.github.io/KPLdata-site/>（主站的 `workers.dev` 域名在国内被 DNS 污染，国内访问请用镜像）
+
+## 体验与参与
+
+[在线体验](https://hccccc01333.github.io/KPLdata-site/) · [项目源码与 Star](https://github.com/hccccc01333/kpl-insight) · [反馈问题](https://github.com/hccccc01333/kpl-insight/issues) · [贡献指南](https://github.com/hccccc01333/kpl-insight/blob/main/CONTRIBUTING.md)
+
+本仓库负责网页、交互与静态数据构建；数据采集、特征、模型和回测工具在主项目。喜欢这个项目，欢迎给主项目点一颗 Star，也欢迎用具体比赛和使用场景帮助我们改进。
+
+![新版网站实际界面](assets/shots/insight-current.jpg)
+
+## 本地运行
+
+```bash
+git clone https://github.com/hccccc01333/KPLdata-site.git
+cd KPLdata-site
+python -m http.server 8000 --bind 127.0.0.1
+```
+
+打开 http://127.0.0.1:8000/，无需 Node、构建步骤或模型权重。站点包含归档数据；自动采集和更新需另行配置。Three.js 已随站点提供，第三方图片仍可能需要联网。
 
 ## 数据规模
 
@@ -28,14 +46,14 @@ KPL 赛事数据产品站点（纯静态）：赛程比分、战队 / 选手 / �
 
 ## 当前状态
 
-- 站点已从「多页面数据展示」收敛为 **V5.5 数据产品**：32 个页面 + 404，21 个离线构建脚本。
+- 站点已从「多页面数据展示」收敛为 **V6 沉浸式数据界面**：全页 3D 场景与卡片交互覆盖全部页面；数据仍由离线构建脚本生成。
 - 数据正确性（2026-10-21）：系列赛 / 战队 Elo 已按真实战队身份重算；选手深挖逐局胜负改用 `battle_winner_team`；资源指标 `kill_big_dragon_num` 已去重；`check_series_consistency.py` 作为发布门禁。
 - 胜率沙盘已上线：221 局概率地形、同状态历史检索、What-if 与 V12 模型体检；数据由 `build_sandbox_data.py` 生成。
 - BP 赛事演播室已上线：真实比赛逐手选禁回放、双方最终阵容、系列赛前几局英雄使用，支持深链与三档响应式。
 - 仍在开发：V5 P2 其余项（今日观赛助手 / 本命英雄对局助手 / honors-v2 剩余项）。
 - 已知限制：部分历史系列赛缺官方胜负或逐局不完整；分钟级复盘只覆盖 221 局；模型测试集只有 20 局，不能当作稳定预测服务。
 
-## 页面（32 个 + 404）
+## 页面与功能
 
 | 模块 | 页面 |
 |---|---|
@@ -102,8 +120,11 @@ node _regress.js                             # 分层回归总入口
 ## 目录
 
 ```text
-*.html                 32 个页面 + 404（纯静态，无构建步骤）
-assets/v55.css         V5.5 竞技媒体白主题（当前视觉）
+*.html                 纯静态页面（无构建步骤）
+assets/arena-world.*   全页 Three.js 3D 场景与深色玻璃界面
+assets/card-motion.*   卡片动效、滑动浏览与键盘交互
+assets/vendor/three*   本地 Three.js 运行时及许可证
+assets/v55.css         基础布局兼容层
 assets/style.css       基础样式与旧主题层
 assets/pages.css       页面级样式
 assets/sandbox.css     胜率沙盘页面样式
@@ -128,7 +149,7 @@ publish.bat "更新说明"    # 质量门禁 → 提交 → 推送 → 部署（
 publish.bat --deploy-only # 只部署（仍先跑质量门禁）
 ```
 
-GitHub Pages 国内镜像由 `.github/workflows/pages.yml` 在 `main` 收到数据更新时自动发布（内置 9 分钟部署间隔闸门，约每 10 分钟一次），只发布 `*.html` 与 `assets/`。需要立即同步时，在 Actions 页手动运行该工作流。
+GitHub Pages 镜像由 `.github/workflows/pages.yml` 在 `main` 收到数据更新时自动发布（内置 9 分钟部署间隔闸门，约每 10 分钟一次），只发布 `*.html` 与 `assets/`。需要立即同步时，在 Actions 页手动运行该工作流。
 
 ## 声明
 
