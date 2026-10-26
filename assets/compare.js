@@ -251,7 +251,7 @@ window.KPL_COMPARE = (function () {
           delta: dim.values[ci].score - (samePos ? 50 : dim.avgScore),
           ok: dim.values[ci].raw !== null && (samePos || dim.avgRaw !== null)
         };
-      }).filter(function (x) { return x.ok; });
+      }).filter(function (x) { return x.ok && x.label !== "出场局数"; });
       var up = rows.filter(function (x) { return x.delta > 0; })
         .sort(function (a, b) { return b.delta - a.delta; }).slice(0, 2);
       var down = rows.filter(function (x) { return x.delta < 0; })
