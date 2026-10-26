@@ -21,7 +21,7 @@ window.KPL_COMPARE = (function () {
   var LANES = ["对抗路", "打野", "中路", "发育路", "游走"];
   var TRENDABLE = { hero: 1, team: 1 };   // 只有英雄 / 战队有逐年 by 数据，选手 / 位置无趋势
 
-  var K, $, baseMode, trendView, mode, curScope, picked, booted = false;
+  var K, $, baseMode, trendView, mode, curScope, picked, posFilter = "all", booted = false;
 
   /* ---------- 位置（分路）聚合 ----------
      把当前数据范围里的选手，按「实际出场位置」聚成 5 条分路画像；
@@ -66,8 +66,10 @@ window.KPL_COMPARE = (function () {
   var MODES = {
     hero: {
       list: function (d) {
-        return (d.heroes || []).slice().sort(function (a, b) { return b.games - a.games; }).slice(0, 90);
+        return (d.heroes || []).filter(function (x) { return x.games > 0; })
+          .slice().sort(function (a, b) { return b.games - a.games; });
       },
+      universe: function (d) { return (d.heroes || []).filter(function (x) { return x.games > 0; }); },
       name: function (x) { return x.name; },
       icon: function (x) { return x.icon; },
       target: "hero.html?id=",
@@ -82,8 +84,10 @@ window.KPL_COMPARE = (function () {
     },
     player: {
       list: function (d) {
-        return (d.players || []).filter(function (p) { return p.games >= 8; }).slice(0, 90);
+        return (d.players || []).filter(function (p) { return p.games >= 8; })
+          .slice().sort(function (a, b) { return b.games - a.games; });
       },
+      universe: function (d) { return (d.players || []).filter(function (p) { return p.games >= 8; }); },
       name: function (x) { return x.name; },
       icon: function (x) { return x.icon; },
       target: "players.html?q=",
@@ -101,6 +105,7 @@ window.KPL_COMPARE = (function () {
         return (d.teams || []).filter(function (t) { return t.matches >= 10; })
           .slice().sort(function (a, b) { return b.wr - a.wr; });
       },
+      universe: function (d) { return (d.teams || []).filter(function (t) { return t.matches >= 10; }); },
       name: function (x) { return x.team; },
       icon: function (x) { return x.icon; },
       target: "teams.html",
@@ -114,6 +119,7 @@ window.KPL_COMPARE = (function () {
     },
     lane: {
       list: function (d) { return laneAgg(d); },
+      universe: function (d) { return laneAgg(d); },
       name: function (x) { return x.name; },
       icon: function () { return ""; },
       target: null,
@@ -148,7 +154,22 @@ window.KPL_COMPARE = (function () {
   };
 
   function conf() { return TREND[mode] || MODES[mode]; }
-  function currentList() { return conf().list(K.scopeOf(curScope)); }
+  function byPos(rows) {
+    if (baseMode !== "player" || posFilter === "all") return rows;
+    return rows.filter(function (x) { return x.pos === posFilter; });
+  }
+  function currentList() { return byPos(conf().list(K.scopeOf(curScope))); }
+  function currentUniverse() {
+    var c = conf();
+    return byPos(c.universe ? c.universe(K.scopeOf(curScope)) : conf().list(K.scopeOf(curScope)));
+  }
+  function pctRank(v, sorted) {
+    if (!sorted.length) return null;
+    if (sorted.length === 1) return 50;
+    var below = 0;
+    for (var i = 0; i < sorted.length; i++) { if (sorted[i] < v) below++; else break; }
+    return below / (sorted.length - 1) * 100;
+  }
   function curName(x) { return conf().name(x); }
   function curIcon(x) { return conf().icon(x); }
 
@@ -198,11 +219,53 @@ window.KPL_COMPARE = (function () {
     $("#legend").innerHTML = "";
     $("#cmpTable").innerHTML = "";
     $("#cmpTip").textContent = "";
+    clearInsights();
+  }
+
+  function clearInsights() {
+    var box = document.getElementById("cmpInsights");
+    if (box) box.innerHTML = "";
+  }
+
+  /* 相对范围均值的优势 / 短板摘要：用分位差，跨指标可读 */
+  function renderInsights(series, dims) {
+    var table = document.getElementById("cmpTable");
+    if (!table || !table.parentNode) return;
+    var box = document.getElementById("cmpInsights");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "cmpInsights";
+      box.className = "cmp-insights";
+      table.parentNode.insertBefore(box, table.nextSibling);
+    }
+    function chip(kind, label, delta) {
+      var n = Math.round(delta);
+      return '<span class="cmp-chip ' + kind + '" title="相对范围均值的分位差">' +
+        (kind === "up" ? "↑" : "↓") + " " + K.esc(label) + " " + (n > 0 ? "+" : "") + n + " 分位</span>";
+    }
+    box.innerHTML = series.map(function (se, ci) {
+      var rows = dims.map(function (dim) {
+        return {
+          label: dim.label,
+          delta: dim.values[ci].score - dim.avgScore,
+          ok: dim.values[ci].raw !== null && dim.avgRaw !== null
+        };
+      }).filter(function (x) { return x.ok; });
+      var up = rows.filter(function (x) { return x.delta > 0; })
+        .sort(function (a, b) { return b.delta - a.delta; }).slice(0, 2);
+      var down = rows.filter(function (x) { return x.delta < 0; })
+        .sort(function (a, b) { return a.delta - b.delta; }).slice(0, 2);
+      var chips = up.map(function (x) { return chip("up", x.label, x.delta); }).join("") +
+        down.map(function (x) { return chip("down", x.label, x.delta); }).join("");
+      if (!chips) chips = '<span class="cmp-chip neutral">各项接近范围均值</span>';
+      return '<div class="cmp-insight"><b>' + K.esc(se.name) + "</b>" + chips + "</div>";
+    }).join("");
   }
 
   /* ---------- 趋势折线视图 ---------- */
   function renderTrend(chosen) {
     if (chosen.length < 1) { emptyTip("请至少选择 1 个对象"); return; }
+    clearInsights();
     var years = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
     var n = years.length;
     var W = 640, H = 470, PL = 46, PR = 16, PT = 26, PB = 40;
@@ -284,21 +347,25 @@ window.KPL_COMPARE = (function () {
     var series = chosen.map(function (obj, ci) {
       return { name: M.name(obj), obj: obj, color: COLORS[ci] };
     });
+    var universe = currentUniverse();
     var dims = M.dims.map(function (dim) {
-      // 只有「有有效样本」的对象参与分位归一化，缺失值不当作 0 拉低别人的排名
-      var sorted = list.map(function (x) { return K.mnum(dim.get(x, d)); })
+      // 分位与均值都基于「当前范围内全部合格对象」，不是只取候选列表的前 90 个
+      var sorted = universe.map(function (x) { return K.mnum(dim.get(x, d)); })
         .filter(function (v) { return v !== null; })
         .sort(function (a, b) { return a - b; });
+      var avgRaw = sorted.length
+        ? sorted.reduce(function (a, b) { return a + b; }, 0) / sorted.length
+        : null;
       return {
         label: dim.label,
         fmt: dim.fmt,
+        avgRaw: avgRaw,
+        avgScore: avgRaw === null ? 0 : Math.max(4, Math.min(100, pctRank(avgRaw, sorted))),
         values: series.map(function (se) {
           var v = K.mnum(dim.get(se.obj, d));
           if (v === null) return { raw: null, score: 0 };   // 无有效样本 → 雷达顶点落圆心、表格显示 —
-          var below = 0;
-          for (var i = 0; i < sorted.length; i++) { if (sorted[i] < v) below++; else break; }
-          var rank = sorted.length > 1 ? below / (sorted.length - 1) * 100 : 50;
-          return { raw: v, score: Math.max(4, Math.min(100, rank)) };
+          var rank = pctRank(v, sorted);
+          return { raw: v, score: Math.max(4, Math.min(100, rank === null ? 50 : rank)) };
         })
       };
     });
@@ -332,9 +399,19 @@ window.KPL_COMPARE = (function () {
         '" stroke-width="2" stroke-linejoin="round"/>';
       dims.forEach(function (dim, i) {
         var p = pt(i, R * dim.values[ci].score / 100);
-        s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill="' + se.color + '"/>';
+        var tip = se.name + " · " + dim.label + "：" + dim.fmt(dim.values[ci].raw) +
+          "（分位 " + Math.round(dim.values[ci].score) + "）";
+        s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill="' + se.color + '">' +
+          '<title>' + K.esc(tip) + '</title></circle>';
       });
     });
+    if (dims.every(function (dim) { return dim.avgRaw !== null; })) {
+      var avgPts = dims.map(function (dim, i) {
+        return pt(i, R * dim.avgScore / 100).map(function (v) { return v.toFixed(1); }).join(",");
+      }).join(" ");
+      s += '<polygon points="' + avgPts + '" fill="none" stroke="' + CP.label +
+        '" stroke-width="1.5" stroke-dasharray="5 5" stroke-linejoin="round" opacity=".9"/>';
+    }
     s += "</svg>";
     $("#radar").innerHTML = s;
 
@@ -343,7 +420,8 @@ window.KPL_COMPARE = (function () {
       return "<span><i style=\"background:" + se.color + '"></i>' +
         (ic ? '<img src="' + K.esc(ic) + '" alt="" style="width:20px;height:20px;border-radius:50%;object-fit:cover">' : "") +
         K.esc(se.name) + "</span>";
-    }).join("");
+    }).join("") + (dims.every(function (dim) { return dim.avgRaw !== null; })
+      ? '<span class="cmp-avg"><i class="dash"></i>范围均值</span>' : "");
 
     /* 对照表 */
     var linkOf = function (se) {
@@ -358,7 +436,8 @@ window.KPL_COMPARE = (function () {
       return '<th><span class="cmp-head">' +
         (href ? '<a href="' + K.esc(href) + '" style="color:inherit;display:inline-flex;align-items:center;gap:6px">' + nameHTML + "</a>" : nameHTML) +
         "</span></th>";
-    }).join("") + (series.length === 2 ? '<th class="num">差（1−2）</th>' : "") + "</tr></thead>";
+    }).join("") + '<th class="num cmp-avg-h" title="当前范围内全部合格对象的等权平均">范围均值</th>' +
+      (series.length === 2 ? '<th class="num">差（1−2）</th>' : "") + "</tr></thead>";
     var body = "<tbody>" + dims.map(function (dim) {
       var raws = dim.values.map(function (v) { return v.raw; });
       var nums = raws.filter(function (v) { return v !== null; });   // 缺失值既不评最高/最低，也不参与差值
@@ -381,20 +460,30 @@ window.KPL_COMPARE = (function () {
             (dv >= 0 ? "+" : "−") + absTxt + "</td>";
         }
       }
-      return "<tr><td>" + K.esc(dim.label) + "</td>" + cells + diff + "</tr>";
+      var avgCell = dim.avgRaw === null
+        ? '<td class="num cmp-avg-cell" title="当前范围没有有效样本">—</td>'
+        : '<td class="num mono cmp-avg-cell" title="当前范围内全部合格对象的等权平均">' +
+          dim.fmt(dim.avgRaw) + "</td>";
+      return "<tr><td>" + K.esc(dim.label) + "</td>" + cells + avgCell + diff + "</tr>";
     }).join("") + "</tbody>";
     $("#cmpTable").innerHTML = head + body;
+    renderInsights(series, dims);
 
     var hasNull = dims.some(function (dim) {
       return dim.values.some(function (v) { return v.raw === null; });
     });
-    var tip = "雷达图上的位置 = 该指标在「" + K.scopeName(curScope) +
-      "」范围内的相对水平（外圈 = 更强）；表格每行最高值金色、最低值灰色；选 2 个对象时多一列差值，表头可点进详情页。";
+    var tip = "雷达位置 = 该指标在「" + K.scopeName(curScope) + "」全部 " + universe.length +
+      " 个合格对象中的百分位（0–100，外圈 = 更强）；虚线 = 范围均值所在分位，表内「范围均值」按对象等权平均，缺失值不参与。表格每行最高值金色、最低值灰色；选 2 个对象时多一列差值，表头可点进详情页。";
     if (hasNull) tip += " 表格里的「—」表示该对象在这一指标上没有有效样本，不参与最高/最低与差值计算，雷达图对应顶点落在圆心。";
     if (mode === "lane") {
       var cov = chosen.map(function (o) { return o.name + " " + o.n + " 人 / " + K.fmtInt(o.games) + " 局"; }).join("；");
       tip += " 分路按选手实际出场位置聚合、按局数加权（" + cov +
-        "）。注意五种分路职责不同，KDA / 输出等原始值的天然区间不一样，只能读作「分路画像」，不能直接当成强弱排序。";
+        "）。注意五种分路职责不同，KDA / 输出等原始值的天然区间不一样，只能读作「分路画像」，不能直接当成强弱排序；跨分路均值只作形状参考。";
+    }
+    if (mode === "player") {
+      tip += posFilter === "all"
+        ? " 当前是跨位置分位：KDA / 输出会受位置影响，跨位置只读作个人画像；选「位置」后可做同位置比较。"
+        : " 当前按位置「" + posFilter + "」归一化：候选、分位与均值都只在该位置内计算。";
     }
     $("#cmpTip").textContent = tip;
   }
@@ -403,7 +492,8 @@ window.KPL_COMPARE = (function () {
   function syncUrl() {
     try {
       var q = "?items=" + picked.filter(Boolean).map(encodeURIComponent).join(",") +
-        (trendView && TRENDABLE[baseMode] ? "&trend=1" : "");
+        (trendView && TRENDABLE[baseMode] ? "&trend=1" : "") +
+        (baseMode === "player" && posFilter !== "all" ? "&pos=" + encodeURIComponent(posFilter) : "");
       history.replaceState(null, "", location.pathname + q + location.hash);
     } catch (e) {}
   }
@@ -412,6 +502,14 @@ window.KPL_COMPARE = (function () {
     trendView = sp.get("trend") === "1" && !!TRENDABLE[baseMode];
     var items = (sp.get("items") || "").split(",").filter(Boolean).map(decodeURIComponent);
     if (items.length) picked = [0, 1, 2, 3].map(function (i) { return items[i] || ""; });
+    if (baseMode === "player") {
+      var pos = sp.get("pos");
+      if (pos) {
+        posFilter = pos;
+        var sel = document.getElementById("posFilter");
+        if (sel) sel.value = pos;
+      }
+    }
   }
 
   function wire() {
@@ -441,6 +539,14 @@ window.KPL_COMPARE = (function () {
     });
     var tm = document.getElementById("trendMetric");
     if (tm) tm.addEventListener("change", render);
+    var pf = document.getElementById("posFilter");
+    if (pf) pf.addEventListener("change", function () {
+      posFilter = this.value || "all";
+      picked = [null, null, null, null];
+      populatePickers();
+      render();
+      syncUrl();
+    });
   }
 
   function init(baseModeIn) {
@@ -451,6 +557,7 @@ window.KPL_COMPARE = (function () {
     baseMode = MODES[baseModeIn] ? baseModeIn : "hero";
     trendView = false;
     mode = baseMode;
+    posFilter = "all";
     picked = [null, null, null, null];
     K.init();
     wire();
@@ -499,7 +606,9 @@ window.KPL_COMPARE = (function () {
       sub: K.scopeName(curScope) + " · 相对水平雷达口径",
       stats: stats,
       note: "卡片数值为各对象原始值；雷达位置是「" + K.scopeName(curScope) +
-        "」范围内的相对百分位（越外越强）。来源：KPL 官方赛事数据。" +
+        "」全部合格对象中的相对百分位（越外越强），虚线为范围均值。" +
+        (baseMode === "player" && posFilter !== "all" ? "当前按位置「" + posFilter + "」归一化。" : "") +
+        "来源：KPL 官方赛事数据。" +
         (baseMode === "lane" ? "分路按选手实际出场位置聚合、按局数加权。" : ""),
       url: location.href
     };
