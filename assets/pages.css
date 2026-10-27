@@ -1569,3 +1569,82 @@ select:disabled{opacity:.55 !important;cursor:not-allowed}
   .tbp-state-grid{grid-template-columns:1fr}
   .tbp-detail-metrics{grid-template-columns:1fr}
 }
+
+
+/* ==================================================================
+   V6.3 · 教练任期与 BP 指纹
+   ================================================================== */
+.coach-controls{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;padding:14px 18px}
+.coach-controls .fld{min-width:240px}
+.coach-meta{margin-left:auto;font-size:11.5px;color:var(--muted);padding-bottom:6px}
+.coach-summary{display:flex;align-items:center;gap:22px;margin-top:16px;padding:16px 18px;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;min-width:0}
+.coach-id{display:flex;align-items:center;gap:12px;min-width:0}
+.coach-teamicon{width:46px;height:46px;border-radius:10px;object-fit:contain;border:1px solid var(--line2);background:var(--card2);flex:none}
+.coach-teamicon.ph{display:grid;place-items:center;font-weight:900;font-size:18px;color:var(--muted)}
+.coach-name{font-size:21px;font-weight:800;line-height:1.2}
+.coach-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.coach-kpis{display:flex;gap:24px;margin-left:auto;min-width:0}
+.coach-kpis div{display:flex;flex-direction:column;align-items:flex-end;gap:2px;white-space:nowrap}
+.coach-kpis b{font-family:var(--mono);font-size:19px;font-weight:800}
+.coach-kpis span{font-size:11px;color:var(--muted)}
+.coach-career-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:10px}
+.coach-career-item{padding:10px 12px;background:var(--card2);border:1px solid var(--line);border-radius:9px}
+.coach-career-item b{display:block;font-family:var(--mono);font-size:18px;font-weight:800}
+.coach-career-item span{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+.coach-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:16px}
+.coach-two>.panel{min-width:0}
+.coach-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.coach-stat-grid>div{padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:var(--card2);min-width:0}
+.coach-stat-grid b{display:block;font-family:var(--mono);font-size:19px;font-weight:800;line-height:1.15}
+.coach-stat-grid span{display:block;font-size:10.5px;color:var(--muted);margin-top:3px}
+.coach-stat-grid em{display:block;font-style:normal;font-size:10px;color:var(--muted);margin-top:2px}
+.coach-source-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.coach-source-tag{display:inline-block;padding:2px 7px;border-radius:5px;border:1px solid var(--line2);
+  color:var(--muted);font-size:10.5px;font-weight:700}
+.coach-source-tag.medium{color:#F0C36A;border-color:rgba(240,195,106,.35);background:rgba(240,195,106,.07)}
+.coach-source-tag.high{color:#7BE0A3;border-color:rgba(123,224,163,.35);background:rgba(123,224,163,.08)}
+.coach-source-tag.low{color:#F2A3AE;border-color:rgba(242,163,174,.35);background:rgba(242,163,174,.08)}
+.coach-source-body{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.coach-source-body div{min-width:0}
+.coach-source-body span{display:block;font-size:10.5px;color:var(--muted)}
+.coach-source-body b{display:block;font-size:11.5px;font-weight:600;color:var(--ink2);margin-top:3px;word-break:break-word}
+.coach-source-body a{color:var(--gold)}
+#coachPicksTable{width:100%;min-width:700px;border-collapse:collapse}
+#coachPicksTable th,#coachPicksTable td{padding:8px 7px;border-bottom:1px solid var(--line);text-align:right;font-size:12.5px;white-space:nowrap}
+#coachPicksTable th:first-child,#coachPicksTable td:first-child{text-align:left}
+#coachPicksTable thead th{position:sticky;top:0;z-index:1;background:var(--card);font-size:11px;color:var(--muted);font-weight:600}
+#coachPicksTable td b{font-family:var(--mono);font-weight:800}
+.coach-evidence-wrap{overflow:auto;-webkit-overflow-scrolling:touch;margin-top:4px;max-height:460px}
+#coachEvidenceTable{width:100%;min-width:980px;border-collapse:collapse}
+#coachEvidenceTable th,#coachEvidenceTable td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;font-size:11.5px;vertical-align:top;white-space:nowrap}
+#coachEvidenceTable th:nth-child(1),#coachEvidenceTable th:nth-child(2),#coachEvidenceTable th:nth-child(5),
+#coachEvidenceTable th:nth-child(6),#coachEvidenceTable th:nth-child(7),#coachEvidenceTable td:nth-child(1),
+#coachEvidenceTable td:nth-child(2),#coachEvidenceTable td:nth-child(5),#coachEvidenceTable td:nth-child(6),
+#coachEvidenceTable td:nth-child(7){text-align:left}
+#coachEvidenceTable thead th{position:sticky;top:0;z-index:1;background:var(--card);font-size:10.5px;color:var(--muted);font-weight:600}
+#coachEvidenceTable td b{font-family:var(--mono)}
+.coach-coverage-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.coach-coverage-grid div{padding:10px 12px;background:var(--card2);border:1px solid var(--line);border-radius:9px}
+.coach-coverage-grid b{display:block;font-family:var(--mono);font-size:19px;font-weight:800}
+.coach-coverage-grid span{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+.coach-exclusions{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.coach-exclusions-head{font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:5px}
+.coach-exclusions-head em{font-style:normal;color:var(--muted);font-weight:400;margin-left:5px}
+.coach-exclusion{display:flex;gap:12px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line);font-size:11px}
+.coach-exclusion span{color:var(--muted);flex:none}
+.coach-exclusion b{font-weight:500;color:var(--ink2)}
+@media(max-width:1000px){
+  .coach-two{grid-template-columns:1fr}
+  .coach-stat-grid,.coach-coverage-grid,.coach-source-body{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .coach-controls .fld{flex:1 1 100%;min-width:0}
+  .coach-meta{margin-left:0;flex-basis:100%}
+  .coach-summary{flex-direction:column;align-items:flex-start;gap:12px}
+  .coach-kpis{margin-left:0;width:100%;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .coach-kpis div{align-items:flex-start}
+  .coach-career-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .coach-stat-grid,.coach-coverage-grid,.coach-source-body{grid-template-columns:1fr}
+  .coach-exclusion{flex-direction:column;gap:2px}
+}

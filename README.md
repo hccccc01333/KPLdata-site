@@ -50,6 +50,7 @@ python -m http.server 8000 --bind 127.0.0.1
 - 数据正确性（2026-10-21）：系列赛 / 战队 Elo 已按真实战队身份重算；选手深挖逐局胜负改用 `battle_winner_team`；资源指标 `kill_big_dragon_num` 已去重；`check_series_consistency.py` 作为发布门禁。
 - 英雄表现工作台（2026-10-27）：444 名至少 20 局的选手、11,138 局，逐系列赛查看选手 × 英雄，并给出同位置同英雄 P50/P75/P90 与比赛证据；2016–2018 外部历史尚未接入该页。
 - 战队 BP 风格（2026-10-27）：3,450 局完整 20 手 BP、53 支战队、10 个赛事；选择结构 / 禁用资源 / 五状态 / 组合 / 赛果分开展示；2019–2024 缺手记录不混入，BP 顺序暂不分析。
+- 教练档案（2026-10-27）：33 名教练、63 个队-赛季，覆盖 2025 春–2026 夏；大场 / 小局 / 完整 BP 分层，BP 指纹与来源置信度并列。任期来源为 Liquipedia 赛季名单（社区整理），9 个中途换帅 / 角色不明确的队-赛季不进入 BP 归属。
 - 胜率沙盘已上线：221 局概率地形、同状态历史检索、What-if 与 V12 模型体检；数据由 `build_sandbox_data.py` 生成。
 - BP 赛事演播室已上线：真实比赛逐手选禁回放、双方最终阵容、系列赛前几局英雄使用，支持深链与三档响应式。
 - 仍在开发：V5 P2 其余项（今日观赛助手 / 本命英雄对局助手 / honors-v2 剩余项）。
@@ -65,11 +66,11 @@ python -m http.server 8000 --bind 127.0.0.1
 | 选手 | `players.html`、`player.html`（能力雷达 / 关键局 / 打法画像 / 搭档对位） |
 | 选手 × 英雄 | `hero-performance.html`（逐系列赛英雄表现 / 同位置同英雄基准 / 比赛证据） |
 | 英雄 | `heroes.html`、`hero.html`、`combos.html` |
-| 深度分析 | `bp.html`、`bp-studio.html`（真实比赛 BP 演播室）、`sandbox.html`（这局谁更可能赢 / 历史对照 / 模型体检）、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`（含赛前预测挑战）、`find.html`（按终局条件找局）、`simulator.html`、`query.html` |
+| 深度分析 | `bp.html`、`bp-studio.html`（真实比赛 BP 演播室）、`coach.html`（教练任期 / BP 指纹 / 来源置信度）、`sandbox.html`（这局谁更可能赢 / 历史对照 / 模型体检）、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`（含赛前预测挑战）、`find.html`（按终局条件找局）、`simulator.html`、`query.html` |
 | 对比工具 | `compare.html`、`compare-team.html`、`compare-player.html`、`compare-lane.html` |
 | 说明 | `about.html`、`404.html` |
 
-## 构建脚本（23 个）
+## 构建脚本（24 个）
 
 数据全部离线生成，页面只读 `assets/*.js`。
 
@@ -78,10 +79,11 @@ python -m http.server 8000 --bind 127.0.0.1
 | 主数据 | `build_data.py`、`build_history_data.py`、`build_game_details.py`、`build_replay_frames.py`、`build_search_index.py` |
 | 比赛与预测 | `build_picks.py`、`build_predict_data.py`、`build_comeback_data.py`、`build_prematch_calib.py` |
 | 战队 / 选手 / 英雄 | `build_team_data.py`、`build_player_details.py`、`build_player_deep.py`、`build_power_data.py`、`build_pro_hero.py`、`build_hero_growth.py`、`build_hero_performance.py`、`build_equip_data.py` |
-| BP / 系列赛 / 荣誉 / 纪录 | `build_bp_data.py`、`build_team_bp.py`、`build_deep_data.py`、`build_honors_data.py`、`build_records.py` |
+| BP / 系列赛 / 荣誉 / 纪录 | `build_bp_data.py`、`build_team_bp.py`、`build_coach_data.py`（教练任期 + BP 指纹）、`build_deep_data.py`、`build_honors_data.py`、`build_records.py` |
 | 交互 / 模型体检 | `build_sandbox_data.py`（概率地形 / 同状态索引 / 可靠性数据） |
 
 辅助脚本：`sync_readme_stats.py` 把上面的「数据规模」与 `assets/*.js` 索引对齐。
+`build_coach_data.py` 读取主项目 `data/meta/coach_tenures.csv`（Liquipedia 赛季名单，社区整理）；来源、置信度和 9 个未纳入队-赛季见主项目 `docs/product/教练任期数据说明.md`。
 
 ## 匿名统计（P0 基线）
 
@@ -106,6 +108,7 @@ python check_data_quality.py        # 缺失值/假零、跨页面同口径、�
 python check_series_consistency.py  # deep.js 对原始逐局数据的独立复算 + players_detail 交叉校验
 python check_hero_performance.py    # 英雄表现索引/分片/三层复算/P 值与基准池
 python check_team_bp.py             # 战队 BP 完整 20 手/五状态/组合/证据/分位
+python check_coach_data.py          # 教练任期/来源/大场小局BP 分层/生涯汇总
 python test_series_logic.py         # 换边/让二追三/官方兜底/重复局号/串场局回归
 ```
 
