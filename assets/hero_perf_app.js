@@ -8,6 +8,9 @@
   var DATA = {};
   var loaded = {}, loading = {};
   var player = "", scope = "all", hero = "all", selectedHero = "";
+  var scopeReady = false;
+  var wantedScope = "";
+  var VERSION = "20261027c";
   var LEAGUE = {};
   (INDEX.leagues || []).forEach(function (l) { LEAGUE[String(l.id)] = l; });
 
@@ -16,8 +19,16 @@
   function num(v, d) { var n = K.mnum(v); return n == null ? "—" : n.toFixed(d == null ? 1 : d); }
   function pct(v, d) { var n = K.mnum(v); return n == null ? "—" : n.toFixed(d == null ? 1 : d) + "%"; }
   function pClass(p) { return p == null ? "low" : p >= 75 ? "high" : p >= 50 ? "mid" : "low"; }
-  function pBadge(p) { return p == null ? "" : '<span class="hp-p ' + pClass(p) + '">P' + Math.min(100, Math.round(p)) + "</span>"; }
+  function pBadge(p) { return p == null ? "" : '<span class="hp-p ' + pClass(p) + '">P' + Math.max(0, Math.min(100, Math.round(p))) + "</span>"; }
   function sampleTag(row) { return (row.series < 3 || row.games < 10) ? '<span class="hp-tag">小样本</span>' : ""; }
+  function coverageText() {
+    var c = INDEX.coverage || {};
+    var parts = [];
+    if (c.start) parts.push(c.start + " – " + c.end);
+    if (c.players) parts.push(K.fmtInt(c.players) + " 名选手");
+    if (c.games) parts.push(K.fmtInt(c.games) + " 局");
+    return parts.join(" · ");
+  }
 
   function playerEntry(name) {
     return (INDEX.players || []).filter(function (p) { return p.name === name; })[0] || null;
@@ -28,7 +39,7 @@
     if (loading[shard]) { loading[shard].push(cb); return; }
     loading[shard] = [cb];
     var s = document.createElement("script");
-    s.src = "assets/hero_perf/shard_" + shard + ".js?v=1";
+    s.src = "assets/hero_perf/shard_" + shard + ".js?v=" + VERSION;
     s.onload = function () {
       Object.assign(DATA, window.KPL_HERO_PERF_SHARD || {});
       loaded[shard] = true;
@@ -102,31 +113,45 @@
     var fromUrl = new URLSearchParams(location.search).get("player");
     player = fromUrl && rows.some(function (p) { return p.name === fromUrl; }) ? fromUrl : (rows[0] || {}).name || "";
     sel.value = player;
-    sel.addEventListener("change", function () {
+    sel.onchange = function () {
       player = this.value;
-      hero = "all"; selectedHero = "";
+      hero = "all";
+      selectedHero = "";
       loadPlayer();
-    });
+    };
   }
 
-  function fillScope() {
+  function fillScope(obj) {
     var sel = $("#hpScope");
-    var leagues = (INDEX.leagues || []).slice();
+    var seen = {};
+    var leagues = [];
+    ((obj && obj.heroes) || []).forEach(function (h) {
+      (h.leagues || []).forEach(function (l) {
+        var id = String(l.league);
+        if (seen[id]) return;
+        seen[id] = 1;
+        leagues.push({ id: id, name: l.leagueName || id, year: l.year || 0 });
+      });
+    });
+    leagues.sort(function (a, b) { return (b.year - a.year) || String(a.id).localeCompare(String(b.id)); });
+    if (!scopeReady) {
+      scope = wantedScope || "all";
+      scopeReady = true;
+    }
+    if (scope !== "all" && !seen[scope]) scope = "all";
     sel.innerHTML = '<option value="all">全部赛事</option>' + leagues.map(function (l) {
       return '<option value="' + esc(l.id) + '">' + esc(l.name) + "</option>";
     }).join("");
-    var fromUrl = new URLSearchParams(location.search).get("league");
-    scope = fromUrl && (fromUrl === "all" || LEAGUE[fromUrl]) ? fromUrl : "all";
     sel.value = scope;
-    sel.addEventListener("change", function () {
+    sel.onchange = function () {
       scope = this.value || "all";
       hero = "all";
       selectedHero = "";
-      var obj = DATA[player];
-      if (obj) fillHeroes(obj);
+      var current = DATA[player];
+      if (current) fillHeroes(current);
       render();
       syncUrl();
-    });
+    };
   }
 
   function fillHeroes(obj) {
@@ -138,12 +163,12 @@
     }).join("");
     hero = names.indexOf(hero) >= 0 ? hero : "all";
     sel.value = hero;
-    sel.addEventListener("change", function () {
+    sel.onchange = function () {
       hero = this.value || "all";
       selectedHero = hero === "all" ? "" : hero;
       render();
       syncUrl();
-    });
+    };
   }
 
   function loadPlayer() {
@@ -154,6 +179,7 @@
         $("#hpMeta").textContent = "未找到选手数据";
         return;
       }
+      fillScope(obj);
       fillHeroes(obj);
       render();
       syncUrl();
@@ -161,7 +187,7 @@
   }
 
   function renderSummary(obj, rows) {
-    var ev = evidenceFor(obj, null);
+    var ev = evidenceFor(obj, hero === "all" ? null : hero);
     var matches = {};
     ev.forEach(function (r) { matches[r[1]] = 1; });
     var games = rows.reduce(function (a, r) { return a + r.games; }, 0);
@@ -193,7 +219,7 @@
     }
     var head = "<thead><tr><th>英雄</th><th class='num'>系列</th><th class='num'>局</th><th class='num'>战绩</th>" +
       "<th class='num'>胜率</th><th class='num'>KDA</th><th class='num'>分均伤害</th><th class='num'>分均经济</th>" +
-      "<th class='num'>参团率</th><th class='num'>生存</th></tr></thead>";
+      "<th class='num'>参团率</th><th class='num' title='每分钟死亡，越低越好'>死亡/分</th></tr></thead>";
     var body = "<tbody>" + rows.map(function (r) {
       var b = r.bench || { p: {} };
       var p = b.p || {};
@@ -228,7 +254,7 @@
   }
 
   function benchCard(label, value, p, ref, digits, suffix, lower) {
-    var has = p != null && ref;
+    var has = p != null && ref && ref[0] != null && ref[1] != null && ref[2] != null;
     var pv = p == null ? null : Math.max(0, Math.min(100, p));
     return '<div class="hp-bench">' +
       '<div class="hp-bench-top"><span>' + esc(label) + "</span>" + pBadge(p) + "</div>" +
@@ -249,22 +275,31 @@
     }
     var recent = rows.slice(0, 3), prev = rows.slice(3, 6);
     function median(rs, idx) {
-      var vals = rs.map(function (r) { return Number(r[idx] || 0); }).sort(function (a, b) { return a - b; });
-      return vals.length ? (vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2) : null;
+      var vals = rs.map(function (r) { return r[idx]; })
+        .filter(function (v) { return v != null && isFinite(Number(v)); })
+        .map(Number)
+        .sort(function (a, b) { return a - b; });
+      if (!vals.length) return null;
+      return vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
+    }
+    function delta(now, before) {
+      if (now == null || before == null || before === 0) return null;
+      return (now - before) / before * 100;
     }
     var dNow = median(recent, 11), dPrev = median(prev, 11);
     var kNow = median(recent, 10), kPrev = median(prev, 10);
-    var dPct = dPrev ? (dNow - dPrev) / dPrev * 100 : null;
-    var kPct = kPrev ? (kNow - kPrev) / kPrev * 100 : null;
+    var dPct = delta(dNow, dPrev), kPct = delta(kNow, kPrev);
     function part(v) {
       if (v == null) return "—";
       return (v >= 0 ? "+" : "") + v.toFixed(1) + "%";
     }
     var volatile = (dPct != null && Math.abs(dPct) > 50) || (kPct != null && Math.abs(kPct) > 50);
+    var noMetric = dPct == null && kPct == null;
     return '<div class="hp-trend"><b>近 3 个系列赛 vs 此前 3 个（中位数）</b>' +
       '<span>分均伤害 ' + part(dPct) + "</span>" +
       '<span>KDA ' + part(kPct) + "</span>" +
-      (volatile ? '<span class="hp-tag warn">波动大，证据不足</span>' : "") +
+      (noMetric ? '<span class="hp-tag warn">有效指标不足</span>' :
+        volatile ? '<span class="hp-tag warn">波动大，证据不足</span>' : "") +
       '<span class="muted">样本 ' + rows.length + " 个系列赛，仅描述变化，不作因果。</span></div>";
   }
 
@@ -280,12 +315,14 @@
     var b = row.bench;
     var p = (b && b.p) || {};
     var ref = (b && b.ref) || {};
-    var scopeTag = !b ? '<span class="hp-tag warn">基准不足</span>' :
+    var hasP = b && ["kda", "dmg", "gold", "part", "surv"].some(function (k) { return p[k] != null; });
+    var scopeTag = !hasP ? '<span class="hp-tag warn">基准不足</span>' :
       b.scope === "same-league" ? '<span class="hp-tag">同赛事基准</span>' :
       '<span class="hp-tag warn">基准已扩大：全历史</span>';
     var pool = b ? '<div class="hp-pool">' + (b.scope === "same-league" ? "同赛事" : "全历史") +
       "同位置同英雄 " + b.poolPlayers + " 人 / " + K.fmtInt(b.poolGames) + " 局 · 同英雄联盟 WR " +
-      pct(b.leagueWr) + "（" + K.fmtInt(b.leagueGames) + " 局）</div>" : "";
+      pct(b.leagueWr) + "（" + K.fmtInt(b.leagueGames) + " 局）" +
+      (hasP ? "" : " · 有效样本不足，未评级") + "</div>" : "";
     $("#hpDetailTitle").textContent = row.hero + " · " + row.pos + " · " + scopeLabel();
     $("#hpDetail").innerHTML =
       '<div class="hp-detail-head"><div><b class="hp-detail-hero">' + esc(row.hero) + "</b>" +
@@ -300,7 +337,8 @@
         benchCard("参团率", row.part, p.part, ref.part, 1, "%") +
         benchCard("生存（死亡/分钟）", row.deathsMin, p.surv, ref.surv, 3, "", true) +
       "</div>" + pool +
-      '<div class="hp-evidence-title">比赛证据 <em class="mono">' + ev.length + " 个系列赛</em></div>" +
+      '<div class="hp-evidence-title">比赛证据 <em class="mono">' + ev.length + " 个系列赛</em>" +
+        '<span class="hp-scroll-hint">表格可横向滚动 →</span></div>' +
       '<div class="hp-evidence-wrap"><table class="hp-evidence"><thead><tr>' +
         "<th>日期</th><th>对手</th><th>赛果</th><th class='num'>局</th><th class='num'>KDA</th>" +
         "<th class='num'>分均伤害</th><th class='num'>分均经济</th><th class='num'>参团</th><th class='num'>生存</th><th>证据</th>" +
@@ -333,7 +371,7 @@
     renderSummary(obj, rows);
     renderTable(rows, obj);
     renderDetail(obj, rows);
-    $("#hpMeta").textContent = "数据更新 " + (INDEX.generatedAt || "—") + " · " + (INDEX.players || []).length + " 名选手";
+    $("#hpMeta").textContent = "覆盖 " + (coverageText() || "—") + " · 更新 " + (INDEX.generatedAt || "—");
   }
 
   function syncUrl() {
@@ -347,9 +385,9 @@
 
   function init() {
     K.init();
+    wantedScope = new URLSearchParams(location.search).get("league") || "";
     var fromUrl = new URLSearchParams(location.search).get("hero");
     if (fromUrl) hero = fromUrl;
-    fillScope();
     fillPlayers();
     loadPlayer();
   }

@@ -27,6 +27,7 @@ const PAGES = [
   ["team.html?id=重庆狼队", "战队详情", ["#teamHead, .page-hero", ".tstat-grid, .panel", ".cmp-radar svg, .radar-wrap .empty-tip"]],
   ["players.html", "选手榜", ["#plBody tr, .player, .pl-card"]],
   ["player.html?id=一诺", "选手详情", ["#main .panel", ".sr-grid"]],
+  ["hero-performance.html", "英雄表现", ["#hpPlayer option", "#hpHeroTable tbody tr", ".hp-bench", ".hp-evidence tr", "#siteHeader #siteNav"]],
   ["series.html", "系列赛研究", ["#boRows tr", "#decRows tr", "#revRows", "#eloRows tr"]],
   ["heroes.html", "英雄列表", ["#heroGrid > *, .hcard"]],
   ["hero.html?id=曹操", "英雄详情", ["#heroHead .page-hero, #heroHead .hd-top", "#main .panel", "#heroGrowthChart svg"]],
@@ -145,7 +146,7 @@ async function main() {
   if (!process.argv.includes('--ui-only')) {
   console.log("=== 逐页：未捕获异常 / 未处理 Promise 拒绝 + 关键区块渲染 ===");
   for (const [path, label, sels] of PAGES) {
-    const errs = await visit(BASE + path, path === "find.html" ? 3600 : 1400);
+    const errs = await visit(BASE + path, path === "find.html" ? 3600 : path === "hero-performance.html" ? 2800 : 1400);
     const counts = await evaluate(
       "(" + JSON.stringify(sels) + ").map(function(s){ return document.querySelectorAll(s).length; })"
     );
@@ -575,10 +576,14 @@ async function main() {
       check(w + "px " + cp + " 无异常", ec.length === 0, ec.slice(0, 2).join(" | "));
       const cOver = await evaluate(`(function(){
         var de = document.documentElement;
-        var bad = ["radar","legend","cmpTable"].filter(function(id){
+        var bad = ["radar","legend"].filter(function(id){
           var el = document.getElementById(id);
           return el && el.getBoundingClientRect().right > window.innerWidth + 1;
         }).join(',');
+        // 对照表在窄屏是「面板内横向滚动」：表格本身有 min-width，
+        // 越界要看承载它的 .cmp-table，而不是 #cmpTable 的原始矩形。
+        var wrap = document.querySelector('.cmp-table');
+        if (wrap && wrap.getBoundingClientRect().right > window.innerWidth + 1) bad += ',cmpTable';
         var fab = document.querySelector('.filterbar .share-fab');
         if (fab && fab.getBoundingClientRect().right > window.innerWidth + 1) bad += ',share';
         return { over: de.scrollWidth - window.innerWidth, bad: bad,
@@ -588,6 +593,21 @@ async function main() {
       check(w + "px " + cp + " 雷达在视口内", cOver && cOver.svg >= 1 && !cOver.bad,
         cOver && (cOver.svg + " 个 / 越界 " + (cOver.bad || "—")));
     }
+    // 英雄表现：宽表在面板内滚动，承载容器不能把页面撑出视口
+    const ehp = await visit(BASE + "hero-performance.html", 2800);
+    check(w + "px 英雄表现无异常", ehp.length === 0, ehp.slice(0, 2).join(" | "));
+    const hpOver = await evaluate(`(function(){
+      var de = document.documentElement;
+      var bad = ['.hp-table-wrap','.hp-evidence-wrap','.hp-grid'].filter(function(sel){
+        var el = document.querySelector(sel);
+        return el && el.getBoundingClientRect().right > window.innerWidth + 1;
+      }).join(',');
+      return { over: de.scrollWidth - window.innerWidth, bad: bad,
+               rows: document.querySelectorAll('#hpHeroTable tbody tr').length };
+    })()`);
+    check(w + "px 英雄表现无横向溢出", hpOver && hpOver.over <= 1, hpOver && hpOver.over + "px");
+    check(w + "px 英雄表现表格/证据容器在视口内", hpOver && hpOver.rows > 0 && !hpOver.bad,
+      hpOver && (hpOver.rows + " 行 / 越界 " + (hpOver.bad || "—")));
     // 阶段5 新页：翻盘研究所 / 英雄成长曲线在窄屏下也不能撑出横向溢出
     const e7 = await visit(BASE + "comeback.html", 1500);
     check(w + "px 翻盘研究所无异常", e7.length === 0, e7.slice(0, 2).join(" | "));
@@ -876,10 +896,11 @@ async function main() {
   await sleep(450);
   const twoSel = await evaluate(`(function(){
     return { cols: document.querySelectorAll('#cmpTable thead th').length,
+             mean: /范围均值/.test((document.querySelector('#cmpTable thead')||{}).textContent || ''),
              diff: /差（1−2）/.test((document.querySelector('#cmpTable thead')||{}).textContent || '') };
   })()`);
-  check("位置入口：选 2 个对象多一列差值", twoSel && twoSel.diff === true && twoSel.cols === 4,
-    twoSel && (twoSel.cols + " 列 / 差值 " + twoSel.diff));
+  check("位置入口：选 2 个对象多一列差值", twoSel && twoSel.diff === true && twoSel.mean === true && twoSel.cols === 5,
+    twoSel && (twoSel.cols + " 列 / 差值 " + twoSel.diff + " / 均值 " + twoSel.mean));
 
   // 趋势开关：英雄 / 战队有逐年数据，选手 / 位置没有
   await visit(BASE + "compare.html", 1400);
