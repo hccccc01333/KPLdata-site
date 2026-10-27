@@ -28,6 +28,7 @@ const PAGES = [
   ["players.html", "选手榜", ["#plBody tr, .player, .pl-card"]],
   ["player.html?id=一诺", "选手详情", ["#main .panel", ".sr-grid"]],
   ["hero-performance.html", "英雄表现", ["#hpPlayer option", "#hpHeroTable tbody tr", ".hp-bench", ".hp-evidence tr", "#siteHeader #siteNav"]],
+  ["team-bp.html", "战队 BP 风格", ["#tbpTeam option", "#tbpPicksTable tbody tr", ".tbp-state", "#tbpEvidenceTable tbody tr", "#siteHeader #siteNav"]],
   ["series.html", "系列赛研究", ["#boRows tr", "#decRows tr", "#revRows", "#eloRows tr"]],
   ["heroes.html", "英雄列表", ["#heroGrid > *, .hcard"]],
   ["hero.html?id=曹操", "英雄详情", ["#heroHead .page-hero, #heroHead .hd-top", "#main .panel", "#heroGrowthChart svg"]],
@@ -146,7 +147,7 @@ async function main() {
   if (!process.argv.includes('--ui-only')) {
   console.log("=== 逐页：未捕获异常 / 未处理 Promise 拒绝 + 关键区块渲染 ===");
   for (const [path, label, sels] of PAGES) {
-    const errs = await visit(BASE + path, path === "find.html" ? 3600 : path === "hero-performance.html" ? 2800 : 1400);
+    const errs = await visit(BASE + path, path === "find.html" ? 3600 : (path === "hero-performance.html" || path === "team-bp.html") ? 2800 : 1400);
     const counts = await evaluate(
       "(" + JSON.stringify(sels) + ").map(function(s){ return document.querySelectorAll(s).length; })"
     );
@@ -608,6 +609,22 @@ async function main() {
     check(w + "px 英雄表现无横向溢出", hpOver && hpOver.over <= 1, hpOver && hpOver.over + "px");
     check(w + "px 英雄表现表格/证据容器在视口内", hpOver && hpOver.rows > 0 && !hpOver.bad,
       hpOver && (hpOver.rows + " 行 / 越界 " + (hpOver.bad || "—")));
+    // 战队 BP：左右面板与两张宽表都只能在面板内滚动，不能撑出页面
+    const etb = await visit(BASE + "team-bp.html", 2800);
+    check(w + "px 战队 BP 无异常", etb.length === 0, etb.slice(0, 2).join(" | "));
+    const tbOver = await evaluate(`(function(){
+      var de = document.documentElement;
+      var bad = ['.tbp-grid','.tbp-table-wrap','.tbp-evidence-wrap','.tbp-two'].filter(function(sel){
+        var el = document.querySelector(sel);
+        return el && el.getBoundingClientRect().right > window.innerWidth + 1;
+      }).join(',');
+      return { over: de.scrollWidth - window.innerWidth, bad: bad,
+               rows: document.querySelectorAll('#tbpPicksTable tbody tr').length,
+               states: document.querySelectorAll('.tbp-state').length };
+    })()`);
+    check(w + "px 战队 BP 无横向溢出", tbOver && tbOver.over <= 1, tbOver && tbOver.over + "px");
+    check(w + "px 战队 BP 表格/状态容器在视口内", tbOver && tbOver.rows > 0 && tbOver.states >= 5 && !tbOver.bad,
+      tbOver && (tbOver.rows + " 行 / " + tbOver.states + " 状态 / 越界 " + (tbOver.bad || "—")));
     // 阶段5 新页：翻盘研究所 / 英雄成长曲线在窄屏下也不能撑出横向溢出
     const e7 = await visit(BASE + "comeback.html", 1500);
     check(w + "px 翻盘研究所无异常", e7.length === 0, e7.slice(0, 2).join(" | "));
