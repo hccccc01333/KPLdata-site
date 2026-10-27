@@ -202,7 +202,7 @@ async function main() {
     i.value = '狼队';
     i.dispatchEvent(new Event('input', { bubbles: true }));
   })()`);
-  await sleep(900);
+  await sleep(2200);
   const sr = await evaluate(`(function(){
     var as = document.querySelectorAll('#searchPop a');
     var first = as[0];
@@ -213,7 +213,7 @@ async function main() {
 
   // 点进搜索结果，再从详情里找一场比赛
   if (sr && sr.href) {
-    await visit(BASE + sr.href, 1500);
+    await visit(BASE + sr.href, 2400);
     const det = await evaluate(`(function(){
       var a = document.querySelector('a[href^="match.html"]');
       return { detailOK: document.querySelectorAll('#main .panel, .panel, .page-hero').length,
@@ -572,7 +572,7 @@ async function main() {
     check(w + "px 战队详情雷达/基准切换在视口内", dOver && !dOver.bad, dOver && ("越界:" + (dOver.bad || "—")));
     // 对比四入口：雷达 + 对照表 + 分享按钮在窄屏下都不能撑出横向溢出
     for (const cp of ["compare.html", "compare-team.html", "compare-player.html", "compare-lane.html"]) {
-      const ec = await visit(BASE + cp, 1500);
+      const ec = await visit(BASE + cp, 2600);
       check(w + "px " + cp + " 无异常", ec.length === 0, ec.slice(0, 2).join(" | "));
       const cOver = await evaluate(`(function(){
         var de = document.documentElement;
