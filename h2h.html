@@ -21,6 +21,7 @@
 <script src="assets/card-motion.js?v=1" type="module"></script>
 <style>
 :root{--h2h-a:#E8ECF5;--h2h-b:#6EAFFF}
+.page-hero p b{white-space:nowrap}
 .h2h-filter{align-items:flex-end}
 .h2h-filter .fld{min-width:150px}
 .h2h-filter .fld select{min-width:150px;max-width:100%}
@@ -35,10 +36,11 @@
 .h2h-score-top{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:20px;align-items:center}
 .h2h-team{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-width:0}
 .h2h-team.b{align-items:flex-end;text-align:right}
-.h2h-logo{width:58px;height:58px;flex:none;display:grid;place-items:center;overflow:hidden;
+.h2h-logo{position:relative;width:58px;height:58px;flex:none;display:grid;place-items:center;overflow:hidden;
           border:1px solid var(--line2);border-radius:50%;background:var(--card2)}
-.h2h-logo img{width:100%;height:100%;object-fit:contain;padding:6px}
-.h2h-logo>span{font-family:var(--mono);font-size:20px;font-weight:800;color:var(--ink2)}
+.h2h-logo img{position:relative;z-index:1;width:100%;height:100%;object-fit:contain;padding:6px;background:var(--card2)}
+.h2h-logo-fb{position:absolute;inset:0;display:grid;place-items:center;
+             font-family:var(--mono);font-size:20px;font-weight:800;color:var(--ink2)}
 .h2h-tname{font-size:19px;font-weight:800;line-height:1.25;color:var(--ink);max-width:100%;overflow-wrap:anywhere}
 .h2h-tsub{font-size:11.5px;color:var(--muted);letter-spacing:.02em}
 .h2h-mid{text-align:center;min-width:218px}
@@ -154,7 +156,7 @@
   .h2h-kpi:nth-child(3n){border-right:1px solid var(--line)}
   .h2h-kpi:nth-child(2n){border-right:none}
   .h2h-filter .fld{flex:1 1 118px;min-width:0}
-  .h2h-filter .fld select{min-width:0;width:100%}
+  .h2h-filter .fld select{min-width:0;width:100%;font-size:12.5px;padding:9px 8px}
   .h2h-swap{width:34px;height:34px}
   .h2h-filter-spacer{display:none}
   .h2h-rec{grid-template-columns:auto auto minmax(0,1fr);grid-template-areas:"d s g" "m m m";
@@ -317,12 +319,15 @@
   selYear.value = state.year;
   selStage.value = state.stage;
 
+  /* 首字兜底常驻下层：图片未加载 / 加载失败时不会出现空白灰圈 */
   function teamLogo(name, side) {
     var t = TEAM[name] || {};
-    var inner = t.icon
-      ? '<img src="' + K.esc(t.icon) + '" alt="" loading="lazy">'
-      : '<span aria-hidden="true">' + K.esc(String(name || "?").slice(0, 1)) + "</span>";
-    return '<span class="h2h-logo ' + side + '">' + inner + "</span>";
+    var fb = '<span class="h2h-logo-fb" aria-hidden="true">' +
+      K.esc(String(name || "?").slice(0, 1)) + "</span>";
+    var img = t.icon
+      ? '<img src="' + K.esc(t.icon) + '" alt="" onerror="this.remove()">'
+      : "";
+    return '<span class="h2h-logo ' + side + '">' + fb + img + "</span>";
   }
 
   /* 同一对阵下按时间倒序，年份筛选前保留全量，供走势图使用 */
