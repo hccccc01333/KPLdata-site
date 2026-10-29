@@ -227,13 +227,19 @@ def bp_stats(ev: list[list], base: dict, H: int) -> dict:
     }
 
 
-def cosine(a: list[int], b: list[int]) -> float | None:
-    dot = sum(x * y for x, y in zip(a, b))
-    na = math.sqrt(sum(x * x for x in a))
-    nb = math.sqrt(sum(x * x for x in b))
-    if not na or not nb:
+def top_set(vec: list[int], k: int = 10) -> set[int]:
+    """取使用次数最高的前 k 个英雄；全 0 时返回空集。"""
+    idx = [i for i, v in enumerate(vec) if v > 0]
+    return set(sorted(idx, key=lambda i: (-vec[i], i))[:k])
+
+
+def jaccard(a: set[int], b: set[int]) -> float | None:
+    """Jaccard 相似度，0–1；空集返回 None。"""
+    if not a or not b:
         return None
-    return dot / (na * nb)
+    inter = len(a & b)
+    union = len(a | b)
+    return inter / union if union else None
 
 
 def main() -> None:
@@ -353,15 +359,16 @@ def main() -> None:
             if oid == cid:
                 continue
             o = coaches[oid]
-            ps = cosine(c["pickVec"], o["pickVec"])
-            bs = cosine(c["banVec"], o["banVec"])
+            ps = jaccard(top_set(c["pickVec"]), top_set(o["pickVec"]))
+            bs = jaccard(top_set(c["banVec"]), top_set(o["banVec"]))
             if ps is None or bs is None:
                 continue
             sims.append({
                 "id": oid, "name": o["name"], "teams": o["teams"], "bpGames": o["bpGames"],
                 "series": o["series"], "seriesWr": o["seriesWr"],
-                "pickSim": round(ps * 100, 1), "banSim": round(bs * 100, 1),
-                "similarity": round((0.6 * ps + 0.4 * bs) * 100, 1),
+                "pickSim": round(ps * 100, 1) if ps is not None else None,
+                "banSim": round(bs * 100, 1) if bs is not None else None,
+                "similarity": round((0.5 * ps + 0.5 * bs) * 100, 1) if ps is not None and bs is not None else None,
             })
         c["similar"] = sorted(sims, key=lambda x: (-x["similarity"], -x["bpGames"]))[:6]
 
