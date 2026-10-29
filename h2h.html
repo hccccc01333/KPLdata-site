@@ -182,8 +182,9 @@
   <div class="wrap">
     <div class="ph-kicker mono">HEAD TO HEAD · 交手记录</div>
     <h1>战队交手记录</h1>
-    <p>任意两支战队的历史交锋全记录：大场比分、局分、逐年胜率与每一次对局详情（2019–2026）。
-      支持按<b>年份 / 赛段</b>筛选，点击走势图里的年份可快速下钻。</p>
+    <p>任意两支战队的历史交锋全记录：大场比分、局分、逐年胜率与每一次对局详情（2016–2026）。
+      支持按<b>年份 / 赛段</b>筛选，点击走势图里的年份可快速下钻。
+      2016–2018 为外部史料，标「史料」的记录可跳转原始赛果。</p>
   </div>
 </header>
 
@@ -232,6 +233,7 @@
 <script src="assets/data.js?v=85"></script>
 <script src="assets/seasons.js?v=85"></script>
 <script src="assets/schedule_all.js?v=85"></script>
+<script src="assets/h2h_early.js?v=20261029"></script>
 <script src="assets/common.js?v=20261027e"></script>
 <script>
 (function () {
@@ -239,7 +241,8 @@
   var K = KPL, $ = function (s) { return document.querySelector(s); };
   K.init();
 
-  var RAW = window.KPL_SCHEDULE_ALL || [];
+  /* 2019 起为站内全量赛程；2016–2018 走外部审核补集（无逐局详情，带原始来源链接） */
+  var RAW = (window.KPL_SCHEDULE_ALL || []).concat(window.KPL_H2H_EARLY || []);
   var SEASONS = window.KPL_SEASONS || { scopes: { all: { teams: [] } } };
   var STAGE_NAME = { regular: "常规赛", playoff: "季后赛 / 淘汰赛", final: "总决赛", other: "其他赛段" };
   var STAGE_KEYS = ["regular", "playoff", "final", "other"];
@@ -446,6 +449,10 @@
         var row = st.yMap[y];
         return { y: y, row: row, wr: row.n ? row.aw / row.n : 0, x: X(i), yy: Y(row.n ? row.aw / row.n : 0) };
       });
+      /* 年份越多单点越密，字号跟着收，避免 2016–2026 挤在一起 */
+      var step = (W - PL - PR) / Math.max(1, keys.length - 1);
+      var pctFont = Math.max(9, Math.min(12, step * 0.42)).toFixed(1);
+      var yFont = Math.max(9, Math.min(11.5, step * 0.38)).toFixed(1);
       var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="' +
         K.esc(a + " 对 " + b + " 的逐年大场胜率") + '">';
       s += '<defs><linearGradient id="h2hTrendFill" x1="0" y1="0" x2="0" y2="1">' +
@@ -477,9 +484,9 @@
         }
         s += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.yy.toFixed(1) + '" r="4" fill="' + CP.line +
           '" stroke="' + CP.dot + '" stroke-width="1.5"/>';
-        s += '<text x="' + p.x.toFixed(1) + '" y="' + (p.yy - 10).toFixed(1) + '" text-anchor="middle" font-size="12" fill="' +
+        s += '<text x="' + p.x.toFixed(1) + '" y="' + (p.yy - 10).toFixed(1) + '" text-anchor="middle" font-size="' + pctFont + '" fill="' +
           CP.onLine + '" font-family="Inter,monospace">' + Math.round(p.wr * 100) + "%</text>";
-        s += '<text x="' + p.x.toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11.5" fill="' +
+        s += '<text x="' + p.x.toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="' + yFont + '" fill="' +
           CP.label + '" font-family="Inter,monospace">' + p.y + "</text></g>";
       });
       s += "</svg>";
@@ -564,15 +571,26 @@
     var bo = r.bo ? "BO" + r.bo : "";
     var label = r.date + " " + (r.leagueName || "") + (stage ? " " + stage : "") +
       "，" + a + " " + s.sa + " 比 " + s.sb;
-    return '<a class="h2h-rec" href="match.html?id=' + encodeURIComponent(r.matchId) +
-      '" aria-label="' + K.esc(label) + '">' +
+    /* 站内详情缺失时（2016–2018 史料）改跳原始赛果页，避免点进空详情 */
+    var href = r.hasDetail
+      ? "match.html?id=" + encodeURIComponent(r.matchId)
+      : String(r.url || "");
+    var go = r.hasDetail ? "复盘" : (href ? "史料" : "—");
+    var arrow = r.hasDetail || !href ? "→" : "↗";
+    var open = href
+      ? '<a class="h2h-rec" href="' + K.esc(href) + '"' +
+        (r.hasDetail ? "" : ' target="_blank" rel="noopener"') +
+        ' aria-label="' + K.esc(label) + '">'
+      : '<div class="h2h-rec" aria-label="' + K.esc(label) + '">';
+    var close = href ? "</a>" : "</div>";
+    return open +
       '<span class="d mono">' + K.esc(r.date) + "</span>" +
       '<span class="meta"><b>' + K.esc(r.leagueName || "KPL") + "</b>" +
         (stage ? "<em>" + K.esc(stage) + "</em>" : "") +
         (bo ? '<i class="bo mono">' + bo + "</i>" : "") + "</span>" +
-      '<span class="score mono"><b class="' + (s.winA ? "w" : "") + '">' + s.sa + "</b><i>:</i><span class=\"" +
+      '<span class="score mono"><b class="' + (s.winA ? "w" : "") + '">' + s.sa + '</b><i>:</i><span class="' +
         (s.winB ? "w" : "") + '">' + s.sb + "</span></span>" +
-      '<span class="go">' + (r.hasDetail ? "复盘" : "详情") + " <i>→</i></span></a>";
+      '<span class="go">' + go + " <i>" + arrow + "</i></span>" + close;
   }
 
   function recordsHTML(ms, a, st, showAll) {
@@ -614,7 +632,8 @@
       : "请选择两支不同战队";
     $("#expBtn").disabled = !valid || !ms.length;
     $("#recNote").textContent = (valid && ms.length)
-      ? "比分按 A : B 排列 · 共 " + ms.length + " 场 · 点击进入复盘"
+      ? "比分按 A : B 排列 · 共 " + ms.length + " 场 · " +
+        (ms.some(function (r) { return !r.hasDetail && r.url; }) ? "含 2016–2018 史料" : "点击进入复盘")
       : "比分按 A : B 排列";
     $("#scoreboard").innerHTML = scoreboardHTML(valid, a, b, ms, allMs);
     $("#trend").innerHTML = valid
