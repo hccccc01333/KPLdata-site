@@ -217,7 +217,7 @@
     var box = $("#coachSimilar");
     if (!rows.length) {
       box.innerHTML = '<div class="empty-tip">样本不足，暂不生成相似教练。</div>' +
-        '<div class="block-note">相似度按「选用分布 + 禁用分布」的余弦相似度合成；只作风格描述，不代表水平高低。</div>';
+        '<div class="block-note">相似度按「前 10 常用英雄 + 前 10 常用禁用」的 Jaccard 重合度合成；只作风格描述，不代表水平高低。</div>';
       return;
     }
     box.innerHTML = '<div class="coach-similar-grid">' + rows.map(function (r) {
@@ -232,7 +232,7 @@
         '<div class="coach-similar-foot">BP 局 ' + K.fmtInt(r.bpGames) + " · 大场 " + K.fmtInt(r.series) + "</div>" +
       "</div>";
     }).join("") + "</div>" +
-      '<div class="block-note">相似度只描述 BP 风格接近，不代表水平高低；计算口径是选用分布 + 禁用分布的余弦相似度。</div>';
+      '<div class="block-note">相似度只描述 BP 风格接近，不代表水平高低；计算口径是前 10 常用英雄 + 前 10 常用禁用的 Jaccard 重合度。</div>';
   }
 
   function render() {
