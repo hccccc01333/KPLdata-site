@@ -50,7 +50,7 @@ python -m http.server 8000 --bind 127.0.0.1
 - 数据正确性（2026-10-21）：系列赛 / 战队 Elo 已按真实战队身份重算；选手深挖逐局胜负改用 `battle_winner_team`；资源指标 `kill_big_dragon_num` 已去重；`check_series_consistency.py` 作为发布门禁。
 - 英雄表现工作台（2026-10-27）：444 名至少 20 局的选手、11,138 局，逐系列赛查看选手 × 英雄，并给出同位置同英雄 P50/P75/P90 与比赛证据；2016–2018 外部历史尚未接入该页。
 - 战队 BP 风格（2026-10-27）：3,450 局完整 20 手 BP、53 支战队、10 个赛事；选择结构 / 禁用资源 / 五状态 / 组合 / 赛果分开展示；2019–2024 缺手记录不混入，BP 顺序暂不分析。
-- 教练档案（2026-10-27）：33 名教练、63 个队-赛季，覆盖 2025 春–2026 夏；大场 / 小局 / 完整 BP 分层，BP 指纹与来源置信度并列。任期来源为 Liquipedia 赛季名单（社区整理），9 个中途换帅 / 角色不明确的队-赛季不进入 BP 归属。
+- 教练档案（2026-10-27）：38 名教练、70 个队-赛季、74 段任期，覆盖 2025 春–2026 夏；任期按公告日期拆分中途换帅，大场 / 小局 / 完整 BP 分层，并给出相似教练。来源为 Liquipedia 赛季名单（社区整理），2 个队-赛季仍不进入 BP 归属。
 - 胜率沙盘已上线：221 局概率地形、同状态历史检索、What-if 与 V12 模型体检；数据由 `build_sandbox_data.py` 生成。
 - BP 赛事演播室已上线：真实比赛逐手选禁回放、双方最终阵容、系列赛前几局英雄使用，支持深链与三档响应式。
 - 仍在开发：V5 P2 其余项（今日观赛助手 / 本命英雄对局助手 / honors-v2 剩余项）。
@@ -66,7 +66,7 @@ python -m http.server 8000 --bind 127.0.0.1
 | 选手 | `players.html`、`player.html`（能力雷达 / 关键局 / 打法画像 / 搭档对位） |
 | 选手 × 英雄 | `hero-performance.html`（逐系列赛英雄表现 / 同位置同英雄基准 / 比赛证据） |
 | 英雄 | `heroes.html`、`hero.html`、`combos.html` |
-| 深度分析 | `bp.html`、`bp-studio.html`（真实比赛 BP 演播室）、`coach.html`（教练任期 / BP 指纹 / 来源置信度）、`sandbox.html`（这局谁更可能赢 / 历史对照 / 模型体检）、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`（含赛前预测挑战）、`find.html`（按终局条件找局）、`simulator.html`、`query.html` |
+| 深度分析 | `bp.html`、`bp-studio.html`（真实比赛 BP 演播室）、`coach.html`（教练任期 / BP 风格 / 相似教练 / 来源置信度）、`sandbox.html`（这局谁更可能赢 / 历史对照 / 模型体检）、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`（含赛前预测挑战）、`find.html`（按终局条件找局）、`simulator.html`、`query.html` |
 | 对比工具 | `compare.html`、`compare-team.html`、`compare-player.html`、`compare-lane.html` |
 | 说明 | `about.html`、`404.html` |
 
