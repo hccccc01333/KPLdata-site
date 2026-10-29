@@ -272,9 +272,10 @@
   /* 实时比分覆盖（每 60 秒） */
   function applyToday() {
     loadLiveScript(function (L) {
-      if (!L || !L.today) return;
+      if (!L) return;
       var at = document.getElementById("liveAt");
       if (at) at.textContent = String(L.updatedAt || "").slice(11, 19);
+      if (!L.today) return;
       L.today.forEach(function (t) {
         var row = document.querySelector('.mrow[data-mid="' + t.matchId + '"]');
         if (!row) return;
@@ -300,6 +301,15 @@
             chipWrap.innerHTML = '<span class="chip next">未开始</span>';
           }
         }
+        /* 首屏「今日焦点」卡也同步，不能只更新列表行 */
+        var focus = document.querySelector('.fh-tcard[data-mid="' + t.matchId + '"]');
+        if (focus && (t.st === 1 || t.st === 2)) {
+          var stEl = focus.querySelector(".st");
+          var fsEl = focus.querySelector(".sc");
+          if (stEl) stEl.innerHTML = t.st === 2 ? "已结束" :
+            '<span class="dot-live"></span> 直播中';
+          if (fsEl) fsEl.textContent = t.score1 + ":" + t.score2;
+        }
       });
     });
   }
@@ -324,7 +334,7 @@
       .sort(function (a, b) { return (b.date + b.time).localeCompare(a.date + a.time); }).slice(0, 3);
     box.innerHTML = rows.map(function (r) {
       var done = r.st === 2, isLive = r.st === 1;
-      return '<a class="fh-tcard" href="match.html?id=' + encodeURIComponent(r.matchId) + '">' +
+      return '<a class="fh-tcard" data-mid="' + K.esc(r.matchId) + '" href="match.html?id=' + encodeURIComponent(r.matchId) + '">' +
         '<span class="t mono">' + K.esc(today.length ? r.time : String(r.date).slice(5)) + "</span>" +
         '<span class="tm">' + K.esc(r.team1) + " vs " + K.esc(r.team2) + "</span>" +
         '<span class="sc mono">' + (done || isLive ? r.score1 + ":" + r.score2 : "—") + "</span>" +
