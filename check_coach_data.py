@@ -2,7 +2,7 @@
 """教练任期与 BP 指纹数据门禁。
 
 检查 assets/coach_data.js：
-  - 33 名教练 / 63 个队-赛季 / 4 个赛季 / 9 个未纳入队-赛季；
+  - 教练 / 队-赛季 / 任期 / 排除项数量与 coverage 一致；
   - 任期日期、来源、置信度、队-赛季唯一性；
   - 大场 / 小局 / 完整 BP 三层胜负可复算，BP 指纹与证据行合法；
   - 教练生涯汇总等于各任期之和，排除项不混入；
@@ -83,7 +83,9 @@ def main() -> None:
     a.check(bool(tenures), "tenures.empty", "tenures 为空")
     a.check(bool(coaches), "coaches.empty", "coaches 为空")
     a.check(data.get("sourceMode"), "source.mode", "缺少 sourceMode")
-    a.check(coverage.get("teamSeasons") == len(tenures), "coverage.teamSeasons", "coverage.teamSeasons 与 tenures 不一致")
+    a.check(coverage.get("teamSeasons") == len({(t.get("team"), t.get("league")) for t in tenures}),
+            "coverage.teamSeasons", "coverage.teamSeasons 与去重队-赛季不一致")
+    a.check(coverage.get("tenures") == len(tenures), "coverage.tenures", "coverage.tenures 与 tenures 不一致")
     a.check(coverage.get("coaches") == len(coaches), "coverage.coaches", "coverage.coaches 与 coaches 不一致")
     a.check(coverage.get("excludedTeamSeasons") == len(exclusions), "coverage.excluded", "排除数与 exclusions 不一致")
     a.check(coverage.get("bpSamples") == sum(t.get("bp", {}).get("games", 0) for t in tenures),
@@ -107,16 +109,20 @@ def main() -> None:
         a.check(isinstance(c.get("tenures"), list) and c["tenures"], "coach.tenures", f"{cid} 没有任期")
         a.check(isinstance(c.get("teams"), list) and c["teams"], "coach.teams", f"{cid} 没有战队")
 
+    for c in coaches:
+        for r in c.get("similar") or []:
+            a.check(r.get("id") in coach_by_id, "coach.similarId", f"{c['id']} 相似教练缺失：{r.get('id')}")
+            a.check(is_num(r.get("similarity")) and 0 <= r["similarity"] <= 100, "coach.similarity", f"{c['id']} 相似度越界")
+
     tenure_by_id = {}
-    team_seasons = set()
+    team_seasons = {}
     for t in tenures:
         tid = str(t.get("id") or "")
         a.check(bool(tid), "tenure.id", " tenure id 为空")
         a.check(tid not in tenure_by_id, "tenure.duplicate", f"任期重复：{tid}")
         tenure_by_id[tid] = t
         key = (t.get("team"), t.get("league"))
-        a.check(key not in team_seasons, "tenure.teamSeason", f"队-赛季重复：{key}")
-        team_seasons.add(key)
+        team_seasons.setdefault(key, []).append((t.get("validFrom"), t.get("validTo"), tid))
         cid = str(t.get("coachId") or "")
         a.check(cid in coach_by_id, "tenure.coach", f"{tid} 教练不在索引：{cid}")
         a.check(t.get("coach") == (coach_by_id.get(cid) or {}).get("name"), "tenure.coachName", f"{tid} 教练名不一致")
@@ -186,6 +192,12 @@ def main() -> None:
             total = sum((r.get(layer) or {}).get("games" if key in ("series", "games", "bpGames") else "wins", 0) for r in rows) if key in ("series", "games", "bpGames") else sum((r.get(layer) or {}).get("wins", 0) for r in rows)
             a.check(total == c.get(key, 0), "coach.sum", f"{c['id']}.{key} {c.get(key)} != {total}")
         a.check(sorted(set(r.get("team") for r in rows)) == sorted(set(c.get("teams") or [])), "coach.teams", f"{c['id']} 战队列表不一致")
+
+    for key, spans in team_seasons.items():
+        spans = sorted(spans)
+        for (s1, e1, id1), (s2, e2, id2) in zip(spans, spans[1:]):
+            if e1 and s2 and e1 >= s2:
+                a.warn("tenure.overlap", f"{key} 任期区间重叠：{id1} / {id2}")
 
     for r in exclusions:
         a.check(bool(r.get("team")) and bool(r.get("league")), "exclusion.id", "排除项缺少队/赛事")

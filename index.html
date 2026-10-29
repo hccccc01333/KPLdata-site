@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>峡谷有数 · KPL Insight · KPL 数据分析与比赛复盘项目</title>
-<meta name="description" content="峡谷有数 KPL Insight：源码公开的 KPL 数据分析项目，提供赛事查询、选手对比、英雄 BP 与比赛复盘。体验 3D 数据界面，前往 GitHub 查看源码、参与贡献。">
+<meta name="description" content="峡谷有数：源码公开的 KPL 赛事数据分析与复盘工具。先在线体验，再自行部署、修改和扩展，做出适合自己的 KPL 数据工具，限非商业使用。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css?v=85">
-<link rel="stylesheet" href="assets/pages.css?v=20261027e">
+<link rel="stylesheet" href="assets/pages.css?v=20261027f">
 <link rel="stylesheet" href="assets/v55.css?v=87">
 <style>
 /* 我的 KPL：仅在存在收藏时出现，无收藏整块隐藏（不留空壳） */
@@ -23,11 +23,16 @@
 .myk-line b.w{color:var(--teal)}
 .myk-line b.l{color:var(--red)}
 .myk-line span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 采集健康条：仅在数据异常时出现，正常时不占位、不弹窗 */
+#kplDataBanner{position:sticky;top:0;z-index:9999;display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:13px;line-height:1.5;color:#fff;background:#b42318;box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#kplDataBanner.kdb-amber{background:#b54708}
+#kplDataBanner b{font-weight:700;flex:none}
+#kplDataBanner .kdb-age{opacity:.82;font-size:12px;flex:none}
 </style>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="峡谷有数">
 <meta property="og:title" content="峡谷有数 · KPL Insight · KPL 数据分析与比赛复盘项目">
-<meta property="og:description" content="源码公开的 KPL 数据分析与比赛复盘项目。赛事查询、选手对比、英雄 BP，欢迎体验与参与贡献。">
+<meta property="og:description" content="先体验，再自己部署和修改，做出适合自己的 KPL 数据工具。源码公开，限非商业使用。">
 <meta property="og:image" content="https://hccccc01333.github.io/KPLdata-site/assets/shots/insight-current.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="assets/arena.css?v=2">
@@ -44,14 +49,14 @@
   <div class="world-copy">
     <p class="world-eyebrow">KPL INSIGHT &nbsp; / &nbsp; DATA MEETS THE GAME</p>
     <h1 class="world-title" id="worldTitle">胜负之间，<span>看见每一道轨迹。</span></h1>
-    <p class="world-deck">从第一手 BP，到最后一座水晶。<br>用数据读懂赛场，也让每一个想法有源码可循。</p>
+    <p class="world-deck">从这套源码出发，做出自己的 KPL 数据工具。<br>先体验，再自行部署、修改和扩展，限非商业使用。</p>
     <div class="world-actions">
       <a class="world-link" href="schedule.html">查看赛程 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
       <a class="world-link secondary" href="https://github.com/hccccc01333/kpl-insight" target="_blank" rel="noopener">GitHub · Star <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></a>
     </div>
   </div>
   <div class="world-hero-bottom">
-    <div class="world-identity"><b>THE GAME IS ALIVE.</b>峡谷有数 · 源码公开的独立赛事数据项目</div>
+    <div class="world-identity"><b>THE GAME IS ALIVE.</b>峡谷有数 · 可自行部署与扩展的 KPL 数据工具</div>
     <a class="world-scroll" href="#arenaData">向下探索 <i aria-hidden="true"></i></a>
     <div class="world-scenes" aria-label="探索赛事内容">
       <button type="button" data-target="#focusBlock"><b>01 / COMPETE</b>赛场焦点</button>
@@ -68,7 +73,7 @@
   <div class="arena-data-intro"><b>01 &nbsp; / &nbsp; THE COMPETITION</b><span>聚焦赛场 · 赛程、赛果与关键时刻</span></div>
 
   <section class="project-strip" aria-label="参与峡谷有数项目">
-    <div><span class="project-label mono">BUILD WITH THE COMMUNITY</span><h2>从看比赛，到一起做项目。</h2><p>KPL 数据采集、分析与复盘工具，源码公开，限非商业使用。觉得有用，欢迎 Star；有想法，欢迎提 Issue 或贡献 PR。</p></div>
+    <div><span class="project-label mono">BUILD WITH THE COMMUNITY</span><h2>基于已有源码，做出自己的工具。</h2><p>在线体验赛程查询、选手与英雄表现、BP 和比赛复盘，再下载或 Fork 源码，按自己的需求部署、修改和扩展。可以独立维护自己的非商业版本，也欢迎分享改进。网站主要展示归档数据与已有历史预测；实时采集与预测需本地配置程序、数据和有效模型。具体使用、修改与分发条件以仓库许可为准。</p></div>
     <div class="project-actions"><a class="world-link" href="https://github.com/hccccc01333/kpl-insight" target="_blank" rel="noopener">查看源码 · Star ↗</a><a href="https://github.com/hccccc01333/kpl-insight/issues" target="_blank" rel="noopener">反馈与交流 ↗</a></div>
   </section>
 
@@ -213,8 +218,8 @@
 <script src="assets/schedule_all.js?v=85"></script>
 <script src="assets/coverage.js?v=85"></script>
 <script src="assets/replay/index.js?v=85"></script>
-<script src="assets/updates.js?v=20261027e"></script>
-<script src="assets/common.js?v=20261027e"></script>
+<script src="assets/updates.js?v=20261027f"></script>
+<script src="assets/common.js?v=20261027f"></script>
 <script src="assets/share.js?v=85"></script>
 <script>
 (function () {
@@ -246,12 +251,37 @@
   })();
 
   /* ---------- 实时比分与状态覆盖（live.js，每 30 秒） ---------- */
+  function renderDataBanner(h) {
+    var el = document.getElementById("kplDataBanner");
+    if (!h || h.status === "ok" || h.status === "idle") {
+      if (el) el.remove();
+      return;
+    }
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "kplDataBanner";
+      el.setAttribute("role", "status");
+      document.body.insertBefore(el, document.body.firstChild);
+    }
+    el.className = h.status === "offline" ? "" : "kdb-amber";
+    var esc = function (s) {
+      return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+      });
+    };
+    var age = (typeof h.snapshotAgeSec === "number") ? Math.round(h.snapshotAgeSec) : null;
+    el.innerHTML = "<b>" + (h.status === "offline" ? "采集中断" : "数据延迟") + "</b>" +
+      "<span>" + esc(h.message || "实时数据暂时不可用") + "</span>" +
+      (age !== null ? '<span class="kdb-age">· 最近快照 ' + age + " 秒前</span>" : "");
+  }
+
   function applyTodayLive() {
     var sc = document.createElement("script");
     sc.src = "assets/live.js?ts=" + Date.now();
     sc.onload = function () {
       sc.remove();
       var L = window.KPL_LIVE || {};
+      renderDataBanner(L.health);
       (L.today || []).forEach(function (t) {
         /* 最新战报列表的比分覆盖 */
         var rr = document.querySelector('#recentList [data-mid="' + t.matchId + '"] .score');

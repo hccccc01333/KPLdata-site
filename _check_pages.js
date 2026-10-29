@@ -264,7 +264,7 @@ async function main() {
   check("复盘首屏有结论与三个转折", story && story.has && story.lead.length > 40 && story.moments === 3,
     story && (story.moments + " 个转折 · 结论 " + story.lead.slice(0, 36)));
   check("复盘详细面板默认折叠", story && story.detailHidden === true, story && story.expand);
-  check("复盘覆盖数字不回避（221 / 全历史）", story && /221\s*\/\s*11,138/.test(story.cov), story && story.cov.slice(0, 80));
+  check("复盘覆盖数字不回避（全历史）", story && /\d+\s*\/\s*11,1\d\d/.test(story.cov), story && story.cov.slice(0, 80));
   check("复盘结论区分官方 / 代理 / 估算", story && story.labels >= 3, story && story.labels);
   check("复盘提供历史类似局面入口", story && /sandbox\.html\?battle=/.test(story.analog), story && story.analog);
   const expanded = await evaluate(`(function(){
@@ -687,8 +687,10 @@ async function main() {
              honorsIdx: hrefs.indexOf('honors.html'),
              on: nav ? nav.querySelectorAll('.ngrp.on').length : -1 };
   })()`);
-  check("顶部导航为六组入口", navSix && navSix.n === 6, navSix && navSix.n + " · " + navSix.hrefs.join("/"));
-  check("六入口含荣誉中心", navSix && navSix.honorsIdx >= 0, navSix && navSix.hrefs.join("/"));
+  check("顶部导航为八组入口", navSix && navSix.n === 8, navSix && navSix.n + " · " + navSix.hrefs.join("/"));
+  check("导航含教练与对比分组", navSix && navSix.hrefs.indexOf("coach.html") >= 0 && navSix.hrefs.indexOf("compare.html") >= 0,
+    navSix && navSix.hrefs.join("/"));
+  check("导航含荣誉中心", navSix && navSix.honorsIdx >= 0, navSix && navSix.hrefs.join("/"));
   check("首页只高亮一个分组", navSix && navSix.on === 1, navSix && navSix.on);
   check("分组含下拉子项", navSix && navSix.sub >= 8, navSix && navSix.sub);
 
@@ -895,7 +897,7 @@ async function main() {
     check(label + "对比入口维度与对象类型匹配", c && mustDims.every(function (d) { return c.dims.indexOf(d) >= 0; }),
       c && c.dims.join(","));
     check(label + "对比入口默认答案进 URL（可分享）", c && /items=/.test(c.url || ""), c && c.url);
-    check(label + "对比入口导航高亮分析组", c && c.on === 1 && /bp\.html/.test(c.onHref || ""),
+    check(label + "对比入口导航高亮对比组", c && c.on === 1 && /compare\.html/.test(c.onHref || ""),
       c && (c.on + " / " + c.onHref));
   }
 
