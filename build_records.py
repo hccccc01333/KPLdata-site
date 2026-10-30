@@ -2,7 +2,8 @@
 """赛事纪录（最系列）：对局 / 选手 / 战队 / 系列赛的极值榜 → assets/records.js
 
 范围：全部赛事 + 每年 + 比赛数 ≥30 的赛事
-指标：13 类，每类保留最高 6 条与最低 6 条
+指标：对局、选手、战队、系列赛与生涯；每类保留最高与最低各 4 条
+含经质量审核的 2016–2018 补充集；缺失字段不参与对应指标
 运行：python build_records.py
 """
 from __future__ import annotations
@@ -14,6 +15,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from kpl_series import battle_winner_team, summarize_match, team_name_of
+from records_history import load_history
 
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
@@ -44,11 +46,12 @@ def secs(dur) -> float:
 
 
 def main() -> None:
-    files = sorted(HIST.glob("*/matches/*.json"))
+    early, early_details, early_leagues, provenance, excluded = load_history(PROJ / "data/external/history_2016_2018")
+    files = sorted(HIST.glob("*/matches/*.json")) + early
     league_matches = Counter()
     for f in files:
         try:
-            o = json.loads(f.read_text(encoding="utf-8"))
+            o = f if isinstance(f, dict) else json.loads(f.read_text(encoding="utf-8"))
         except Exception:
             continue
         lid = str((o.get("match") or {}).get("league_id") or "")
@@ -61,12 +64,16 @@ def main() -> None:
     team_series = defaultdict(list)          # team -> [(date, won, mid)]
     team_games_n = Counter()
     team_wins_n = Counter()
-    player_total = defaultdict(lambda: {"g": 0, "mvp": 0, "k": 0, "a": 0, "team": "", "last": ""})
+    player_total = defaultdict(lambda: {"g": 0, "mvp": 0, "k": 0, "a": 0, "team": "", "last": "", "mvp_known": 0})
     league_team = defaultdict(lambda: defaultdict(lambda: {"g": 0, "w": 0}))
     league_player = defaultdict(lambda: defaultdict(lambda: {"g": 0, "mvp": 0, "team": ""}))
     league_year = defaultdict(Counter)
 
+    counts = defaultdict(lambda: {"matches": 0, "battles": 0})
+
     def push(scope_ids, metric, row):
+        if row.get("mid") in provenance:
+            row = dict(row, **provenance[row["mid"]])
         for sid in scope_ids:
             cell = scopes[sid][metric]
             cell["max"].append(row)
@@ -79,13 +86,13 @@ def main() -> None:
     games = 0
     for f in files:
         try:
-            o = json.loads(f.read_text(encoding="utf-8"))
+            o = f if isinstance(f, dict) else json.loads(f.read_text(encoding="utf-8"))
         except Exception:
             continue
         m = o.get("match") or {}
         # 统一走 kpl_series：按 battle_id 去重、过滤串场小局，并按真实逐局胜方结算。
         # 历史数据存在不同小局共用 battle_seq 的情况，不能再按 seq 去重。
-        res = summarize_match(o, fallback_id=f.stem)
+        res = summarize_match(o, fallback_id="" if isinstance(f, dict) else f.stem)
         if res is None:
             continue
         bs = list(res.battles)
@@ -100,6 +107,10 @@ def main() -> None:
         scope_ids = ["all", year]
         if lid in good_leagues:
             scope_ids.append(lid)
+
+        for sid in scope_ids:
+            counts[sid]["matches"] += 1
+            counts[sid]["battles"] += len(bs)
 
         bo = int(m.get("bo") or 0)
         need = bo // 2 + 1 if bo > 0 else 0
@@ -198,6 +209,8 @@ def main() -> None:
                 "opp": bt2 if k_camp2 == 1 else bt1,
                 "t1": bt1, "t2": bt2, "g": seq,
             })
+            if b.get("history_team_gold"):
+                gold = {i: num(b["history_team_gold"][i - 1]) for i in (1, 2)}
             gold_ok = gold[1] >= 20000 and gold[2] >= 20000
             if gold_ok:
                 g_camp2 = 1 if gold[1] >= gold[2] else 2
@@ -240,7 +253,8 @@ def main() -> None:
                 push(scope_ids, "p_ka", dict(base, v=k + a))
                 if 2000 <= g <= 60000:
                     push(scope_ids, "p_gold", dict(base, v=int(g)))
-                push(scope_ids, "p_dmg_abs", dict(base, v=int(hurt)))
+                if p.get("hurt_total") not in (None, ""):
+                    push(scope_ids, "p_dmg_abs", dict(base, v=int(hurt)))
                 dv = p.get("hurt_total_rate")
                 if dv not in (None, ""):
                     push(scope_ids, "p_dmg", dict(base, v=round(num(dv) * 100, 1)))
@@ -264,12 +278,13 @@ def main() -> None:
                 else:
                     push(scope_ids, "p_lucky_win", dict(base, v=d_))
                 if d_ == 0:
-                    push(scope_ids, "p_perfect", dict(base, v=k, d=0))
+                    push(scope_ids, "p_perfect", dict(base, v=k))
                 # 生涯 / 赛季累加
                 pt = player_total[name]
                 pt["g"] += 1
                 pt["k"] += k
                 pt["a"] += a
+                pt["mvp_known"] += 1 if p.get("is_mvp") not in (None, "") else 0
                 pt["mvp"] += 1 if str(p.get("is_mvp")) in ("1", "True", "true") else 0
                 if date >= pt["last"]:
                     pt["last"] = date
@@ -322,7 +337,8 @@ def main() -> None:
         if pt["g"] < 30:
             continue
         base = {"p": name, "team": pt["team"], "d": pt["last"], "g": pt["g"]}
-        push(["all"], "player_mvp", dict(base, v=pt["mvp"]))
+        if pt["mvp_known"]:
+            push(["all"], "player_mvp", dict(base, v=pt["mvp"], g=pt["mvp_known"]))
         push(["all"], "player_games", dict(base, v=pt["g"]))
         push(["all"], "player_kills", dict(base, v=pt["k"]))
         push(["all"], "player_assists", dict(base, v=pt["a"]))
@@ -340,6 +356,8 @@ def main() -> None:
             for sid in ("all", year, lid):
                 push([sid], "season_team_wr", dict(row))
         for name, st in league_player[lid].items():
+            if lid.startswith("history_"):
+                continue
             if st["g"] < 20:
                 continue
             row = {"v": st["mvp"], "p": name, "team": st["team"],
@@ -367,11 +385,18 @@ def main() -> None:
     data = {
         "generatedAt": datetime.now(CN).strftime("%Y-%m-%d %H:%M"),
         "games": games,
+        "coverage": {"earlyMatches": len(early), "earlyGames": len(early_details),
+                     "excluded": excluded, "indexedMatches": len(early) + len(excluded),
+                     "expectedMatches": 587},
+        "scopeCounts": dict(counts),
+        "earlyLeagues": early_leagues,
         "scopes": out,
     }
     path = SITE / "assets" / "records.js"
     path.write_text("KPL_RECORDS = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n",
                     encoding="utf-8")
+    (SITE / "assets/records-history-games.json").write_text(
+        json.dumps(early_details, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"records.js: {path.stat().st_size/1024:.0f} KB | scopes {len(out)} | games {games}")
 
 
