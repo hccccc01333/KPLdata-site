@@ -1,5 +1,5 @@
 window.SITE_DATA = {
- "generatedAt": "2026-10-30 11:50",
+ "generatedAt": "2026-10-30 13:05",
  "season": "2026 年度总决赛",
  "stats": {
   "matches": 173,
@@ -4263,7 +4263,7 @@ window.SITE_DATA = {
      "td": 0.0,
      "rd": 1.0
     },
-    "prob_mean": 0.6405324980251137
+    "prob_mean": 0.6405324980251138
    }
   ],
   "cards": [
