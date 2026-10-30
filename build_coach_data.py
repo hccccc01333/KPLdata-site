@@ -256,6 +256,14 @@ def main() -> None:
         bp_shards.update(load_js(f, "KPL_TEAM_BP_SHARD"))
     matches = match_rows()
 
+    # 同一 coach_id 可能因为来源页面大小写 / 空格不同而出现多个展示名；
+    # 这里统一取出现次数最多的名字，避免同一人被拆成两条教练档案。
+    name_votes = {}
+    for row in tenures:
+        cid = str(row.get("coach_id") or str(row.get("coach_name") or "").lower().replace(" ", ""))
+        name_votes.setdefault(cid, Counter())[str(row.get("coach_name") or "").strip()] += 1
+    canonical_name = {cid: votes.most_common(1)[0][0] for cid, votes in name_votes.items()}
+
     out_rows = []
     problems = []
     bp_game_keys = set()
@@ -277,13 +285,14 @@ def main() -> None:
         shard = bp_shards.get(team) or {}
         ev_all = [r for r in (shard.get("evidence") or []) if str(r[2]) == lid and in_range(r[0], start, end)]
         if not ev_all:
-            problems.append(f"{team}/{lid}: 任期内没有完整 BP 证据")
-            continue
+            # 2024 春 / 夏没有完整 20 手 BP，但仍保留任期与大场 / 小局赛果。
+            pass
         base = baselines.get(lid) or baselines.get("all") or {}
         st = series_stats(matches, lid, team, start, end)
         bp = bp_stats(ev_all, base, H)
-        coach = str(row.get("coach_name") or "")
-        cid = str(row.get("coach_id") or coach.lower().replace(" ", ""))
+        raw_name = str(row.get("coach_name") or "")
+        cid = str(row.get("coach_id") or raw_name.lower().replace(" ", ""))
+        coach = canonical_name.get(cid) or raw_name
         vec = coach_vec.setdefault(cid, {"pick": [0] * H, "ban": [0] * H, "bpGames": 0})
         for r in ev_all:
             for i in r[7] or []:

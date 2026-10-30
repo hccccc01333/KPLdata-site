@@ -551,6 +551,7 @@ window.KPL_REPLAY = (function () {
       // 分享深链直接指向某一分钟时展开技术面板；普通进入先看结论与三个转折。
       var detailOpen = opts.initialMinute != null && !isNaN(Number(opts.initialMinute));
       var layerMode = "team";   // team = 队伍总量（默认答案）；lane = 同位置对位
+      var detailTab = "timeline";
       // 支持从链接直接回到某一分钟（?g=3&m=12）
       if (opts.initialMinute != null && !isNaN(Number(opts.initialMinute))) {
         var targetM = Number(opts.initialMinute);
@@ -572,7 +573,26 @@ window.KPL_REPLAY = (function () {
         if (detail) detail.hidden = !detailOpen;
         if (btn) {
           btn.setAttribute("aria-expanded", detailOpen ? "true" : "false");
-          btn.textContent = detailOpen ? "收起详细面板 ↑" : "展开完整时间轴与数据面板 ↓";
+          btn.textContent = detailOpen ? "收起详细分析 ↑" : "展开详细分析 ↓";
+        }
+      }
+
+      function applyDetailTab() {
+        var tabs = document.querySelectorAll("#rpTabs button");
+        Array.prototype.forEach.call(tabs, function (b) {
+          b.classList.toggle("on", b.getAttribute("data-tab") === detailTab);
+        });
+        ["timeline", "resource", "turn"].forEach(function (k) {
+          var el = document.getElementById("rpPane-" + k);
+          if (el) el.hidden = k !== detailTab;
+        });
+        var note = document.getElementById("rpTabNote");
+        if (note) {
+          note.textContent = detailTab === "timeline"
+            ? "时间轴：胜率曲线 + 分层经济"
+            : detailTab === "resource"
+              ? "资源与证据：中立资源、击杀推塔、同段事件"
+              : "转折与事件：模型变点和关键事件";
         }
       }
 
@@ -596,17 +616,27 @@ window.KPL_REPLAY = (function () {
           (b.src === "replay"
             ? '<div class="rp-warn">本局没有直播期预测记录，曲线是赛后用当前模型重放的结果，只作参考；复盘结论请以经济 / 资源等客观指标为主。</div>'
             : "") +
-          '<div class="rp-chart" id="rpChart"></div>' +
-          '<div class="rp-tl"><input type="range" min="0" max="' + (b.frames.length - 1) + '" step="1" value="' + frameIdx + '" id="rpRange">' +
-          '<div class="rp-tl-meta mono"><span id="rpTime"></span>' +
-          "<span>拖动查看该时刻的经济、资源与选手表现</span></div></div>" +
-          '<div class="rp-layer seg" id="rpLayer">' +
-          '<button type="button" data-layer="team"' + (layerMode === "team" ? ' class="on"' : "") + ">队伍总量</button>" +
-          '<button type="button" data-layer="lane"' + (layerMode === "lane" ? ' class="on"' : "") + ">分路对位</button></div>" +
-          '<div class="rp-grid" id="rpGrid"></div>' +
-          '<div class="rp-turn" id="rpTurn"></div>' +
-          '<div class="rp-evs"><div class="rp-pt">关键事件 <em class="mono">点击跳到该分钟</em></div>' +
-          '<div class="rp-events" id="rpEvents"></div></div>' +
+          '<div class="rp-tabs2"><div class="seg" id="rpTabs">' +
+            '<button type="button" data-tab="timeline" class="on">时间轴</button>' +
+            '<button type="button" data-tab="resource">资源与证据</button>' +
+            '<button type="button" data-tab="turn">转折与事件</button>' +
+          '</div><span class="rp-tab-note mono" id="rpTabNote"></span></div>' +
+          '<div id="rpPane-timeline">' +
+            '<div class="rp-chart" id="rpChart"></div>' +
+            '<div class="rp-tl"><input type="range" min="0" max="' + (b.frames.length - 1) + '" step="1" value="' + frameIdx + '" id="rpRange">' +
+            '<div class="rp-tl-meta mono"><span id="rpTime"></span>' +
+            "<span>拖动查看该时刻的经济、资源与选手表现</span></div></div>" +
+            '<div class="rp-layer seg" id="rpLayer">' +
+              '<button type="button" data-layer="team"' + (layerMode === "team" ? ' class="on"' : "") + ">队伍总量</button>" +
+              '<button type="button" data-layer="lane"' + (layerMode === "lane" ? ' class="on"' : "") + ">分路对位</button></div>" +
+            '<div class="rp-grid" id="rpGridGold"></div>' +
+          '</div>' +
+          '<div id="rpPane-resource" hidden>' +
+            '<div class="rp-grid" id="rpGridData"></div>' +
+            '<div class="rp-evs"><div class="rp-pt">关键事件 <em class="mono">点击跳到该分钟</em></div>' +
+            '<div class="rp-events" id="rpEvents"></div></div>' +
+          '</div>' +
+          '<div id="rpPane-turn" hidden><div class="rp-turn" id="rpTurn"></div></div>' +
           "</div>" +
           "</div>";
 
@@ -620,6 +650,7 @@ window.KPL_REPLAY = (function () {
             : '<div class="empty-tip">该局没有结构性事件记录</div>';
         }
         applyDetail();
+        applyDetailTab();
         bind();
         paint();
       }
@@ -633,11 +664,11 @@ window.KPL_REPLAY = (function () {
         var chart = document.getElementById("rpChart");
         if (chart) chart.innerHTML = curveSVG(b.frames, b.t1, b.t2, frameIdx);
 
-        var grid = document.getElementById("rpGrid");
-        if (grid) {
-          grid.innerHTML = goldPanel(b, f, prev, layerMode) + resourcePanel(b, f, prev) +
-            evidencePanel(b, f, prev, b.frames, frameIdx);
-        }
+        var gold = document.getElementById("rpGridGold");
+        if (gold) gold.innerHTML = goldPanel(b, f, prev, layerMode);
+
+        var data = document.getElementById("rpGridData");
+        if (data) data.innerHTML = resourcePanel(b, f, prev) + evidencePanel(b, f, prev, b.frames, frameIdx);
 
         var turn = document.getElementById("rpTurn");
         if (turn) turn.innerHTML = tpPanel(b);
@@ -735,6 +766,14 @@ window.KPL_REPLAY = (function () {
             setFrame(best);
           });
         });
+        var tabBox = document.getElementById("rpTabs");
+        if (tabBox) {
+          tabBox.addEventListener("click", function (e) {
+            var btn = e.target.closest("button"); if (!btn) return;
+            detailTab = btn.getAttribute("data-tab") || "timeline";
+            applyDetailTab();
+          });
+        }
         var layerBox = document.getElementById("rpLayer");
         if (layerBox) {
           layerBox.addEventListener("click", function (e) {

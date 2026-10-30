@@ -1660,3 +1660,45 @@ select:disabled{opacity:.55 !important;cursor:not-allowed}
 .coach-similar-foot{margin-top:9px;font-size:10px;color:var(--muted)}
 @media(max-width:1000px){.coach-similar-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.coach-similar-grid{grid-template-columns:1fr}}
+
+/* V6.4 · 曲线 tooltip / 分路小图 */
+.live-chart{position:relative}
+.lc-tip{position:absolute;z-index:4;min-width:132px;padding:7px 9px;border-radius:8px;border:1px solid var(--line2);
+  background:var(--card);color:var(--ink);font-size:11px;line-height:1.45;pointer-events:none;opacity:0;transition:opacity .12s}
+.lc-tip b{font-family:var(--mono)}
+.lc-tip div{display:flex;align-items:center;gap:6px;white-space:nowrap;margin-top:3px}
+.lc-tip i{width:8px;height:8px;border-radius:50%;flex:none}
+.rp-sm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.rp-sm{border:1px solid var(--line);border-radius:12px;background:var(--card2);padding:10px 12px;min-width:0}
+.rp-sm-t{font-size:11px;color:var(--muted);margin-bottom:4px}
+.rp-sm-c .lc-legend{font-size:10px}
+@media(max-width:1000px){.rp-sm-grid{grid-template-columns:1fr}}
+
+/* V6.4 · 数据曲线分组 */
+.curve-groups{display:flex;flex-wrap:wrap;gap:10px 18px;margin:6px 0 10px}
+.curve-group{display:flex;align-items:center;gap:8px;min-width:0}
+.curve-label{font-size:10.5px;color:var(--muted)}
+.curve-groups .seg{margin-left:0}
+@media(max-width:760px){
+  .curve-groups{flex-direction:column;align-items:stretch}
+  .curve-group{flex-wrap:wrap}
+  .curve-group .seg{width:100%;overflow-x:auto}
+}
+
+/* V6.4 · 复盘二级标签 */
+.rp-tabs2{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 10px}
+.rp-tabs2 .seg{margin-left:0}
+.rp-tab-note{font-size:10.5px;color:var(--muted)}
+@media(max-width:760px){.rp-tabs2{align-items:flex-start;flex-direction:column}.rp-tabs2 .seg{width:100%;overflow-x:auto}}
+
+/* V6.4 · 选手页子页签 */
+.player-tabs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 14px}
+.player-tabs .seg{margin-left:0}
+.player-tab-note{font-size:10.5px;color:var(--muted)}
+@media(max-width:760px){.player-tabs{align-items:flex-start;flex-direction:column}.player-tabs .seg{width:100%;overflow-x:auto}}
+
+/* V6.4 · 比赛页一级页签 */
+.match-tabs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 14px}
+.match-tabs .seg{margin-left:0}
+.match-tab-note{font-size:10.5px;color:var(--muted)}
+@media(max-width:760px){.match-tabs{align-items:flex-start;flex-direction:column}.match-tabs .seg{width:100%;overflow-x:auto}}

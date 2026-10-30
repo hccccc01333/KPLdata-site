@@ -7,7 +7,7 @@
 <title>比赛详情 · 峡谷有数</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css?v=85">
-<link rel="stylesheet" href="assets/pages.css?v=20261027f">
+<link rel="stylesheet" href="assets/pages.css?v=20261030a">
 <link rel="stylesheet" href="assets/v55.css?v=87">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="峡谷有数">
@@ -37,8 +37,8 @@
 <script src="assets/seasons.js?v=85"></script>
 <script src="assets/replay/index.js?v=85"></script>
 <script src="assets/coverage.js?v=85"></script>
-<script src="assets/replay.js?v=85"></script>
-<script src="assets/common.js?v=20261027f"></script>
+<script src="assets/replay.js?v=20261030a"></script>
+<script src="assets/common.js?v=20261030a"></script>
 <script src="assets/share.js?v=85"></script>
 <script>
 (function () {
@@ -145,17 +145,41 @@
         '<a class="btn primary" href="' + K.esc(sr.video) + '" target="_blank" rel="noopener">看整场回放 ↗</a>' +
         '<span class="block-note mono">腾讯视频 · 官方录像</span></div>' : "") +
       "</div></header>";
+    var basicTabs = '<div class="match-tabs"><div class="seg" id="matchTabs">' +
+      '<button type="button" data-tab="replay" class="on">复盘工作台</button>' +
+      '<button type="button" data-tab="list">全部对局</button>' +
+      '</div><span class="match-tab-note mono" id="matchTabNote">复盘工作台：一句话结论 + 需要时展开时间轴 / 资源 / 转折</span></div>';
     $("#main").innerHTML =
-      replaySectionHTML(sr.matchId) +
-      '<div class="live-zone" id="liveZone" style="display:none"></div>' +
-      '<div class="live-zone" id="histZone" style="display:none"></div>' +
+      basicTabs +
+      '<section id="mtab-replay">' + replaySectionHTML(sr.matchId) + "</section>" +
+      '<section id="mtab-list" hidden>' +
       '<div class="block-head"><h2><i></i>本大场对局</h2>' +
       '<span class="block-note mono">每局都有选手数据、BP 与出装</span></div>' +
       '<div class="panel table-panel"><table class="tbl"><thead><tr><th class="num">局</th><th>胜方</th><th class="num">时长</th><th>数据完整度</th><th class="num">明细</th></tr></thead><tbody id="battleRows">' +
       rows + "</tbody></table></div>" +
+      "</section>" +
       '<div class="mnav"><a href="schedule.html">返回赛程中心</a>' +
       '<span class="block-note mono">' + (liveNow
         ? "比赛进行中 · 结束后自动更新比分与复盘" : "本场暂无逐分钟胜率曲线（曲线仅覆盖有完整快照的对局）") + "</span></div>";
+    (function () {
+      var tabs = document.querySelectorAll("#matchTabs button");
+      var notes = {
+        replay: "复盘工作台：一句话结论 + 需要时展开时间轴 / 资源 / 转折",
+        list: "全部对局：每局时长、数据完整度与明细入口"
+      };
+      Array.prototype.forEach.call(tabs, function (btn) {
+        btn.addEventListener("click", function () {
+          var key = btn.getAttribute("data-tab");
+          Array.prototype.forEach.call(tabs, function (b) { b.classList.toggle("on", b === btn); });
+          ["replay", "list"].forEach(function (k) {
+            var el = document.getElementById("mtab-" + k);
+            if (el) el.hidden = k !== key;
+          });
+          var note = document.getElementById("matchTabNote");
+          if (note) note.textContent = notes[key] || "";
+        });
+      });
+    })();
     if (liveNow && !rows) {
       $("#main").innerHTML = '<div class="block-head"><h2><i></i>本大场对局</h2></div>' +
         '<div class="panel" style="padding:26px;text-align:center;color:var(--muted);font-size:13.5px">' +
@@ -522,10 +546,19 @@
   }).join("");
 
   var prev = list[idx + 1], next = list[idx - 1];
+  var matchTabs = '<div class="match-tabs"><div class="seg" id="matchTabs">' +
+      '<button type="button" data-tab="replay" class="on">复盘工作台</button>' +
+      '<button type="button" data-tab="key">关键局解读</button>' +
+      '<button type="button" data-tab="bp">BP 与阵容</button>' +
+      '<button type="button" data-tab="list">全部对局</button>' +
+    '</div><span class="match-tab-note mono" id="matchTabNote">复盘工作台：一句话结论 + 需要时展开时间轴 / 资源 / 转折</span></div>';
+
   $("#main").innerHTML =
     '<div class="live-zone" id="liveZone" style="display:none"></div>' +
     '<div class="live-zone" id="histZone" style="display:none"></div>' +
-    replaySectionHTML(M.matchId) +
+    matchTabs +
+    '<section id="mtab-replay">' + replaySectionHTML(M.matchId) + "</section>" +
+    '<section id="mtab-key" hidden>' +
     '<div class="block-head"><h2><i></i>关键局复盘 · G' + KEY.gameNo +
     (KEY.comeback ? ' <span class="demo-tag">翻盘局</span>' : "") + "</h2>" +
     '<span class="block-note mono">' + K.dateCN(M.date) + " · 时长 " + KEY.duration.toFixed(0) +
@@ -535,13 +568,18 @@
     '<div class="wr-chart" id="wrChart"></div><div class="feat-phases">' + phasesHTML + "</div></div>" +
     '<div class="panel"><div class="panel-title">关键事件解读 <em class="mono">描述性，非因果</em></div>' +
     '<div class="feat-cards">' + cardsHTML + "</div></div></div>" +
+    "</section>" +
+    '<section id="mtab-bp" hidden>' +
     '<div class="block-head sub-head"><h2><i></i>BP 与阵容（关键局）</h2>' +
     '<span class="block-note mono">官方记录 · ' + (KEY.bp.camp1.picks.length + KEY.bp.camp2.picks.length) + " 选用 / " +
     (KEY.bp.camp1.bans.length + KEY.bp.camp2.bans.length) + " 禁用</span></div>" +
     '<div class="bp-grid">' + bpSide(1, "blue", M.team1) + bpSide(2, "red", M.team2) + "</div>" +
+    "</section>" +
+    '<section id="mtab-list" hidden>' +
     '<div class="block-head sub-head"><h2><i></i>本大场对局列表</h2></div>' +
     '<div class="panel table-panel"><table class="tbl"><thead><tr><th class="num">局</th><th>胜方</th><th class="num">时长</th><th>数据</th><th class="num">明细</th></tr></thead><tbody>' +
     rowsHTML + "</tbody></table></div>" +
+    "</section>" +
     '<div class="mnav">' +
     (prev ? '<a href="match.html?id=' + K.esc(prev.matchId) + '">← ' + K.esc(prev.date) + " " + K.esc(prev.team1) + " vs " + K.esc(prev.team2) + "</a>" : "<span></span>") +
     '<a href="schedule.html">返回赛程中心</a>' +
@@ -552,6 +590,29 @@
   K.wrChart($("#wrChart"), KEY, M.team1);
   initLive(M.matchId);
   initTodayOverlay(M.matchId);
+
+  (function () {
+    var tabs = document.querySelectorAll("#matchTabs button");
+    var notes = {
+      replay: "复盘工作台：一句话结论 + 需要时展开时间轴 / 资源 / 转折",
+      key: "关键局解读：关键局胜率曲线、阶段与事件卡",
+      bp: "BP 与阵容：关键局官方选禁",
+      list: "全部对局：每局时长、数据完整度与明细入口"
+    };
+    Array.prototype.forEach.call(tabs, function (btn) {
+      btn.addEventListener("click", function () {
+        var key = btn.getAttribute("data-tab");
+        Array.prototype.forEach.call(tabs, function (b) { b.classList.toggle("on", b === btn); });
+        ["replay", "key", "bp", "list"].forEach(function (k) {
+          var el = document.getElementById("mtab-" + k);
+          if (el) el.hidden = k !== key;
+        });
+        var note = document.getElementById("matchTabNote");
+        if (note) note.textContent = notes[key] || "";
+      });
+    });
+  })();
+
   K.refresh();
   SHARE.mount($("#wrapHero"), matchShareSpec, "kpldata-match.png");
 })();

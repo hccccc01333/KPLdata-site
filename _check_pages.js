@@ -33,7 +33,7 @@ const PAGES = [
   ["series.html", "系列赛研究", ["#boRows tr", "#decRows tr", "#revRows", "#eloRows tr"]],
   ["heroes.html", "英雄列表", ["#heroGrid > *, .hcard"]],
   ["hero.html?id=曹操", "英雄详情", ["#heroHead .page-hero, #heroHead .hd-top", "#main .panel", "#heroGrowthChart svg"]],
-  ["match.html?id=2026062603&g=3&m=13", "比赛复盘", ["#rpRange", "#rpChart svg", "#rpGrid .rp-panel"]],
+  ["match.html?id=2026062603&g=3&m=13", "比赛复盘", ["#rpRange", "#rpChart svg", "#rpGridGold .rp-panel"]],
   ["match.html?id=2026102201", "系列赛诊断", ["#seriesAnalysis", ".sr-game", ".sr-grid-3"]],
   // game.html 的 id 是 battle_id（不是 match_id），传错了会走空态
   ["game.html?id=1373651472_21_1779526666", "对局详情", ["#main .panel", "#main .bp-grid"]],
@@ -318,7 +318,7 @@ async function main() {
     if (tab) tab.click();
     return { same: same, distinctLabels: new Set(labels).size, kb: Number(after.value) - Number(before),
              sameAfterKb: after === first, switched: !!tab,
-             panelsAfterSwitch: document.querySelectorAll('#rpGrid .rp-panel').length };
+             panelsAfterSwitch: document.querySelectorAll('#rpGridGold .rp-panel, #rpGridData .rp-panel').length };
   })()`);
   check("连续拖动 13 次滑块节点不变", inter && inter.same && inter.same.every(Boolean),
     inter && inter.same ? inter.same.filter(Boolean).length + "/" + inter.same.length : "n/a");
@@ -356,8 +356,8 @@ async function main() {
     var on = lb ? lb.querySelector('button.on') : null;
     return { btns: lb ? lb.querySelectorAll('button').length : 0,
              onText: on ? on.textContent.trim() : '',
-             teamBars: document.querySelectorAll('#rpGrid .rp-lbrow').length,
-             laneTables: document.querySelectorAll('#rpGrid .rp-tblwrap').length };
+             teamBars: document.querySelectorAll('#rpGridGold .rp-lbrow').length,
+             laneTables: document.querySelectorAll('#rpGridGold .rp-tblwrap').length };
   })()`);
   check("复盘默认答案=队伍总量（分层第一层）",
     lay0 && lay0.btns === 2 && lay0.onText === "队伍总量" && lay0.teamBars === 2 && lay0.laneTables === 0,
@@ -365,10 +365,10 @@ async function main() {
   const lay1 = await evaluate(`(function(){
     var b = document.querySelector('#rpLayer button[data-layer="lane"]');
     if (b) b.click();
-    var lanes = Array.prototype.map.call(document.querySelectorAll('#rpGrid td.ln'), function(t){return t.textContent.trim();});
-    return { rows: document.querySelectorAll('#rpGrid .rp-tblwrap tbody tr').length, lanes: lanes,
+    var lanes = Array.prototype.map.call(document.querySelectorAll('#rpGridGold td.ln'), function(t){return t.textContent.trim();});
+    return { rows: document.querySelectorAll('#rpGridGold .rp-tblwrap tbody tr').length, lanes: lanes,
              onText: (document.querySelector('#rpLayer button.on')||{}).textContent||'',
-             disc: (document.querySelector('#rpGrid .rp-panel .rp-disc')||{}).textContent||'' };
+             disc: (document.querySelector('#rpGridGold .rp-panel .rp-disc')||{}).textContent||'' };
   })()`);
   check("切到分路对位：5 行同位置对位表",
     lay1 && lay1.rows === 5 && lay1.lanes.length === 5 && lay1.lanes[0] === "对抗路",
@@ -388,7 +388,7 @@ async function main() {
   const smReady = await evaluate("(function(){var t=document.querySelector('#curveTabs button[data-t=\"player\"]');return {has:!!t, chart:!!document.getElementById('curveChart'), note:(document.getElementById('curveNote')||{}).textContent||''};})()");
   if (smReady && smReady.has) {
     const sm = await evaluate(`(function(){
-      document.querySelector('#curveTabs button[data-t="player"]').click();
+      document.querySelector('#curveTabsLane button[data-t="player"]').click();
       return { blocks: document.querySelectorAll('#curveChart .rp-sm').length,
                svgs: document.querySelectorAll('#curveChart .rp-sm-c svg').length,
                titles: Array.prototype.map.call(document.querySelectorAll('#curveChart .rp-sm-t'), function(t){return t.textContent.trim();}),
@@ -399,10 +399,19 @@ async function main() {
       sm && (sm.blocks + " 块 / " + sm.titles.join(",")));
     check("对位小图标注分路序来源", sm && /复盘名单/.test(sm.note), sm && sm.note.slice(0, 30));
     const smd = await evaluate(`(function(){
-      document.querySelector('#curveTabs button[data-t="dmg"]').click();
+      document.querySelector('#curveTabsLane button[data-t="dmg"]').click();
       return { blocks: document.querySelectorAll('#curveChart .rp-sm').length };
     })()`);
     check("选手输出同样按分路拆图", smd && smd.blocks === 5, smd && smd.blocks);
+    const smdiff = await evaluate(`(function(){
+      document.querySelector('#curveTabsLane button[data-t="playerDiff"]').click();
+      return { blocks: document.querySelectorAll('#curveChart .rp-sm').length,
+               svgs: document.querySelectorAll('#curveChart .rp-sm-c svg').length,
+               note: (document.getElementById('curveNote')||{}).textContent||'' };
+    })()`);
+    check("分路经济差拆成 5 张小图", smdiff && smdiff.blocks === 5 && smdiff.svgs === 5,
+      smdiff && (smdiff.blocks + " 块 / " + smdiff.svgs + " svg"));
+    check("分路差值说明指向两队差", smdiff && /分别看/.test(smdiff.note), smdiff && smdiff.note.slice(0, 30));
   } else {
     check("对局详情提供分钟级数据曲线入口（本局无直播采集，跳过）", true, smReady && smReady.note.slice(0, 20));
   }

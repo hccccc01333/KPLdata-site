@@ -892,6 +892,19 @@ window.KPL = (function () {
   }
 
   /* ---------- 多系列折线图（指标曲线） ---------- */
+  var _lcSeq = 0;
+  function smoothPath(pts, X, Y) {
+    if (pts.length < 3) return pts.map(function (pt, i) { return (i ? "L" : "M") + X(pt[0]).toFixed(1) + " " + Y(pt[1]).toFixed(1); }).join(" ");
+    var d = "M" + X(pts[0][0]).toFixed(1) + " " + Y(pts[0][1]).toFixed(1);
+    for (var i = 0; i < pts.length - 1; i++) {
+      var p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      var c1x = X(p1[0]) + (X(p2[0]) - X(p0[0])) / 6, c1y = Y(p1[1]) + (Y(p2[1]) - Y(p0[1])) / 6;
+      var c2x = X(p2[0]) - (X(p3[0]) - X(p1[0])) / 6, c2y = Y(p2[1]) - (Y(p3[1]) - Y(p1[1])) / 6;
+      d += " C" + c1x.toFixed(1) + " " + c1y.toFixed(1) + " " + c2x.toFixed(1) + " " + c2y.toFixed(1) + " " +
+        X(p2[0]).toFixed(1) + " " + Y(p2[1]).toFixed(1);
+    }
+    return d;
+  }
   function lineChart(el, opts) {
     var CP2 = chartPalette();
     if (!el) return;
@@ -912,10 +925,19 @@ window.KPL = (function () {
     var X = function (v) { return P.l + (v - xMin) / (xMax - xMin) * (W - P.l - P.r); };
     var Y = function (v) { return P.t + (1 - (v - yMin) / (yMax - yMin)) * (H - P.t - P.b); };
     var yFmt = opts.yFmt || function (v) { return Math.round(v); };
-    var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img">';
-    /* 网格与 y 轴 */
-    for (var gi = 0; gi <= 3; gi++) {
-      var gv = yMin + (yMax - yMin) * gi / 3;
+    var yTicks = opts.yTicks || 4;
+    var xEvery = opts.xEvery || 5;
+    var smooth = opts.smooth !== false;
+    _lcSeq++;
+    var gradId = "lcg" + _lcSeq;
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="指标曲线">';
+    if (series.some(function (se) { return se.fill; })) {
+      s += '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="' + CP2.mark + '" stop-opacity=".22"/>' +
+        '<stop offset="100%" stop-color="' + CP2.mark + '" stop-opacity="0"/></linearGradient></defs>';
+    }
+    for (var gi = 0; gi <= yTicks; gi++) {
+      var gv = yMin + (yMax - yMin) * gi / yTicks;
       var gy = Y(gv).toFixed(1);
       s += '<line x1="' + P.l + '" y1="' + gy + '" x2="' + (W - P.r) + '" y2="' + gy +
         '" stroke=' + JSON.stringify(CP2.grid) + ' stroke-dasharray="4 6"/>' +
@@ -924,32 +946,73 @@ window.KPL = (function () {
     if (yMin < 0 && yMax > 0) {
       s += '<line x1="' + P.l + '" y1="' + Y(0).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0).toFixed(1) + '" stroke=' + JSON.stringify(CP2.axis) + ' />';
     }
-    /* x 轴刻度（每 5 分钟） */
-    for (var m = Math.ceil(xMin / 5) * 5; m <= xMax; m += 5) {
+    var x0 = Math.ceil(xMin / xEvery) * xEvery;
+    for (var m = x0; m <= xMax; m += xEvery) {
       s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10.5" fill=' + JSON.stringify(CP2.label) + ' font-family="Inter,monospace">' + m + "′</text>";
     }
-    /* 折线 */
     series.forEach(function (se) {
-      var d = se.pts.map(function (pt, i) {
+      var d = smooth ? smoothPath(se.pts, X, Y) : se.pts.map(function (pt, i) {
         return (i ? "L" : "M") + X(pt[0]).toFixed(1) + " " + Y(pt[1]).toFixed(1);
       }).join(" ");
       if (se.fill && se.pts.length > 1) {
-        s += '<path d="' + d + " L" + X(se.pts[se.pts.length - 1][0]).toFixed(1) + " " + Y(Math.max(0, yMin)).toFixed(1) +
-          " L" + X(se.pts[0][0]).toFixed(1) + " " + Y(Math.max(0, yMin)).toFixed(1) + ' Z" fill="' + se.color + '" fill-opacity=".10" stroke="none"/>';
+        var area = d + " L" + X(se.pts[se.pts.length - 1][0]).toFixed(1) + " " + Y(Math.max(0, yMin)).toFixed(1) +
+          " L" + X(se.pts[0][0]).toFixed(1) + " " + Y(Math.max(0, yMin)).toFixed(1) + " Z";
+        s += '<path d="' + area + '" fill="url(#' + gradId + ')" stroke="none"/>';
       }
       s += '<path d="' + d + '" fill="none" stroke="' + se.color + '" stroke-width="' + (se.width || 2.2) + '"' +
-        (se.dash ? ' stroke-dasharray="6 5"' : "") + ' stroke-linejoin="round" opacity="' + (se.opacity || 1) + '"/>';
+        (se.dash ? ' stroke-dasharray="6 5"' : "") + ' stroke-linejoin="round" stroke-linecap="round" opacity="' + (se.opacity || 1) + '"/>';
       if (se.dots) {
         se.pts.forEach(function (pt) {
           s += '<circle cx="' + X(pt[0]).toFixed(1) + '" cy="' + Y(pt[1]).toFixed(1) + '" r="2.6" fill="' + se.color + '"/>';
         });
       }
     });
+    s += '<line id="lcCross' + _lcSeq + '" x1="0" y1="' + P.t + '" x2="0" y2="' + (H - P.b) +
+      '" stroke=' + JSON.stringify(CP2.axis) + ' stroke-dasharray="3 4" opacity="0"/>';
     s += "</svg>";
+    var tip = '<div class="lc-tip" id="lcTip' + _lcSeq + '"></div>';
     el.innerHTML = (opts.legend === false ? "" :
       '<div class="lc-legend">' + series.map(function (se) {
         return '<span><i style="background:' + se.color + (se.dash ? ';opacity:.65' : "") + '"></i>' + esc(se.name) + "</span>";
-      }).join("") + "</div>") + s;
+      }).join("") + "</div>") + s + tip;
+    if (opts.tooltip !== false) {
+      var svg = el.querySelector("svg"), tipEl = el.querySelector(".lc-tip"), cross = el.querySelector("#lcCross" + _lcSeq);
+      if (svg && tipEl && cross) {
+        svg.addEventListener("mousemove", function (e) {
+          var rect = svg.getBoundingClientRect();
+          var ratio = (e.clientX - rect.left) / rect.width;
+          var target = xMin + ratio * (xMax - xMin);
+          var best = null;
+          series.forEach(function (se) {
+            se.pts.forEach(function (pt) {
+              var d = Math.abs(pt[0] - target);
+              if (!best || d < best.d) best = { d: d, m: pt[0] };
+            });
+          });
+          if (!best) return;
+          var rows = series.map(function (se) {
+            var near = se.pts.reduce(function (a, pt) {
+              return Math.abs(pt[0] - best.m) < Math.abs(a[0] - best.m) ? pt : a;
+            }, se.pts[0]);
+            return '<div><i style="background:' + se.color + '"></i>' + esc(se.name) + " <b>" + yFmt(near[1]) + "</b></div>";
+          }).join("");
+          tipEl.innerHTML = "<b>" + best.m.toFixed(0) + "′</b>" + rows;
+          tipEl.style.opacity = "1";
+          var box = el.getBoundingClientRect();
+          var left = Math.min(Math.max(e.clientX - box.left + 12, 6), box.width - 160);
+          var top = Math.min(Math.max(e.clientY - box.top - 8, 6), box.height - 72);
+          tipEl.style.left = left + "px";
+          tipEl.style.top = top + "px";
+          cross.setAttribute("x1", X(best.m).toFixed(1));
+          cross.setAttribute("x2", X(best.m).toFixed(1));
+          cross.setAttribute("opacity", ".55");
+        });
+        svg.addEventListener("mouseleave", function () {
+          tipEl.style.opacity = "0";
+          cross.setAttribute("opacity", "0");
+        });
+      }
+    }
   }
 
   /* ---------- 实时框架：数据新鲜度探测 + 进行中判定 ---------- */

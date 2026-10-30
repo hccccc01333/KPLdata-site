@@ -7,7 +7,7 @@
 <title>对局详情 · 峡谷有数</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css?v=85">
-<link rel="stylesheet" href="assets/pages.css?v=20261027f">
+<link rel="stylesheet" href="assets/pages.css?v=20261030a">
 <link rel="stylesheet" href="assets/v55.css?v=87">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="峡谷有数">
@@ -34,11 +34,11 @@
 <script src="assets/seasons.js?v=85"></script>
 <script src="assets/replay/index.js?v=85"></script>
 <script src="assets/coverage.js?v=85"></script>
-<script src="assets/replay.js?v=85"></script>
+<script src="assets/replay.js?v=20261030a"></script>
 <script src="assets/schedule_all.js?v=85"></script>
 <script src="assets/games/index.js?v=85"></script>
 <script src="assets/equip_icons.js?v=85"></script>
-<script src="assets/common.js?v=20261027f"></script>
+<script src="assets/common.js?v=20261030a"></script>
 <script>
 (function () {
   "use strict";
@@ -202,27 +202,35 @@
   function renderCurves(h) {
     var pts = h.pts;
     var LANES = ["对抗路", "打野", "中路", "发育路", "游走"];
-    // 分路序名单：取自本局的复盘数据包（与 frames[].g 同一份 roster），
-    // 避免按采集顺序把不同位置的选手画在同一张图上。
     var laneNames = null, curTab = "win";
-    var TABS = [
-      ["win", "胜率"], ["eco", "经济"], ["gd", "经济差 · 预测对照"],
-      ["kill", "击杀"], ["tower", "推塔"], ["player", "选手经济"], ["dmg", "选手输出"]
+    var TEAM_TABS = [
+      ["win", "胜率"], ["eco", "经济"], ["gd", "经济差"], ["kill", "击杀"],
+      ["tower", "推塔"], ["res", "资源"]
+    ];
+    var LANE_TABS = [
+      ["player", "分路经济"], ["dmg", "分路输出"],
+      ["playerDiff", "分路经济差"], ["dmgDiff", "分路输出差"]
     ];
     var box = document.createElement("div");
     box.className = "panel";
     box.style.marginTop = "14px";
-    box.innerHTML = '<div class="panel-title">数据曲线 <em class="mono">比赛期间逐分钟采集 · 模型实时推算</em></div>' +
-      '<div class="seg curve-tabs" id="curveTabs" style="margin:6px 0 8px">' +
-      TABS.map(function (t, i) { return '<button type="button" data-t="' + t[0] + '" class="' + (i === 0 ? "on" : "") + '">' + t[1] + "</button>"; }).join("") +
+    box.innerHTML =
+      '<div class="panel-title">数据曲线 <em class="mono">逐分钟采集 · 模型实时推算</em></div>' +
+      '<div class="curve-groups">' +
+        '<div class="curve-group"><span class="curve-label mono">团队</span>' +
+          '<div class="seg curve-tabs" id="curveTabsTeam">' +
+          TEAM_TABS.map(function (t, i) { return '<button type="button" data-t="' + t[0] + '" class="' + (i === 0 ? "on" : "") + '">' + t[1] + "</button>"; }).join("") +
+          "</div></div>" +
+        '<div class="curve-group"><span class="curve-label mono">分路</span>' +
+          '<div class="seg curve-tabs" id="curveTabsLane">' +
+          LANE_TABS.map(function (t) { return '<button type="button" data-t="' + t[0] + '">' + t[1] + "</button>"; }).join("") +
+          "</div></div>" +
       "</div>" +
       '<div class="live-chart" id="curveChart"></div>' +
       '<div class="panel-foot mono" id="curveNote"></div>';
     var main = document.getElementById("main");
     if (main) main.prepend(box);
 
-    // 预取本局的分路序名单（复盘数据包里的 roster 与 frames 同序），用于同位置对位。
-    // 取不到时 drawLanes 会退回单图并标注"无法做同位置对位"。
     if (window.KPL_REPLAY && KPL_REPLAY.loadPackage) {
       KPL_REPLAY.loadPackage(MID, function (pkg) {
         var bt = null;
@@ -232,8 +240,15 @@
           }
         }
         if (bt && bt.names && bt.names.length === 10) laneNames = bt.names;
-        if (laneNames && (curTab === "player" || curTab === "dmg")) draw(curTab);
+        if (laneNames && ["player", "dmg", "playerDiff", "dmgDiff"].indexOf(curTab) >= 0) draw(curTab);
       });
+    }
+
+    function teamSeries(idx) {
+      return [
+        { name: h.t1, color: CP.mark, pts: pts.map(function (r) { return [r[0], r[idx]]; }) },
+        { name: h.t2, color: CP.line, pts: pts.map(function (r) { return [r[0], r[idx + 1]]; }) }
+      ];
     }
 
     function draw(id) {
@@ -241,16 +256,14 @@
       var note = document.getElementById("curveNote");
       curTab = id;
       if (id === "win") {
-        K.lineChart(el2, { height: 280, yMin0: true, yFmt: function (v) { return Math.round(v * 100) + "%"; },
-          series: [{ name: K.esc(h.t1) + " 胜率（模型）", color: CP.mark, fill: true,
+        K.lineChart(el2, { height: 420, yMin0: true, yTicks: 5,
+          yFmt: function (v) { return Math.round(v * 100) + "%"; },
+          series: [{ name: h.t1 + " 胜率（模型）", color: CP.mark, fill: true,
                      pts: pts.map(function (r) { return [r[0], r[1]]; }) }] });
         note.textContent = "模型对 " + h.t1 + " 的实时胜率推算 · 每分钟一个采样点";
       } else if (id === "eco") {
-        K.lineChart(el2, { height: 280, yFmt: function (v) { return Math.round(v / 1000) + "k"; },
-          series: [
-            { name: h.t1, color: CP.mark, pts: pts.map(function (r) { return [r[0], r[2]]; }) },
-            { name: h.t2, color: CP.line, pts: pts.map(function (r) { return [r[0], r[3]]; }) }
-          ] });
+        K.lineChart(el2, { height: 420, yTicks: 5, yFmt: function (v) { return Math.round(v / 1000) + "k"; },
+          series: teamSeries(2) });
         note.textContent = "两队总经济随比赛发展";
       } else if (id === "gd") {
         var ser = [{ name: "实际经济差", color: CP.mark, fill: true,
@@ -258,48 +271,62 @@
         if ((h.gpred || []).length >= 3) {
           ser.push({ name: "5 分钟前的预测值", color: CP.label, dash: true, pts: h.gpred });
         }
-        K.lineChart(el2, { height: 280, yZero: true,
+        K.lineChart(el2, { height: 420, yZero: true, yTicks: 5,
           yFmt: function (v) { return (v > 0 ? "+" : "") + Math.round(v / 1000) + "k"; }, series: ser });
         note.textContent = "紫色虚线 = 用 5 分钟前的走势外推出的此刻经济差——与实际曲线越贴合，说明节奏越稳定";
       } else if (id === "kill") {
-        K.lineChart(el2, { height: 280, yFmt: Math.round, series: [
-          { name: h.t1 + " 击杀", color: CP.mark, pts: pts.map(function (r) { return [r[0], r[4]]; }) },
-          { name: h.t2 + " 击杀", color: CP.line, pts: pts.map(function (r) { return [r[0], r[5]]; }) }
-        ] });
+        K.lineChart(el2, { height: 420, yTicks: 5, yFmt: Math.round, series: teamSeries(4) });
         note.textContent = "两队累计击杀";
       } else if (id === "tower") {
-        K.lineChart(el2, { height: 280, yFmt: Math.round, series: [
-          { name: h.t1 + " 推塔", color: CP.mark, pts: pts.map(function (r) { return [r[0], r[6]]; }) },
-          { name: h.t2 + " 推塔", color: CP.line, pts: pts.map(function (r) { return [r[0], r[7]]; }) }
-        ] });
+        K.lineChart(el2, { height: 420, yTicks: 5, yFmt: Math.round, series: teamSeries(6) });
         note.textContent = "两队累计推塔数";
-      } else if (id === "player" || id === "dmg") {
-        drawLanes(el2, note, id === "player");
+      } else if (id === "res") {
+        drawResources(el2, note);
+      } else {
+        drawLanes(el2, note, id);
       }
     }
 
-    /* 选手经济 / 选手输出：按分路拆成 5 张同位置对位小图（small multiples）。
-       有复盘名单时严格按 对抗路→游走 对齐；没有时退回单图并明确标注无法对位。 */
-    function drawLanes(el2, note, isGold) {
-      var valAt = function (i3, r) { return isGold ? (r[12 + i3 * 2] || 0) : (r[12 + i3 * 2 + 1] || 0); };
-      var yf = function (v) { return Math.round(v / 1000) + "k"; };
+    function drawResources(el2, note) {
+      var names = ["暴君", "黑暗暴君", "主宰", "风暴龙王"];
+      el2.innerHTML = '<div class="rp-sm-grid">' + names.map(function (nm, i) {
+        return '<div class="rp-sm"><div class="rp-sm-t mono">' + nm + '</div><div class="rp-sm-c" id="resc' + i + '"></div></div>';
+      }).join("") + "</div>";
+      names.forEach(function (nm, i) {
+        var base = 8 + i * 2;
+        K.lineChart(document.getElementById("resc" + i), { height: 240, yFmt: Math.round, series: [
+          { name: h.t1, color: CP.mark, width: 2, pts: pts.map(function (r) { return [r[0], r[base]]; }) },
+          { name: h.t2, color: CP.line, width: 2, pts: pts.map(function (r) { return [r[0], r[base + 1]]; }) }
+        ] });
+      });
+      note.textContent = "四类中立资源按 2×2 展开；同图对比两队累计数量，避免 8 条线挤在一张图里。";
+    }
+
+    function lanePairs() {
+      if (!laneNames || laneNames.length !== 10) return null;
+      var pairs = [];
       var idxOf = function (nm) {
         for (var k = 0; k < (h.names || []).length; k++) if (h.names[k] === nm) return k;
         return -1;
       };
-      var pairs = null;
-      if (laneNames && laneNames.length === 10) {
-        pairs = [];
-        for (var i = 0; i < 5; i++) {
-          var a = idxOf(laneNames[i]), b = idxOf(laneNames[i + 5]);
-          if (a < 0 || b < 0) { pairs = null; break; }
-          pairs.push({ lane: LANES[i], a: a, b: b });
-        }
+      for (var i = 0; i < 5; i++) {
+        var a = idxOf(laneNames[i]), b = idxOf(laneNames[i + 5]);
+        if (a < 0 || b < 0) return null;
+        pairs.push({ lane: LANES[i], a: a, b: b, n1: laneNames[i], n2: laneNames[i + 5] });
       }
+      return pairs;
+    }
+
+    function drawLanes(el2, note, mode) {
+      var pairs = lanePairs();
+      var isGold = mode === "player" || mode === "playerDiff";
+      var isDiff = mode === "playerDiff" || mode === "dmgDiff";
       var what = isGold ? "个人经济" : "累计输出伤害";
+      var yf = function (v) { return (v < 0 ? "" : "+") + Math.round(v / 1000) + "k"; };
       if (!pairs) {
         var C1 = ["#FFFFFF", "#E8A33D", "#D98A2B", "#C47421", "#A85F1A"];
         var C2 = ["#9DB2CC", "#8AA2BE", "#2E71B0", "#225A94", "#174378"];
+        var valAt = function (i3, r) { return isGold ? (r[12 + i3 * 2] || 0) : (r[12 + i3 * 2 + 1] || 0); };
         var ser = [];
         for (var i2 = 0; i2 < 10; i2++) {
           (function (i3) {
@@ -310,34 +337,63 @@
             });
           })(i2);
         }
-        K.lineChart(el2, { height: 300, yFmt: yf, series: ser });
+        K.lineChart(el2, { height: 380, yFmt: function (v) { return Math.round(v / 1000) + "k"; }, series: ser });
         note.textContent = "10 名选手的" + what + "曲线（金系 = " + h.t1 + "，蓝系 = " + h.t2 +
           "）· 本局无分钟级复盘名单，无法做同位置对位";
         return;
       }
       el2.innerHTML = '<div class="rp-sm-grid">' + pairs.map(function (pk, i) {
-        return '<div class="rp-sm"><div class="rp-sm-t mono">' + pk.lane + "</div>" +
+        return '<div class="rp-sm"><div class="rp-sm-t mono">' + pk.lane + " · " + esc(pk.n1) + " vs " + esc(pk.n2) + "</div>" +
           '<div class="rp-sm-c" id="smc' + i + '"></div></div>';
       }).join("") + "</div>";
       pairs.forEach(function (pk, i) {
-        K.lineChart(document.getElementById("smc" + i), { height: 200, yFmt: yf, series: [
-          { name: (h.names || [])[pk.a] || "P", color: "#F6C021", width: 2,
-            pts: pts.map(function (r) { return [r[0], valAt(pk.a, r)]; }) },
-          { name: (h.names || [])[pk.b] || "P", color: "#8FC7F0", width: 2,
-            pts: pts.map(function (r) { return [r[0], valAt(pk.b, r)]; }) }
-        ] });
+        if (isDiff) {
+          K.lineChart(document.getElementById("smc" + i), {
+            height: 280, yZero: true, yTicks: 4, yFmt: yf,
+            series: [{
+              name: pk.n1 + " − " + pk.n2,
+              color: CP.mark, fill: true, width: 2.2,
+              pts: pts.map(function (r) {
+                var a = isGold ? (r[12 + pk.a * 2] || 0) : (r[12 + pk.a * 2 + 1] || 0);
+                var b = isGold ? (r[12 + pk.b * 2] || 0) : (r[12 + pk.b * 2 + 1] || 0);
+                return [r[0], a - b];
+              })
+            }]
+          });
+        } else {
+          K.lineChart(document.getElementById("smc" + i), {
+            height: 280, yTicks: 4, yFmt: function (v) { return Math.round(v / 1000) + "k"; },
+            series: [
+              { name: pk.n1, color: "#F6C021", width: 2.2,
+                pts: pts.map(function (r) { return [r[0], isGold ? (r[12 + pk.a * 2] || 0) : (r[12 + pk.a * 2 + 1] || 0)]; }) },
+              { name: pk.n2, color: "#8FC7F0", width: 2.2,
+                pts: pts.map(function (r) { return [r[0], isGold ? (r[12 + pk.b * 2] || 0) : (r[12 + pk.b * 2 + 1] || 0)]; }) }
+            ]
+          });
+        }
       });
-      note.textContent = "按分路拆成 5 张同位置对位小图（金 = " + h.t1 + "，蓝 = " + h.t2 +
-        "，顺序 对抗路→游走）· 分路序取自本局复盘名单";
+      note.textContent = isDiff
+        ? "五条分路分别看「" + h.t1 + " − " + h.t2 + "」的差值；0 线上方 = " + h.t1 + " 领先。"
+        : "按分路拆成 5 张同位置对位小图（金 = " + h.t1 + "，蓝 = " + h.t2 + "，顺序 对抗路→游走）。";
     }
-    var tabs = document.getElementById("curveTabs");
-    tabs.addEventListener("click", function (e) {
-      var b = e.target.closest("button"); if (!b) return;
-      Array.prototype.forEach.call(tabs.children, function (x) { x.classList.toggle("on", x === b); });
-      draw(b.getAttribute("data-t"));
-    });
+
+    function bindTabs() {
+      ["#curveTabsTeam", "#curveTabsLane"].forEach(function (sel) {
+        var tabs = document.querySelector(sel);
+        if (!tabs) return;
+        tabs.addEventListener("click", function (e) {
+          var b = e.target.closest("button"); if (!b) return;
+          Array.prototype.forEach.call(tabs.children, function (x) { x.classList.toggle("on", x === b); });
+          var other = sel === "#curveTabsTeam" ? "#curveTabsLane" : "#curveTabsTeam";
+          var otherTabs = document.querySelector(other);
+          if (otherTabs) Array.prototype.forEach.call(otherTabs.children, function (x) { x.classList.remove("on"); });
+          draw(b.getAttribute("data-t"));
+        });
+      });
+    }
+    bindTabs();
     draw("win");
-  }
+}
 })();
 </script>
 </body>
