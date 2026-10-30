@@ -65,9 +65,9 @@ python -m http.server 8000 --bind 127.0.0.1
 | 模块 | 页面 |
 |---|---|
 | 首页与赛程 | `index.html`、`schedule.html`、`bracket.html`（赛事进程）、`updates.html`（更新日志） |
-| 比赛与复盘 | `match.html`（复盘工作台 / 分享深链）、`game.html`（单局战报）、`picks.html`（精选对局）、`comeback.html`（翻盘路径） |
+| 比赛与复盘 | `match.html`（复盘工作台 / 关键局解读 / BP 与阵容 / 全部对局）、`game.html`（单局战报 / 团队与分路数据曲线）、`picks.html`（精选对局）、`comeback.html`（翻盘路径） |
 | 战队 | `teams.html`、`team.html`（能力雷达 / 系列赛画像 / 冠军墙）、`team-bp.html`（战队 BP 风格 / 完整 20 手 BP / 英雄竞争状态）、`h2h.html` |
-| 选手 | `players.html`、`player.html`（能力雷达 / 关键局 / 打法画像 / 搭档对位） |
+| 选手 | `players.html`、`player.html`（概览 / 同位置 / 打法 / 搭档与对位） |
 | 选手 × 英雄 | `hero-performance.html`（逐系列赛英雄表现 / 同位置同英雄基准 / 比赛证据） |
 | 英雄 | `heroes.html`、`hero.html`、`combos.html` |
 | 深度分析 | `bp.html`、`bp-studio.html`（真实比赛 BP 演播室）、`coach.html`（教练任期 / BP 风格 / 相似教练 / 来源置信度）、`sandbox.html`（这局谁更可能赢 / 历史对照 / 模型体检）、`series.html`（首局转化 / 决胜局 / 让二追三 / Elo）、`honors.html`、`records.html`、`stage.html`、`predict.html`（含赛前预测挑战）、`find.html`（按终局条件找局）、`simulator.html`、`query.html` |
