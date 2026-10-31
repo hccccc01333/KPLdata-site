@@ -21,6 +21,8 @@
 
 ### 方式一：本地工作台（推荐，一条命令）
 
+不会用 git？直接到 [Releases](https://github.com/hccccc01333/KPLdata-site/releases/latest) 下载便携版 zip，解压后跳到第 3 步。
+
 ```bash
 git clone https://github.com/hccccc01333/KPLdata-site.git
 cd KPLdata-site
