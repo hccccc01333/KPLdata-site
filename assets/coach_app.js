@@ -93,7 +93,7 @@
   }
 
   function fingerprintBars(t) {
-    var b = t.bp;
+    var b = t.bp || {};
     var colors = ["#F6C021", "#8FC7F0", "#B98CE0", "#F2A3AE", "#7BE0A3"];
     function bar(list, total, emptyText) {
       if (!list || !list.length || !total) return '<div class="cfp-empty">' + emptyText + "</div>";
@@ -133,7 +133,7 @@
   }
 
   function finger(t) {
-    var b = t.bp;
+    var b = t.bp || {};
     var picks = b.topPicks || [];
     $("#coachFingerprint").innerHTML =
       fingerprintBars(b) +
