@@ -151,11 +151,11 @@ async function main() {
   await sleep(400);
   const chip0 = await evaluate(`(document.getElementById('duelHead')||{}).textContent || ''`);
   check("点击分路芯片切换对位", (chip0 || "").length > 4, String(chip0).slice(0, 30));
-  const bfly = await evaluate(`(function(){
+  const bfly = await waitFor(`(function(){
     var rows = Array.from(document.querySelectorAll('#duelBfly .bf-lb')).map(function(x){return x.textContent.trim();});
-    return { rows: rows.length, hasTank: rows.indexOf('承受占比') >= 0, hasKda: rows.indexOf('K / D / A') >= 0,
-             bars: document.querySelectorAll('#duelBfly .bf-cell i').length };
-  })()`);
+    return rows.length ? { rows: rows.length, hasTank: rows.indexOf('承受占比') >= 0, hasKda: rows.indexOf('K / D / A') >= 0,
+             bars: document.querySelectorAll('#duelBfly .bf-cell i').length } : null;
+  })()`, 20000) || { rows: 0, bars: 0 };
   check("终局贡献蝶形图（含承伤占比 / 参团率 / KDA）", !!bfly && bfly.rows === 5 && bfly.hasTank && bfly.hasKda && bfly.bars === 8,
     "rows=" + (bfly && bfly.rows) + " bars=" + (bfly && bfly.bars));
   err = await visit("game.html?id=48251408_47_1793364935", 600);
