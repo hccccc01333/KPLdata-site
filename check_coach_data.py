@@ -196,7 +196,8 @@ def main() -> None:
     for key, spans in team_seasons.items():
         spans = sorted(spans)
         for (s1, e1, id1), (s2, e2, id2) in zip(spans, spans[1:]):
-            if e1 and s2 and e1 >= s2:
+            # 并列主教练（同起始日期、同队同赛季）允许重叠。
+            if e1 and s2 and e1 >= s2 and s1 != s2:
                 a.warn("tenure.overlap", f"{key} 任期区间重叠：{id1} / {id2}")
 
     for r in exclusions:

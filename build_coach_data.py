@@ -274,14 +274,14 @@ def main() -> None:
         team = str(row.get("team") or "")
         start = str(row.get("valid_from") or "")[:10]
         end = str(row.get("valid_to") or "")[:10]
-        if lid not in leagues or team not in bp_teams:
-            problems.append(f"{team}/{lid}: 缺少赛事或战队数据")
+        if lid not in leagues:
+            problems.append(f"{team}/{lid}: 缺少赛事数据")
             continue
         if not start or not end or start > end:
             problems.append(f"{team}/{lid}: 任期日期异常 {start} → {end}")
             continue
         lg = leagues[lid]
-        meta = bp_teams[team]
+        meta = bp_teams.get(team) or {}
         shard = bp_shards.get(team) or {}
         ev_all = [r for r in (shard.get("evidence") or []) if str(r[2]) == lid and in_range(r[0], start, end)]
         if not ev_all:
