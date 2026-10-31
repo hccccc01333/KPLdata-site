@@ -92,10 +92,51 @@
       '<div class="block-note">' + esc(t.note || "") + " 当前教练不能回填往年赛果；换帅 / 角色不明确不纳入 BP 归属。</div>";
   }
 
+  function fingerprintBars(t) {
+    var b = t.bp;
+    var colors = ["#F6C021", "#8FC7F0", "#B98CE0", "#F2A3AE", "#7BE0A3"];
+    function bar(list, total, emptyText) {
+      if (!list || !list.length || !total) return '<div class="cfp-empty">' + emptyText + "</div>";
+      return '<div class="cfp-bar">' + list.slice(0, 5).map(function (r, i) {
+        var w = Math.max(2, Number(r.n || 0) / total * 100);
+        var tip = heroName(r.i) + "：" + K.fmtInt(r.n) + " 手";
+        return '<i style="width:' + w.toFixed(2) + '%;background:' + colors[i % colors.length] + '" title="' + esc(tip) + '"></i>';
+      }).join("") + "</div>";
+    }
+    return '<div class="cfp-bars">' +
+      '<div><span>选用结构</span>' + bar(b.topPicks, b.picks, "本任期没有完整 BP 选用") + "</div>" +
+      '<div><span>禁用结构</span>' + bar(b.topBans, b.bans, "本任期没有完整 BP 禁用") + "</div>" +
+      "</div>";
+  }
+
+  function tenureTimeline(c) {
+    var rows = coachTenures(c.id);
+    if (!rows.length) return "";
+    var starts = rows.map(function (r) { return r.validFrom || ""; }).filter(Boolean).sort();
+    var ends = rows.map(function (r) { return r.validTo || ""; }).filter(Boolean).sort();
+    var start = starts[0], end = ends[ends.length - 1];
+    var time = function (v) { return new Date(v + "T00:00:00").getTime(); };
+    var span = Math.max(1, time(end) - time(start));
+    var tracks = rows.map(function (r) {
+      var x = Math.max(0, (time(r.validFrom) - time(start)) / span * 100);
+      var w = Math.max(4, (time(r.validTo) - time(r.validFrom)) / span * 100);
+      var hasBp = Number(r.bp.games || 0) > 0;
+      return '<div class="ct-row">' +
+        '<span class="ct-team">' + esc(r.team) + "</span>" +
+        '<span class="ct-track"><i class="' + (hasBp ? "" : "nobp") + '" style="left:' + x.toFixed(2) + "%;width:" + w.toFixed(2) + '%" title="' +
+        esc(r.seasonName + " · " + r.validFrom + " → " + r.validTo + (hasBp ? " · BP " + K.fmtInt(r.bp.games) + " 局" : " · 无完整 BP")) + '"></i></span>' +
+        '<span class="ct-meta mono">' + (hasBp ? K.fmtInt(r.bp.games) + " BP 局" : "无 BP") + "</span></div>";
+    }).join("");
+    return '<div class="ct-timeline"><div class="ct-head"><b>任期时间轴</b><span class="mono">' +
+      start + " → " + end + "</span></div>" + tracks +
+      '<div class="ct-note">实色 = 有完整 20 手 BP；虚线 = 只有赛果 / 无 BP。</div></div>';
+  }
+
   function finger(t) {
     var b = t.bp;
     var picks = b.topPicks || [];
     $("#coachFingerprint").innerHTML =
+      fingerprintBars(b) +
       '<div class="coach-stat-grid">' +
         '<div><b>' + K.fmtInt(b.uniquePicks) + '</b><span>选用英雄</span><em>有效 ' + (b.effectiveHeroes == null ? "—" : b.effectiveHeroes) + " 个</em></div>" +
         '<div><b>' + pct(b.topShare) + '</b><span>最高选用占比</span><em>' + (b.topPick == null ? "—" : esc(heroName(b.topPick))) + "</em></div>" +
@@ -147,7 +188,7 @@
 
   function tenureHistory(c) {
     var rows = coachTenures(c.id);
-    $("#coachTenures").innerHTML = '<div class="tbp-table-wrap"><table class="tbp-compact"><thead><tr>' +
+    $("#coachTenures").innerHTML = tenureTimeline(c) + '<div class="tbp-table-wrap"><table class="tbp-compact"><thead><tr>' +
       "<th>赛季</th><th>战队</th><th>任期</th><th class='num'>大场</th><th class='num'>大场胜率</th><th class='num'>BP 局</th><th>来源</th>" +
       "</tr></thead><tbody>" + rows.map(function (r) {
         return '<tr data-tenure="' + esc(r.id) + '" tabindex="0" class="' + (r.id === tenureId ? "on" : "") + '">' +
