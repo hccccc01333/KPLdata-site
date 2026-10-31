@@ -105,36 +105,52 @@ async function main() {
   let err = await visit("game.html?id=48251408_47_1793364935", 400);
   check("game.html 无未捕获异常", err.length === 0, err.join(" | "));
 
+  const score = await evaluate(`document.querySelectorAll('#curveScore .cs-k').length`);
+  check("终局记分牌渲染（两队各 5 项指标）", score === 10, "chips=" + score);
+
   await waitFor(`!!document.querySelector('#curveTabsTeam [data-t="res"]')`);
   await evaluate(`document.querySelector('#curveTabsTeam [data-t="res"]').click()`);
-  await waitFor(`document.querySelectorAll('#curveChart .rp-sm').length > 0`);
+  await waitFor(`document.querySelectorAll('#curveChart .res-dot').length > 0`);
   await sleep(400);
   const res = await evaluate(`(function(){
-    var titles = Array.from(document.querySelectorAll('#curveChart .rp-sm-t')).map(function(x){return x.textContent.trim();});
-    var ticks = Array.from(document.querySelectorAll('#curveChart svg text')).map(function(t){return t.textContent;});
-    var nums = ticks.map(function(s){ var m = s.match(/^(\\d+(?:\\.\\d+)?)$/); return m ? Number(m[1]) : null; }).filter(function(v){return v!==null;});
-    return { titles: titles, maxTick: nums.length ? Math.max.apply(null, nums) : null, tickCount: nums.length };
+    var labels = Array.from(document.querySelectorAll('#curveChart .res-tl text')).map(function(t){return t.textContent.trim();});
+    return { dots: document.querySelectorAll('#curveChart .res-dot').length,
+             hasLord: labels.indexOf('主宰') >= 0, hasDark: labels.indexOf('黑暗暴君') >= 0 };
   })()`);
-  check("资源图只有 2 张（主宰 / 黑暗暴君）", res && res.titles && res.titles.length === 2, JSON.stringify(res && res.titles));
-  check("资源图标题正确", !!res && !!res.titles && res.titles.indexOf("主宰") >= 0 && res.titles.indexOf("黑暗暴君") >= 0, "");
-  check("资源图纵轴为个位数整数计数", !!res && res.maxTick !== null && res.maxTick <= 12, "maxTick=" + (res && res.maxTick));
+  check("中立资源为点状时间轴（主宰 / 黑暗暴君两行）", !!res && res.hasLord && res.hasDark && res.dots > 0,
+    "dots=" + (res && res.dots));
 
-  await evaluate(`document.querySelector('#curveTabsLane [data-t="player"]').click()`);
-  await waitFor(`document.querySelectorAll('#curveChart .rp-sm').length > 0`);
+  await evaluate(`document.querySelector('#curveTabsTeam [data-t="gd"]').click()`);
+  await waitFor(`document.querySelectorAll('#curveChart svg rect').length > 0`);
+  await sleep(300);
+  const bars = await evaluate(`document.querySelectorAll('#curveChart svg rect').length`);
+  check("经济差动力为逐分钟柱状图", bars >= 8, "rects=" + bars);
+
+  await evaluate(`document.querySelector('#curveTabsLane [data-t="lane"]').click()`);
+  await waitFor(`document.querySelectorAll('#curveChart .duel-chip').length > 0`);
   await sleep(300);
   const lane = await evaluate(`(function(){
-    var titles = Array.from(document.querySelectorAll('#curveChart .rp-sm-t')).map(function(x){return x.textContent.trim();});
-    var paths = document.querySelectorAll('#curveChart svg path').length;
-    return { n: titles.length, withVs: titles.filter(function(t){return t.indexOf(' vs ')>=0;}).length, paths: paths, first: titles[0] || '' };
+    var chips = Array.from(document.querySelectorAll('#curveChart .duel-chip')).map(function(c){return c.textContent.trim();});
+    var lanes = ['对抗路','打野','中路','发育路','游走'];
+    var head = (document.getElementById('duelHead')||{}).textContent || '';
+    return { chips: chips.length, lanes: lanes.filter(function(l){return chips.some(function(c){return c.indexOf(l)===0;});}).length,
+             headOk: /VS/.test(head), leadPaths: document.querySelectorAll('#duelLead svg path').length };
   })()`);
-  check("分路经济渲染 5 张同位置对位小图", !!lane && lane.n === 5 && lane.withVs === 5, "n=" + (lane && lane.n) + " withVs=" + (lane && lane.withVs));
-  check("分路小图实际画出曲线", !!lane && lane.paths > 0, "paths=" + (lane && lane.paths));
-
-  await evaluate(`document.querySelector('#curveTabsLane [data-t="dmg"]').click()`);
-  await waitFor(`document.querySelectorAll('#curveChart .rp-sm').length > 0`);
-  await sleep(300);
-  const dmg = await evaluate(`document.querySelectorAll('#curveChart .rp-sm').length`);
-  check("分路输出渲染 5 张小图", dmg === 5, "n=" + dmg);
+  check("分路对位为五路决斗卡", !!lane && lane.chips === 5 && lane.lanes === 5, "chips=" + (lane && lane.chips));
+  check("决斗视图含双方与领先差大图", !!lane && lane.headOk && lane.leadPaths > 0, "paths=" + (lane && lane.leadPaths));
+  // 切到输出口径，决斗视图应重绘
+  await evaluate(`document.querySelector('#duelMetric [data-m="dmg"]').click()`);
+  await sleep(400);
+  const dmg = await evaluate(`(function(){
+    var head = (document.getElementById('duelHead')||{}).textContent || '';
+    return { headOk: /VS/.test(head), paths: document.querySelectorAll('#duelLead svg path').length };
+  })()`);
+  check("输出口径决斗视图重绘", !!dmg && dmg.headOk && dmg.paths > 0, "paths=" + (dmg && dmg.paths));
+  // 点对抗路芯片，决斗视图应切换
+  await evaluate(`document.querySelector('#curveChart .duel-chip[data-i="0"]').click()`);
+  await sleep(400);
+  const chip0 = await evaluate(`(document.getElementById('duelHead')||{}).textContent || ''`);
+  check("点击分路芯片切换对位", (chip0 || "").length > 4, String(chip0).slice(0, 30));
   err = await visit("game.html?id=48251408_47_1793364935", 600);
   check("game.html 复检无异常（含分路切换后）", err.length === 0, err.join(" | "));
 

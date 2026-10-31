@@ -978,7 +978,22 @@ window.KPL = (function () {
         '<stop offset="0%" stop-color="' + se.color + '" stop-opacity="' + (se.fillOpacity == null ? 0.18 : se.fillOpacity) + '"/>' +
         '<stop offset="100%" stop-color="' + se.color + '" stop-opacity="0"/></linearGradient>';
     });
+    series.forEach(function (se, si) {
+      if (!se.glow) return;
+      s += '<filter id="' + uid + "gl" + si + '" x="-30%" y="-30%" width="160%" height="160%">' +
+        '<feDropShadow dx="0" dy="0" stdDeviation="4.5" flood-color="' + se.color + '" flood-opacity=".4"/></filter>';
+    });
     s += '</defs>';
+    /* 背景区带：用于「优势期」等叙事高亮，画在网格之前 */
+    (opts.bands || []).forEach(function (bd) {
+      if (!isFinite(Number(bd.from)) || !isFinite(Number(bd.to))) return;
+      var bx1 = X(Number(bd.from)), bx2 = X(Number(bd.to));
+      var vx1 = Math.max(bx1, P.l), vx2 = Math.min(bx2, W - P.r);
+      if (vx2 - vx1 < 2) return;
+      s += '<rect x="' + vx1.toFixed(1) + '" y="' + P.t + '" width="' + (vx2 - vx1).toFixed(1) +
+        '" height="' + (H - P.t - P.b) + '" fill="' + (bd.color || CP2.mark) +
+        '" opacity="' + (bd.opacity == null ? 0.06 : bd.opacity) + '" rx="4"/>';
+    });
     for (var gi = 0; gi <= yTicks; gi++) {
       var gv = yMin + (yMax - yMin) * gi / yTicks;
       var gy = Y(gv).toFixed(1);
@@ -1006,22 +1021,66 @@ window.KPL = (function () {
       s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10.5" ' +
         'fill=' + JSON.stringify(CP2.label) + ' font-family="Inter,monospace">' + esc(xFmt(m)) + "</text>";
     }
+    /* 柱状系列：先统计一组里有多少柱状系列，以便并排分组 */
+    var barSeries = series.filter(function (se) { return se.bars; });
+    var barGroupN = Math.max(1, barSeries.length);
+    var barSlot = (W - P.l - P.r) / Math.max(1, xMax - xMin);
     series.forEach(function (se, si) {
-      var d = smooth ? smoothPath(se.pts, X, Y) : se.pts.map(function (pt, i) {
-        return (i ? "L" : "M") + X(pt[0]).toFixed(1) + " " + Y(pt[1]).toFixed(1);
-      }).join(" ");
+      if (se.bars) {
+        /* 每分钟一根柱：0 线上下一分为二着色（领先方一眼可见），并排柱按组内序号错位 */
+        var bw = Math.min(Math.max(barSlot * 0.62 / barGroupN, 2), 18);
+        var gi2 = barSeries.indexOf(se);
+        var off = (gi2 - (barGroupN - 1) / 2) * bw;
+        var baseV = yMin >= 0 ? yMin : (yMax <= 0 ? yMax : 0);
+        var by2 = Y(baseV);
+        se.pts.forEach(function (pt) {
+          var v = Number(pt[1]);
+          var vy = Y(v);
+          var col = v >= 0 ? (se.barColors && se.barColors.pos) || se.color
+                           : (se.barColors && se.barColors.neg) || se.color;
+          s += '<rect x="' + (X(pt[0]) - bw / 2 + off).toFixed(1) + '" y="' + Math.min(by2, vy).toFixed(1) +
+            '" width="' + bw.toFixed(1) + '" height="' + Math.max(1.5, Math.abs(by2 - vy)).toFixed(1) +
+            '" rx="' + Math.min(2.5, bw / 3).toFixed(1) + '" fill="' + col + '" opacity="' + (se.opacity == null ? 0.88 : se.opacity) + '"/>';
+        });
+        return;
+      }
+      var d;
+      if (se.step) {
+        d = se.pts.map(function (pt, i) {
+          var x = X(pt[0]).toFixed(1), y = Y(pt[1]).toFixed(1);
+          if (!i) return "M" + x + " " + y;
+          return "L" + X(se.pts[i - 1][0]).toFixed(1) + " " + y + " L" + x + " " + y;
+        }).join(" ");
+      } else {
+        d = smooth ? smoothPath(se.pts, X, Y) : se.pts.map(function (pt, i) {
+          return (i ? "L" : "M") + X(pt[0]).toFixed(1) + " " + Y(pt[1]).toFixed(1);
+        }).join(" ");
+      }
       if (se.fill && se.pts.length > 1) {
         var baseY = se.fillTo == null ? Math.max(yMin, 0) : Number(se.fillTo);
         var area = d + " L" + X(se.pts[se.pts.length - 1][0]).toFixed(1) + " " + Y(baseY).toFixed(1) +
           " L" + X(se.pts[0][0]).toFixed(1) + " " + Y(baseY).toFixed(1) + " Z";
-        s += '<path d="' + area + '" fill="url(#' + uid + "g" + si + ')" stroke="none"/>';
+        /* fillSolid：不随高度衰减的纯色填充，适合围绕 0 线上下摆动的差值面积 */
+        s += se.fillSolid
+          ? '<path d="' + area + '" fill="' + se.color + '" fill-opacity="' + (se.fillOpacity == null ? 0.18 : se.fillOpacity) + '" stroke="none"/>'
+          : '<path d="' + area + '" fill="url(#' + uid + "g" + si + ')" stroke="none"/>';
       }
-      s += '<path d="' + d + '" fill="none" stroke="' + se.color + '" stroke-width="' + (se.width || 2.5) + '"' +
-        (se.dash ? ' stroke-dasharray="6 5"' : "") + ' stroke-linejoin="round" stroke-linecap="round" opacity="' + (se.opacity || 1) + '"/>';
+      s += se.nostroke ? "" : '<path d="' + d + '" fill="none" stroke="' + se.color + '" stroke-width="' + (se.width || 2.5) + '"' +
+        (se.dash ? ' stroke-dasharray="6 5"' : "") + ' stroke-linejoin="round" stroke-linecap="round" opacity="' + (se.opacity || 1) + '"' +
+        (se.glow ? ' filter="url(#' + uid + "gl" + si + ')"' : "") + "/>";
       if (se.dots && se.pts.length <= 24) {
         se.pts.forEach(function (pt) {
           s += '<circle cx="' + X(pt[0]).toFixed(1) + '" cy="' + Y(pt[1]).toFixed(1) + '" r="2.8" fill="' + se.color + '"/>';
         });
+      }
+      /* 增量点：只在数值上涨的分钟画点（累计击杀 / 推塔的「发生时刻」） */
+      if (se.markGrowth) {
+        for (var gi3 = 1; gi3 < se.pts.length; gi3++) {
+          if (Number(se.pts[gi3][1]) > Number(se.pts[gi3 - 1][1])) {
+            s += '<circle cx="' + X(se.pts[gi3][0]).toFixed(1) + '" cy="' + Y(se.pts[gi3][1]).toFixed(1) +
+              '" r="3.4" fill="' + se.color + '" stroke=' + JSON.stringify(CP2.dot) + ' stroke-width="1.6"/>';
+          }
+        }
       }
     });
     events.forEach(function (e) {
@@ -1068,7 +1127,7 @@ window.KPL = (function () {
       var best = nearest(target);
       if (!best) return;
       var evs = nearEvents(best.m);
-      var rows = series.map(function (se) {
+      var rows = series.filter(function (se) { return !se.noTip; }).map(function (se) {
         var near = se.pts.reduce(function (a, pt) {
           return Math.abs(Number(pt[0]) - best.m) < Math.abs(Number(a[0]) - best.m) ? pt : a;
         }, se.pts[0]);
