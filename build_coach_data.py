@@ -70,6 +70,17 @@ def load_leagues() -> dict:
     return out
 
 
+# 2016–2018 站内 leagues.json 不包含；Liquipedia 页面提供赛事起止，
+# 这里只用于展示任期区间，不参与站内大场 / 小局赛果计算。
+EARLY_LEAGUES = {
+    "20160001": {"id": "20160001", "name": "2016 KPL 秋季赛", "start": "2016-09-17", "end": "2016-12-18"},
+    "20170001": {"id": "20170001", "name": "2017 KPL 春季赛", "start": "2017-03-24", "end": "2017-07-09"},
+    "20170002": {"id": "20170002", "name": "2017 KPL 秋季赛", "start": "2017-09-21", "end": "2017-12-23"},
+    "20180001": {"id": "20180001", "name": "2018 KPL 春季赛", "start": "2018-03-21", "end": "2018-07-08"},
+    "20180002": {"id": "20180002", "name": "2018 KPL 秋季赛", "start": "2018-09-12", "end": "2018-12-22"},
+}
+
+
 def match_rows() -> list[dict]:
     """解析站内比赛为大场 / 小局记录，小局按每局自己的 camp 队名结算。"""
     rows = []
@@ -244,6 +255,7 @@ def jaccard(a: set[int], b: set[int]) -> float | None:
 
 def main() -> None:
     leagues = load_leagues()
+    leagues.update(EARLY_LEAGUES)
     tenures = read_csv(META / "coach_tenures.csv")
     exclusions = read_csv(META / "coach_tenure_exclusions.csv")
     bp_index = load_js(BP_DIR / "index.js", "KPL_TEAM_BP_INDEX")
