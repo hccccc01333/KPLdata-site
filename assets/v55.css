@@ -660,8 +660,7 @@ html.v55 .rec-row.openable:hover .rec-who b{border-bottom-color:var(--brand)}
 .rp-sm-t{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .rp-sm-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rp-sm-diff{font-family:var(--mono);font-size:12.5px;font-weight:800;flex:none;font-variant-numeric:tabular-nums}
-.rp-sm-grid.lane5{grid-template-columns:repeat(5,minmax(0,1fr))}
-@media(max-width:1100px){.rp-sm-grid.lane5{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}}
+.lane-strips svg{width:100%;height:auto;display:block}
 .res-tl svg{width:100%;height:auto;display:block}
 .res-dot{cursor:pointer}
 .curve-summary b{font-size:16.5px}
