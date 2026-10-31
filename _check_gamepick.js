@@ -105,7 +105,7 @@ async function main() {
   let err = await visit("game.html?id=48251408_47_1793364935", 400);
   check("game.html 无未捕获异常", err.length === 0, err.join(" | "));
 
-  const score = await evaluate(`document.querySelectorAll('#curveScore .cs-k').length`);
+  const score = await waitFor(`document.querySelectorAll('#curveScore .cs-k').length || null`, 15000) || 0;
   check("终局记分牌渲染（两队各 5 项指标）", score === 10, "chips=" + score);
 
   await waitFor(`!!document.querySelector('#curveTabsTeam [data-t="res"]')`);
