@@ -32,56 +32,105 @@ window.KPL_REPLAY = (function () {
     return !!idx[matchId];
   }
 
-  /* ---------- 时间轴曲线 ---------- */
+  /* ---------- 时间轴曲线（V5 设计语言：天平优势面积 + 金差条带） ---------- */
   function curveSVG(frames, t1, t2, curIdx, b) {
-    var W = 1040, H = 240, P = { l: 46, r: 54, t: 16, b: 28 };
+    var W = 1040, H = 264, P = { l: 52, r: 56, t: 16 };
+    var mainB = H - 92, stripT = H - 86, stripB = H - 34;
     var maxM = Math.max(10, frames[frames.length - 1].m);
+    var LIGHT = document.documentElement.classList.contains("light-site");
+    var T1 = LIGHT ? "#C43A4B" : "#F6C021", T2 = LIGHT ? "#2E6FD0" : "#6EAFFF";
+    var LINEC = LIGHT ? "#5B6B82" : "#D6DEEA";
+    var devs = frames.map(function (f) { return (f.p == null ? 0.5 : f.p) - 0.5; });
+    var dMax = Math.max(0.12, Math.max.apply(null, devs.map(Math.abs))) * 1.15;
+    var midY = (P.t + mainB) / 2, halfH = (mainB - P.t) / 2 - 6;
+    var YA = function (dev) { return midY - dev / dMax * halfH; };
     var gds = frames.map(function (f) { return f.gd || 0; });
-    var gMax = Math.max(1, Math.max.apply(null, gds.map(Math.abs)));
+    var gMax = Math.max(1000, Math.max.apply(null, gds.map(Math.abs))) * 1.1;
+    var midY2 = (stripT + stripB) / 2, half2 = (stripB - stripT) / 2 - 5;
+    var YG = function (v) { return midY2 - v / gMax * half2; };
     var X = function (m) { return P.l + m / maxM * (W - P.l - P.r); };
-    var Y = function (p) { return P.t + (1 - p) * (H - P.t - P.b); };
-    var YG = function (v) { return P.t + (0.5 - v / (gMax * 2)) * (H - P.t - P.b); };
-    var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="胜率时间轴">';
-    for (var gi = 0; gi <= 4; gi++) {
-      var gv = gi / 4, gy = Y(gv).toFixed(1);
-      s += '<line x1="' + P.l + '" y1="' + gy + '" x2="' + (W - P.r) + '" y2="' + gy + '" stroke=' + CP.grid + ' stroke-dasharray="4 6"/>' +
-        '<text x="' + (P.l - 8) + '" y="' + (parseFloat(gy) + 4) + '" text-anchor="end" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' +
-        Math.round(gv * 100) + '%</text>';
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="胜率天平与金差时间轴">';
+    /* 网格与左轴（天平：±dMax 对称，五五开为 0） */
+    for (var gi = -2; gi <= 2; gi++) {
+      var dv = dMax * gi / 2, gy = YA(dv).toFixed(1);
+      var zero = gi === 0;
+      s += '<line x1="' + P.l + '" y1="' + gy + '" x2="' + (W - P.r) + '" y2="' + gy + '" stroke=' + CP.grid +
+        (zero ? "" : ' stroke-dasharray="4 6"') + ' opacity="' + (zero ? 1 : .8) + '"/>' +
+        '<text x="' + (P.l - 8) + '" y="' + (parseFloat(gy) + 4) + '" text-anchor="end" font-size="10.5" fill=' + CP.label +
+        ' font-family="Inter,monospace">' + (dv > 0 ? "+" : dv < 0 ? "−" : "") + Math.round(Math.abs(dv) * 100) + "%</text>";
     }
-    for (var m = 0; m <= maxM; m += 5) {
-      s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' + m + "′</text>";
-    }
-    /* 50% 中线 + 金差右轴 */
-    s += '<line x1="' + P.l + '" y1="' + Y(0.5).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0.5).toFixed(1) + '" stroke=' + CP.axis + ' />';
+    /* 金差条带底 + 右轴 */
+    s += '<rect x="' + P.l + '" y="' + stripT + '" width="' + (W - P.l - P.r) + '" height="' + (stripB - stripT) +
+      '" rx="8" fill=' + CP.grid + ' opacity=".33"/>';
     [gMax, 0, -gMax].forEach(function (gv) {
       s += '<text x="' + (W - P.r + 8) + '" y="' + (YG(gv) + 4).toFixed(1) +
-        '" font-size="10.5" fill=' + CP.label + ' font-family="Inter,monospace">' +
-        (gv > 0 ? "+" : "") + (gv / 1000).toFixed(1) + "k</text>";
+        '" font-size="10" fill=' + CP.label + ' font-family="Inter,monospace">' +
+        (gv > 0 ? "+" : gv < 0 ? "−" : "") + (Math.abs(gv) / 1000).toFixed(gv === 0 ? 0 : 1) + "k</text>";
     });
-    var gPts = frames.map(function (f) { return X(f.m).toFixed(1) + "," + YG(f.gd || 0).toFixed(1); }).join(" ");
-    s += '<polyline points="' + gPts + '" fill="none" stroke=' + CP.label + ' stroke-width="1.6" stroke-dasharray="5 4" opacity=".85"/>';
-    var pts = frames.map(function (f) {
-      return X(f.m).toFixed(1) + "," + Y(f.p == null ? 0.5 : f.p).toFixed(1);
+    s += '<text x="' + (P.l - 8) + '" y="' + (midY2 + 4) + '" text-anchor="end" font-size="10" fill=' + CP.label +
+      ' font-family="Inter,monospace">金差</text>';
+    /* 分钟刻度 */
+    var stepM = maxM > 40 ? 10 : 5;
+    for (var m = 0; m <= maxM; m += stepM) {
+      s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="10.5" fill=' + CP.label +
+        ' font-family="Inter,monospace">' + m + "′</text>";
+    }
+    /* 天平优势面积：0 线上 = t1 优势（金），下 = t2 优势（蓝） */
+    var dPos = "", dNeg = "";
+    frames.forEach(function (f, i) {
+      var x = X(f.m).toFixed(1);
+      dPos += (i ? "L" : "M") + x + " " + YA(Math.max(0, devs[i])).toFixed(1) + " ";
+      dNeg += (i ? "L" : "M") + x + " " + YA(Math.min(0, devs[i])).toFixed(1) + " ";
+    });
+    var lastX = X(frames[frames.length - 1].m).toFixed(1);
+    s += '<path d="' + dPos + "L" + lastX + " " + midY.toFixed(1) + " L" + X(frames[0].m).toFixed(1) + " " +
+      midY.toFixed(1) + ' Z" fill="' + T1 + '" fill-opacity=".34" stroke="none"/>';
+    s += '<path d="' + dNeg + "L" + lastX + " " + midY.toFixed(1) + " L" + X(frames[0].m).toFixed(1) + " " +
+      midY.toFixed(1) + ' Z" fill="' + T2 + '" fill-opacity=".34" stroke="none"/>';
+    s += '<line x1="' + P.l + '" y1="' + midY.toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + midY.toFixed(1) +
+      '" stroke=' + CP.axis + ' opacity=".9"/>';
+    s += '<text x="' + (W - P.r - 6) + '" y="' + (midY - 6).toFixed(1) + '" text-anchor="end" font-size="10" fill=' +
+      CP.label + ' font-family="Inter,monospace">五五开</text>';
+    /* 金差条带面积 */
+    var gPos = "", gNeg = "";
+    frames.forEach(function (f, i) {
+      var x = X(f.m).toFixed(1);
+      gPos += (i ? "L" : "M") + x + " " + YG(Math.max(0, f.gd || 0)).toFixed(1) + " ";
+      gNeg += (i ? "L" : "M") + x + " " + YG(Math.min(0, f.gd || 0)).toFixed(1) + " ";
+    });
+    s += '<path d="' + gPos + "L" + lastX + " " + midY2.toFixed(1) + " L" + X(frames[0].m).toFixed(1) + " " +
+      midY2.toFixed(1) + ' Z" fill="' + T1 + '" fill-opacity=".45" stroke="none"/>';
+    s += '<path d="' + gNeg + "L" + lastX + " " + midY2.toFixed(1) + " L" + X(frames[0].m).toFixed(1) + " " +
+      midY2.toFixed(1) + ' Z" fill="' + T2 + '" fill-opacity=".45" stroke="none"/>';
+    s += '<line x1="' + P.l + '" y1="' + midY2.toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + midY2.toFixed(1) +
+      '" stroke=' + CP.axis + ' opacity=".8"/>';
+    /* 优势边界线 */
+    var line = frames.map(function (f, i) {
+      return (i ? "L" : "M") + X(f.m).toFixed(1) + " " + YA(devs[i]).toFixed(1);
     }).join(" ");
-    var area = "M" + X(frames[0].m).toFixed(1) + "," + Y(0.5).toFixed(1) + " L" + pts.split(" ").join(" L") +
-      " L" + X(frames[frames.length - 1].m).toFixed(1) + "," + Y(0.5).toFixed(1) + " Z";
-    s += '<path d="' + area + '" fill=' + CP.mark + ' fill-opacity=".10"/>';
-    s += '<polyline points="' + pts + '" fill="none" stroke=' + CP.mark + ' stroke-width="2.2" stroke-linejoin="round"/>';
-    var cf = frames[curIdx] || frames[frames.length - 1];
-    var cx = X(cf.m).toFixed(1), cy = Y(cf.p == null ? 0.5 : cf.p).toFixed(1);
+    s += '<path d="' + line + '" fill="none" stroke="' + LINEC + '" stroke-width="2.2" stroke-linejoin="round"/>';
+    /* 事件 */
     var EV_COLOR = { first_blood: "#F0C36A", tyrant: "#7BE0A3", dark_tyrant: "#7BE0A3", lord: "#F6C021", storm: "#F6C021", big_dragon: "#F6C021" };
     (b.events || []).forEach(function (e) {
       var ex = X(e.m);
       if (ex < P.l || ex > W - P.r) return;
       var color = EV_COLOR[e.type] || CP.label;
       s += '<g class="rp-ev-mark">' +
-        '<line x1="' + ex.toFixed(1) + '" y1="' + P.t + '" x2="' + ex.toFixed(1) + '" y2="' + (H - P.b) +
+        '<line x1="' + ex.toFixed(1) + '" y1="' + P.t + '" x2="' + ex.toFixed(1) + '" y2="' + stripB +
         '" stroke="' + color + '" stroke-width="1" stroke-dasharray="3 4" opacity=".28"/>' +
         '<circle cx="' + ex.toFixed(1) + '" cy="' + (P.t + 5) + '" r="3.2" fill="' + color + '" opacity=".92"/>' +
         '<title>' + esc(e.m.toFixed(0) + "′ " + e.l) + "</title></g>";
     });
-    s += '<line x1="' + cx + '" y1="' + P.t + '" x2="' + cx + '" y2="' + (H - P.b) + '" stroke=' + CP.label + ' stroke-width="1" stroke-dasharray="3 4"/>';
+    /* 当前帧游标 */
+    var cf = frames[curIdx] || frames[frames.length - 1];
+    var cx = X(cf.m).toFixed(1), cy = YA((cf.p == null ? 0.5 : cf.p) - 0.5).toFixed(1);
+    s += '<line x1="' + cx + '" y1="' + P.t + '" x2="' + cx + '" y2="' + stripB + '" stroke=' + CP.label +
+      ' stroke-width="1" stroke-dasharray="3 4"/>';
     s += '<circle cx="' + cx + '" cy="' + cy + '" r="4.5" fill=' + CP.dot + ' stroke=' + CP.mark + ' stroke-width="2.4"/>';
+    /* 队伍图例（右上角） */
+    s += '<text x="' + (W - P.r) + '" y="' + (P.t - 3) + '" text-anchor="end" font-size="10.5" font-family="Inter,monospace">' +
+      '<tspan fill="' + T1 + '">●</tspan><tspan fill=' + CP.label + "> " + esc(t1) +
+      '</tspan><tspan fill=' + CP.label + "> vs </tspan><tspan fill='" + T2 + "'>●</tspan><tspan fill=" + CP.label + "> " + esc(t2) + "</tspan></text>";
     s += "</svg>";
     return s;
   }
@@ -600,7 +649,7 @@ window.KPL_REPLAY = (function () {
         var note = document.getElementById("rpTabNote");
         if (note) {
           note.textContent = detailTab === "timeline"
-            ? "时间轴：胜率曲线 + 分层经济"
+            ? "时间轴：天平优势 + 金差条带"
             : detailTab === "resource"
               ? "资源与证据：中立资源、击杀推塔、同段事件"
               : "转折与事件：模型变点和关键事件";

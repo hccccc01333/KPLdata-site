@@ -152,6 +152,7 @@ def bp_stats(ev: list[list], base: dict, H: int) -> dict:
     combo_wins = Counter()
     games = len(ev)
     wins = 0
+    partial_games = sum(1 for r in ev if len(r) > 11 and r[11])
     for r in ev:
         # date, match, league, stage, opponent, side, win, picks, bans, oppPicks, oppBans
         win = 1 if r[6] == 1 else 0
@@ -223,6 +224,7 @@ def bp_stats(ev: list[list], base: dict, H: int) -> dict:
         "games": games,
         "wins": wins,
         "wr": round(wins / games * 100, 1) if games else None,
+        "partialGames": partial_games,
         "picks": picks,
         "bans": bans,
         "oppBans": opp_bans,

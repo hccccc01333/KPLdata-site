@@ -109,7 +109,8 @@ def main() -> None:
         for b in obj.get("battles") or []:
             scanned_battles += 1
             bp = b.get("bp_list") or []
-            if len(bp) != 20:
+            # 2020-2023 官方只发布 17/18 手残缺 BP（无第 10 手），15 手极少数；一并纳入并打 partial 标记
+            if not (15 <= len(bp) <= 20):
                 skipped["incomplete_bp"] += 1
                 continue
             t1 = str((b.get("camp1") or {}).get("team_name") or "").strip()
@@ -138,7 +139,7 @@ def main() -> None:
                     ok = False
                     break
                 hands.append([act, camp, hero])
-            if not ok or len({h for _, _, h in hands}) != 20:
+            if not ok or len({h for _, _, h in hands}) != len(bp):
                 skipped["bad_hands"] += 1
                 continue
             by_camp = {
@@ -148,9 +149,14 @@ def main() -> None:
                 }
                 for c in (1, 2)
             }
-            if any(len(by_camp[c]["picks"]) != 5 or len(by_camp[c]["bans"]) != 5 for c in (1, 2)):
+            if any(not (3 <= len(by_camp[c]["picks"]) <= 5 and 3 <= len(by_camp[c]["bans"]) <= 5) for c in (1, 2)):
                 skipped["bad_counts"] += 1
                 continue
+            partial = 0 if all(
+                len(by_camp[c]["picks"]) == 5 and len(by_camp[c]["bans"]) == 5 for c in (1, 2)
+            ) else 1
+            if partial:
+                skipped["partial_bp"] = skipped.get("partial_bp", 0) + 1
             for h in {h for _, _, h in hands}:
                 hero_counts[h] += 1
             games.append(
@@ -163,10 +169,11 @@ def main() -> None:
                     "t2": t2,
                     "win": win_camp,
                     "hands": hands,
+                    "partial": partial,
                 }
             )
         if idx % 500 == 0:
-            print(f"  parse {idx}/{len(files)} | complete BP {len(games)}", flush=True)
+            print(f"  parse {idx}/{len(files)} | BP games {len(games)}", flush=True)
 
     if not games:
         raise SystemExit("没有可用的完整 BP 局")
@@ -177,7 +184,7 @@ def main() -> None:
     leagues_used = sorted({g["league"] for g in games})
     teams = sorted({g["t1"] for g in games} | {g["t2"] for g in games})
     dates = sorted(g["date"] for g in games if g["date"])
-    print(f"complete BP: {len(games)} games | {len(teams)} teams | {len(leagues_used)} leagues | {H} heroes", flush=True)
+    print(f"BP games: {len(games)} games | {len(teams)} teams | {len(leagues_used)} leagues | {H} heroes", flush=True)
     print(f"skipped: {dict(skipped)} | scanned battles: {scanned_battles}", flush=True)
 
     # 基准池：全部 / 每个赛事，按英雄聚合选用、选用胜场与禁用。
@@ -237,7 +244,7 @@ def main() -> None:
             opp_picks = [hero_idx[h] for a, c, h in g["hands"] if c != camp and a == 1]
             opp_bans = [hero_idx[h] for a, c, h in g["hands"] if c != camp and a == 0]
             team_evidence[team].append(
-                [g["date"], g["match"], g["league"], g["stage"], opp, camp, win, picks, bans, opp_picks, opp_bans]
+                [g["date"], g["match"], g["league"], g["stage"], opp, camp, win, picks, bans, opp_picks, opp_bans, g.get("partial", 0)]
             )
             for scope in ("all", g["league"]):
                 st = stats[scope]
@@ -349,6 +356,8 @@ def main() -> None:
             "start": dates[0] if dates else "",
             "end": dates[-1] if dates else "",
             "games": len(games),
+            "fullGames": sum(1 for g in games if not g.get("partial")),
+            "partialGames": sum(1 for g in games if g.get("partial")),
             "series": len({g["match"] for g in games}),
             "leagues": len(leagues_used),
             "teams": len(teams),
