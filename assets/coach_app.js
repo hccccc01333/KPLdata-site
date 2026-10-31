@@ -73,7 +73,7 @@
       '<div class="coach-kpis">' +
         '<div><b>' + K.fmtInt(t.series.games) + "</b><span>大场</span></div>" +
         '<div><b>' + pct(t.series.wr) + "</b><span>大场胜率</span></div>" +
-        '<div><b>' + K.fmtInt(t.bp.games) + "</b><span>完整 BP 局</span></div>" +
+        '<div><b>' + K.fmtInt(t.bp.games) + '</b><span>BP 局' + (t.bp.partialGames ? "（含残缺）" : "") + "</span></div>" +
         '<div><b>' + K.fmtInt(c.tenures.length) + "</b><span>收录任期</span></div>" +
       "</div>";
   }
@@ -121,15 +121,16 @@
       var x = Math.max(0, (time(r.validFrom) - time(start)) / span * 100);
       var w = Math.max(4, (time(r.validTo) - time(r.validFrom)) / span * 100);
       var hasBp = Number(r.bp.games || 0) > 0;
+      var part = r.bp && r.bp.partialGames ? "（含 " + K.fmtInt(r.bp.partialGames) + " 局残缺）" : "";
       return '<div class="ct-row">' +
         '<span class="ct-team">' + esc(r.team) + "</span>" +
         '<span class="ct-track"><i class="' + (hasBp ? "" : "nobp") + '" style="left:' + x.toFixed(2) + "%;width:" + w.toFixed(2) + '%" title="' +
-        esc(r.seasonName + " · " + r.validFrom + " → " + r.validTo + (hasBp ? " · BP " + K.fmtInt(r.bp.games) + " 局" : " · 无完整 BP")) + '"></i></span>' +
+        esc(r.seasonName + " · " + r.validFrom + " → " + r.validTo + (hasBp ? " · BP " + K.fmtInt(r.bp.games) + " 局" + part : " · 无 BP")) + '"></i></span>' +
         '<span class="ct-meta mono">' + (hasBp ? K.fmtInt(r.bp.games) + " BP 局" : "无 BP") + "</span></div>";
     }).join("");
     return '<div class="ct-timeline"><div class="ct-head"><b>任期时间轴</b><span class="mono">' +
       start + " → " + end + "</span></div>" + tracks +
-      '<div class="ct-note">实色 = 有完整 20 手 BP；虚线 = 只有赛果 / 无 BP。</div></div>';
+      '<div class="ct-note">实色 = 有 BP 指纹（2024 起完整 20 手，2020–2023 为 17/18 手残缺口径）；虚线 = 只有赛果 / 无 BP。</div></div>';
   }
 
   function finger(t) {
@@ -141,7 +142,8 @@
         '<div><b>' + K.fmtInt(b.uniquePicks) + '</b><span>选用英雄</span><em>有效 ' + (b.effectiveHeroes == null ? "—" : b.effectiveHeroes) + " 个</em></div>" +
         '<div><b>' + pct(b.topShare) + '</b><span>最高选用占比</span><em>' + (b.topPick == null ? "—" : esc(heroName(b.topPick))) + "</em></div>" +
         '<div><b>' + K.fmtInt(b.uniqueBans) + '</b><span>禁用英雄</span><em>' + K.fmtInt(b.bans) + " 手</em></div>" +
-        '<div><b>' + K.fmtInt(b.games) + '</b><span>BP 样本</span><em>' + K.fmtInt(b.picks) + " 个选用手位</em></div>" +
+        '<div><b>' + K.fmtInt(b.games) + '</b><span>BP 样本</span><em>' + K.fmtInt(b.picks) + " 个选用手位" +
+        (b.partialGames ? " · 含 " + K.fmtInt(b.partialGames) + " 局残缺" : "") + "</em></div>" +
       "</div>" +
       '<div class="tbp-table-wrap" style="max-height:420px"><table id="coachPicksTable"></table></div>' +
       '<div class="block-note">选用率 = 该队选用手数 / 本任期全部选用手数；联盟率取同赛事全部完整 BP；Lift 只描述偏好强度，胜率是赛果描述。</div>';
@@ -232,7 +234,7 @@
       '<div class="coach-coverage-grid">' +
         '<div><b>' + K.fmtInt(c.teamSeasons) + '</b><span>纳入队-赛季</span></div>' +
         '<div><b>' + K.fmtInt(c.coaches) + '</b><span>教练</span></div>' +
-        '<div><b>' + K.fmtInt(c.bpGames) + '</b><span>去重完整 BP 局</span></div>' +
+        '<div><b>' + K.fmtInt(c.bpGames) + '</b><span>去重 BP 局</span></div>' +
         '<div><b>' + K.fmtInt(c.excludedTeamSeasons) + '</b><span>未纳入队-赛季</span></div>' +
       "</div>" +
       '<div class="block-note">来源：' + esc(D.sourceMode || "—") + "；" + esc(c.start || "") + " – " + esc(c.end || "") + "。只纳入赛季内主教练唯一的战队；中途换帅 / 角色不明确 " + K.fmtInt(c.excludedTeamSeasons) + " 个队-赛季不进入 BP 归属。</div>" +
@@ -258,7 +260,7 @@
     var box = $("#coachSimilar");
     if (!rows.length) {
       box.innerHTML = '<div class="empty-tip">样本不足，暂不生成相似教练。</div>' +
-        '<div class="block-note">相似度按「前 10 常用英雄 + 前 10 常用禁用」的 Jaccard 重合度合成；只作风格描述，不代表水平高低。2024 春夏及更早赛季没有完整 20 手 BP 时，不参与 BP 相似度。</div>';
+        '<div class="block-note">相似度按「前 10 常用英雄 + 前 10 常用禁用」的 Jaccard 重合度合成；只作风格描述，不代表水平高低。2020 春季赛之前官方无 BP 数据，不参与 BP 相似度；2020–2023 为 17/18 手残缺口径，已逐局标注。</div>';
       return;
     }
     box.innerHTML = '<div class="coach-similar-grid">' + rows.map(function (r) {
