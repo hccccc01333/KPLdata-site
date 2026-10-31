@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css?v=85">
 <link rel="stylesheet" href="assets/pages.css?v=20261031c">
-<link rel="stylesheet" href="assets/v55.css?v=90">
+<link rel="stylesheet" href="assets/v55.css?v=91">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="峡谷有数">
 <meta property="og:title" content="对局详情 · 峡谷有数">
@@ -191,7 +191,7 @@
         var all = (L.history || []).concat(L.matches || []);
         var h = all.filter(function (x) { return x.battleId === BID; })[0];
         if (!h || !(h.pts || []).length || h.pts.length < 3) return;
-        renderCurves(h);
+        renderCurves(h, g);
       };
       sc.onerror = function () { sc.remove(); };
       document.head.appendChild(sc);
@@ -199,10 +199,14 @@
     K.refresh();
   }
 
-  function renderCurves(h) {
+  function renderCurves(h, gBattle) {
     var pts = h.pts;
     var LANES = ["对抗路", "打野", "中路", "发育路", "游走"];
     var laneNames = null, curTab = "win", curveEvents = [];
+    /* 官方逐局选手终局数据（输出 / 承受为队内占比，无逐分钟采集），按名字查 */
+    var statByName = {};
+    ((gBattle && gBattle.players) || []).forEach(function (p) { if (p && p.n) statByName[p.n] = p; });
+    var teamKills = [Number(gBattle && gBattle.k1) || 0, Number(gBattle && gBattle.k2) || 0];
     /* 队伍主色：深色台面用 金 / 蓝（与分路卡、复盘台一致），日光主题换高对比红 / 蓝 */
     var LIGHT = document.documentElement.classList.contains("light-site");
     var TC = LIGHT ? { t1: "#C43A4B", t2: "#2E6FD0" } : { t1: "#F6C021", t2: "#6EAFFF" };
@@ -507,7 +511,8 @@
         '<div class="duel-slider"><span class="mono" id="duelMin"></span>' +
         '<input type="range" id="duelRange" min="0" max="100" step="0.2" value="100" aria-label="对位时间轴"></div>' +
         '<div id="duelLead"></div>' +
-        '<div class="duel-insights" id="duelIns"></div>';
+        '<div class="duel-insights" id="duelIns"></div>' +
+        '<div class="duel-bfly" id="duelBfly"></div>';
       var chipsEl = document.getElementById("duelChips");
       var headEl = document.getElementById("duelHead");
       var tugEl = document.getElementById("duelTug");
@@ -515,6 +520,7 @@
       var rangeEl = document.getElementById("duelRange");
       var leadEl = document.getElementById("duelLead");
       var insEl = document.getElementById("duelIns");
+      var bflyEl = document.getElementById("duelBfly");
       var seqOf = function (pk, isGold) {
         return pts.map(function (r) {
           var a = isGold ? Number(r[12 + pk.a * 2] || 0) : Number(r[12 + pk.a * 2 + 1] || 0);
@@ -591,6 +597,35 @@
           '<div><span>终局差</span><b style="color:' + (endD >= 0 ? TC.t1 : TC.t2) + '">' +
           (endD >= 0 ? "+" : "−") + kOut(Math.abs(endD)) + "</b></div>";
         setMinute(Number(last[0]));
+        renderButterfly();
+      }
+      /* 终局贡献蝶形对比：承伤等官方只有终局口径（队内占比），没有逐分钟采集，诚实展示 */
+      function renderButterfly() {
+        var p1 = statByName[curPk.n1] || {}, p2 = statByName[curPk.n2] || {};
+        var has = p1.n && p2.n;
+        if (!has) { bflyEl.innerHTML = ""; return; }
+        var maxM = Math.max(1, Number(last[0]));
+        var kt1 = (Number(p1.g) || 0) / 1000 / maxM, kt2 = (Number(p2.g) || 0) / 1000 / maxM;
+        var kt1v = (Number(p1.k) || 0) + (Number(p1.a) || 0), kt2v = (Number(p2.k) || 0) + (Number(p2.a) || 0);
+        var teamK1 = teamKills[0] || 1, teamK2 = teamKills[1] || 1;
+        var rows = [
+          { lb: "输出占比", v1: Number(p1.dmg) || 0, v2: Number(p2.dmg) || 0, fmt: function (v) { return v.toFixed(1) + "%"; } },
+          { lb: "承受占比", v1: Number(p1.bh) || 0, v2: Number(p2.bh) || 0, fmt: function (v) { return v.toFixed(1) + "%"; } },
+          { lb: "参团率", v1: kt1v / teamK1 * 100, v2: kt2v / teamK2 * 100, fmt: function (v) { return Math.round(v) + "%"; } },
+          { lb: "分均经济", v1: kt1, v2: kt2, fmt: function (v) { return v.toFixed(2) + "k"; } }
+        ];
+        var html = '<div class="duel-bfly-h mono">终局贡献对比 <em>官方逐局数据 · 承伤等无逐分钟采集，占比为队内口径</em></div>';
+        rows.forEach(function (r) {
+          var mx = Math.max(r.v1, r.v2, 0.01);
+          html += '<div class="bf-row">' +
+            '<div class="bf-cell l"><b>' + r.fmt(r.v1) + '</b><i style="width:' + (r.v1 / mx * 78).toFixed(1) + '%;background:' + TC.t1 + '"></i></div>' +
+            '<div class="bf-lb">' + r.lb + "</div>" +
+            '<div class="bf-cell r"><i style="width:' + (r.v2 / mx * 78).toFixed(1) + '%;background:' + TC.t2 + '"></i><b>' + r.fmt(r.v2) + "</b></div></div>";
+        });
+        html += '<div class="bf-row"><div class="bf-cell l"><b class="mono">' + (Number(p1.k) || 0) + "/" + (Number(p1.d) || 0) + "/" + (Number(p1.a) || 0) + "</b></div>" +
+          '<div class="bf-lb">K / D / A</div>' +
+          '<div class="bf-cell r"><b class="mono">' + (Number(p2.k) || 0) + "/" + (Number(p2.d) || 0) + "/" + (Number(p2.a) || 0) + "</b></div></div>";
+        bflyEl.innerHTML = html;
       }
       chipsEl.addEventListener("click", function (e) {
         var c = e.target.closest(".duel-chip");
