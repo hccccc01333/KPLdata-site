@@ -644,3 +644,24 @@ html.v55 .rec-row.openable:hover .rec-who b{border-bottom-color:var(--brand)}
 .gsel-foot{padding:12px 22px 16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
 .gsel-note{font-size:11.5px;color:var(--muted)}
 @media(max-width:720px){.gsel-grid{grid-template-columns:1fr 1fr}.gsel-note{display:none}}
+
+/* 数据曲线 V3：终局记分牌 + 五路对位大卡 + 资源时间轴 */
+.curve-score{display:flex;align-items:stretch;gap:10px;margin:0 0 14px}
+.cs-team{flex:1;display:flex;align-items:center;gap:4px 14px;padding:10px 14px;flex-wrap:wrap;min-width:0;
+  border:1px solid var(--line);border-radius:12px;background:var(--card2)}
+.cs-dot{width:10px;height:10px;border-radius:50%;flex:none;margin-right:2px}
+.cs-team>b{font-size:13.5px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.cs-k{display:flex;align-items:baseline;gap:3px}
+.cs-k b{font-family:var(--mono);font-size:14.5px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.cs-k em{font-style:normal;font-size:9.5px;color:var(--muted)}
+.cs-final{align-self:center;flex:none;font-size:10px;letter-spacing:.14em;color:var(--muted);
+  border:1px solid var(--line);border-radius:999px;padding:4px 9px;background:var(--inset)}
+.live-chart{padding:12px 14px}
+.rp-sm-t{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rp-sm-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-sm-diff{font-family:var(--mono);font-size:12.5px;font-weight:800;flex:none;font-variant-numeric:tabular-nums}
+.rp-sm-grid.lane5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1100px){.rp-sm-grid.lane5{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}}
+.res-tl svg{width:100%;height:auto;display:block}
+.res-dot{cursor:pointer}
+.curve-summary b{font-size:16.5px}
