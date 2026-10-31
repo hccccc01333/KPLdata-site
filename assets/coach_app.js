@@ -217,7 +217,7 @@
     var box = $("#coachSimilar");
     if (!rows.length) {
       box.innerHTML = '<div class="empty-tip">样本不足，暂不生成相似教练。</div>' +
-        '<div class="block-note">相似度按「前 10 常用英雄 + 前 10 常用禁用」的 Jaccard 重合度合成；只作风格描述，不代表水平高低。2024 春夏没有完整 20 手 BP，不参与 BP 相似度。</div>';
+        '<div class="block-note">相似度按「前 10 常用英雄 + 前 10 常用禁用」的 Jaccard 重合度合成；只作风格描述，不代表水平高低。2024 春夏及更早赛季没有完整 20 手 BP 时，不参与 BP 相似度。</div>';
       return;
     }
     box.innerHTML = '<div class="coach-similar-grid">' + rows.map(function (r) {
