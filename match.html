@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css?v=85">
 <link rel="stylesheet" href="assets/pages.css?v=20261031c">
-<link rel="stylesheet" href="assets/v55.css?v=87">
+<link rel="stylesheet" href="assets/v55.css?v=88">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="峡谷有数">
 <meta property="og:title" content="比赛详情 · 峡谷有数">
@@ -186,7 +186,7 @@
         "BP / 开局准备中——第一局开始后，实时胜率、指标与对局数据会自动出现在这里。</div>" +
         '<div class="mnav"><a href="schedule.html">返回赛程中心</a></div>';
     }
-    mountReplay(sr.matchId, "");
+    enterReplay(sr.matchId, "", { t1: sr.team1, t2: sr.team2, s1: sr.score1, s2: sr.score2, date: sr.date, done: !liveNow });
     if (liveNow) initLive(sr.matchId);
     else initHistoryOnly(sr.matchId);
     initTodayOverlay(sr.matchId);
@@ -476,11 +476,73 @@
     }
   }
 
+  /* ---------- 对局选择弹窗：点开已结束的多局比赛，先选要进入哪一局 ---------- */
+  function finishedGames(matchId) {
+    var gi = (window.KPL_GAME_INDEX || {})[matchId] || { b: [] };
+    return (gi.b || []).filter(function (b) { return b[3] !== 0; });
+  }
+  function showGamePicker(matchId, meta, onBrowse) {
+    var games = finishedGames(matchId);
+    var rp = (window.KPL_REPLAY_INDEX || {})[matchId] || {};
+    var replaySet = {};
+    (rp.b || []).forEach(function (x) { replaySet[x] = 1; });
+    function close() {
+      var m = document.getElementById("gselModal");
+      if (m) m.remove();
+      document.removeEventListener("keydown", onKey);
+    }
+    function onKey(e) { if (e.key === "Escape") { close(); onBrowse(); } }
+    var cards = games.map(function (b) {
+      var hasRp = !!replaySet[b[0]];
+      return '<button type="button" class="gsel-card" data-bid="' + K.esc(b[0]) + '">' +
+        '<span class="gc-go">进入 →</span><span class="gc-no mono">GAME ' + b[1] + "</span>" +
+        '<span class="gc-win">' + K.esc(b[4] || (b[3] === 1 ? meta.t1 : meta.t2)) + " 胜</span>" +
+        '<span class="gc-meta"><span class="mono">' + (b[2] || "—") + "′</span>" +
+        K.coverageBadges(K.battleCoverageMask(matchId, b[0])) +
+        '<span class="tag">' + (hasRp ? "分钟级复盘" : "基础数据") + "</span></span></button>";
+    }).join("");
+    var ov = document.createElement("div");
+    ov.id = "gselModal";
+    ov.className = "gsel-modal";
+    ov.innerHTML = '<div class="gsel-bg" data-close="1"></div>' +
+      '<div class="gsel-panel" role="dialog" aria-modal="true" aria-label="选择要进入的对局">' +
+      '<div class="gsel-head"><div class="gsel-kicker mono">SELECT GAME · 本场已结束</div>' +
+      "<h3>要进入哪一局？<span>共 " + games.length + " 局</span></h3>" +
+      '<div class="gsel-sub">' + K.esc(meta.t1) + " <b>" + meta.s1 + " : " + meta.s2 + "</b> " + K.esc(meta.t2) +
+      (meta.date ? " · " + K.esc(meta.date) : "") + "</div></div>" +
+      '<button type="button" class="gsel-close" data-close="1" aria-label="关闭">×</button>' +
+      '<div class="gsel-body"><div class="gsel-grid">' + cards + "</div></div>" +
+      '<div class="gsel-foot"><span class="gsel-note">选择单局进入复盘空间（曲线 · 分路 · 选手可视化）；关闭则浏览整场概览。</span>' +
+      '<button type="button" class="btn ghost sm" data-close="1">先浏览整场概览</button></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("click", function (e) {
+      var card = e.target.closest(".gsel-card");
+      if (card) { close(); location.href = "game.html?id=" + encodeURIComponent(card.getAttribute("data-bid")); return; }
+      if (e.target.getAttribute && e.target.getAttribute("data-close")) { close(); onBrowse(); }
+    });
+    document.addEventListener("keydown", onKey);
+  }
+  function enterReplay(matchId, defaultBattle, meta) {
+    // 分享/局号深链直接落到对应局，不弹窗；系列赛进行中也不弹
+    meta = meta || {};
+    if (SHARE_SEQ || meta.done === false) { mountReplay(matchId, defaultBattle); return; }
+    var games = finishedGames(matchId);
+    if (games.length >= 2) {
+      showGamePicker(matchId, meta, function () { mountReplay(matchId, defaultBattle); });
+      return;
+    }
+    mountReplay(matchId, defaultBattle);
+  }
+
   /* ---------- 头图 ---------- */
   var strip = (M.battles || []).map(function (b) {
     var kw = b.gameNo === KEY.gameNo;
-    return '<span class="battle-chip' + (kw ? " win" : "") + '">G' + b.gameNo + " · " + K.esc(b.winner) +
-      '<span class="tag">' + (b.hasTl ? "可复盘" : "基础数据") + (kw ? " · 关键局" : "") + "</span></span>";
+    var bid = bidOfSeq(b.gameNo);
+    var tag = '<span class="tag">' + (b.hasTl ? "可复盘" : "基础数据") + (kw ? " · 关键局" : "") + "</span>";
+    var body = "G" + b.gameNo + " · " + K.esc(b.winner) + tag;
+    return bid
+      ? '<a class="battle-chip' + (kw ? " win" : "") + '" href="game.html?id=' + encodeURIComponent(bid) + '" style="text-decoration:none">' + body + "</a>"
+      : '<span class="battle-chip' + (kw ? " win" : "") + '">' + body + "</span>";
   }).join("");
   $("#wrapHero").innerHTML = '<header class="page-hero"><div class="wrap">' +
     '<div class="ph-kicker mono">MATCH · ' + K.esc(LG_NAME[M.leagueId] || "2026 赛季") + ' · ' + K.esc(M.date) + "</div>" +
@@ -586,7 +648,9 @@
     (next ? '<a href="match.html?id=' + K.esc(next.matchId) + '">' + K.esc(next.date) + " " + K.esc(next.team1) + " vs " + K.esc(next.team2) + " →</a>" : "<span></span>") +
     "</div>";
 
-  mountReplay(M.matchId, KEY.battleId);
+  var schedRowM = (window.KPL_SCHEDULE_ALL || []).filter(function (r) { return r.matchId === M.matchId; })[0];
+  enterReplay(M.matchId, KEY.battleId, { t1: M.team1, t2: M.team2, s1: M.score1, s2: M.score2, date: M.date,
+    done: schedRowM ? (schedRowM.st === 2 || !!schedRowM.done) : true });
   K.wrChart($("#wrChart"), KEY, M.team1);
   initLive(M.matchId);
   initTodayOverlay(M.matchId);

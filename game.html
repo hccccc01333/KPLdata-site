@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css?v=85">
 <link rel="stylesheet" href="assets/pages.css?v=20261031c">
-<link rel="stylesheet" href="assets/v55.css?v=87">
+<link rel="stylesheet" href="assets/v55.css?v=88">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="峡谷有数">
 <meta property="og:title" content="对局详情 · 峡谷有数">
@@ -335,26 +335,29 @@
     }
 
     function drawResources(el2, note) {
-      var names = ["暴君", "黑暗暴君", "主宰", "风暴龙王"];
-      var maxV = 1;
-      pts.forEach(function (r) {
-        for (var i = 0; i < 4; i++) maxV = Math.max(maxV, Number(r[8 + i * 2]), Number(r[9 + i * 2]));
-      });
-      el2.innerHTML = '<div class="rp-sm-grid">' + names.map(function (nm, i) {
-        return '<div class="rp-sm"><div class="rp-sm-t mono">' + nm + '</div><div class="rp-sm-c" id="resc' + i + '"></div></div>';
+      var RES = [
+        { nm: "主宰", base: 8 },
+        { nm: "黑暗暴君", base: 10 }
+      ];
+      el2.innerHTML = '<div class="rp-sm-grid">' + RES.map(function (rc, i) {
+        return '<div class="rp-sm"><div class="rp-sm-t mono">' + rc.nm + '</div><div class="rp-sm-c" id="resc' + i + '"></div></div>';
       }).join("") + "</div>";
-      names.forEach(function (nm, i) {
-        var base = 8 + i * 2;
+      RES.forEach(function (rc, i) {
+        var maxV = 1;
+        pts.forEach(function (r) {
+          maxV = Math.max(maxV, Number(r[rc.base]) || 0, Number(r[rc.base + 1]) || 0);
+        });
         K.lineChart(document.getElementById("resc" + i), {
           height: 240, yTicks: 4, xEvery: Math.max(1, Math.ceil((pts[pts.length - 1][0] - pts[0][0]) / 5)),
-          yDomain: [0, maxV * 1.08], yFmt: Math.round,
+          yDomain: [0, Math.ceil(maxV * 1.15 + 0.5)], yFmt: Math.round,
+          events: curveEvents,
           series: [
-            { name: h.t1, color: CP.mark, width: 2.2, pts: pts.map(function (r) { return [r[0], r[base]]; }) },
-            { name: h.t2, color: CP.line, width: 2.2, pts: pts.map(function (r) { return [r[0], r[base + 1]]; }) }
+            { name: h.t1, color: CP.mark, width: 2.2, pts: pts.map(function (r) { return [r[0], Number(r[rc.base]) || 0]; }) },
+            { name: h.t2, color: CP.line, width: 2.2, pts: pts.map(function (r) { return [r[0], Number(r[rc.base + 1]) || 0]; }) }
           ]
         });
       });
-      note.textContent = "四类中立资源共享同一纵轴，方便横向比较控制量；不把 8 条线挤进一张图。";
+      note.textContent = "分钟级采集记录两队累计主宰 / 黑暗暴君数量（击杀暴君计入黑暗暴君前的普通暴君口径，风暴龙王不在分钟数据内）；纵轴为整数计数。";
     }
 
     function lanePairs() {
@@ -408,7 +411,7 @@
       sharedMax *= 1.08;
       diffMax *= 1.12;
       el2.innerHTML = '<div class="rp-sm-grid">' + pairs.map(function (pk, i) {
-        return '<div class="rp-sm"><div class="rp-sm-t mono">' + pk.lane + " · " + esc(pk.n1) + " vs " + esc(pk.n2) + "</div>" +
+        return '<div class="rp-sm"><div class="rp-sm-t mono">' + pk.lane + " · " + K.esc(pk.n1) + " vs " + K.esc(pk.n2) + "</div>" +
           '<div class="rp-sm-c" id="smc' + i + '"></div></div>';
       }).join("") + "</div>";
       pairs.forEach(function (pk, i) {
