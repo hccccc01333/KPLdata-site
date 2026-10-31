@@ -2,6 +2,19 @@
    维护方式：新增版本时在最前面插入一条，version 会用于首页公告的“已读”判断。 */
 KPL_UPDATES = [
   {
+    version: "V6.8.0",
+    date: "2026-10-31",
+    title: "本地专业版：一条命令的数据台",
+    summary: "下载仓库后 python server.py 一条命令，全量数据进 SQLite + SQL 控制台 + 只读数据 API，零第三方依赖。",
+    items: [
+      "新增本地专业版 server.py（仅 Python 标准库）：启动即自动把全量数据导入本地 SQLite（约 17 MB：2,901 场比赛 / 11,162 局对局 / 111,620 条选手行 / 逐帧快照 / 教练任期），数据更新后重启自动重建。",
+      "新增 SQL 控制台（/local.html）：任意只读 SELECT、内置六组示例查询、结果一键导出 CSV、数据表浏览器、全局搜索（选手 / 英雄 / 战队 / 教练）。",
+      "新增只读数据 API：/api/status、/api/schema、/api/query、/api/search、/api/battle/<id>；查询带护栏——仅 SELECT/WITH、拒绝多语句与 PRAGMA、6 秒超时、单次上限 2,000 行。",
+      "本地启动时站点每页左下角出现「本地专业版」徽标；托管静态站上自动隐藏，线上体验不受影响。",
+      "README 新增两种本地运行方式：本地专业版（一条命令）与纯静态预览；Windows 提供启动本地版.bat。"
+    ]
+  },
+  {
     version: "V6.7.2",
     date: "2026-10-31",
     title: "赛中数据可视化重做",

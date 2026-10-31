@@ -19,13 +19,32 @@
 
 ## 本地运行
 
+### 方式一：本地专业版（推荐，一条命令）
+
 ```bash
 git clone https://github.com/hccccc01333/KPLdata-site.git
 cd KPLdata-site
+python server.py
+```
+
+Windows 也可以直接双击 `启动本地版.bat`。脚本只依赖 Python 标准库（3.9+），无任何 pip 安装。
+
+启动后它会：
+
+1. **首次自动建库**：把 `assets/` 里的全量数据（2,901 场比赛、11,162 局对局、111,620 条选手对局行、逐帧快照、教练任期）导入本地 SQLite（约 17 MB，缓存在 `.cache/`，数据更新后重启自动重建）；
+2. **起一个常驻进程**：静态站 + 只读数据 API（`/api/status`、`/api/schema`、`/api/query`、`/api/search`、`/api/battle/<id>`）；
+3. **自动打开 SQL 控制台**（`/local.html`）：任意 SELECT 查询、内置示例（大场胜率 / MVP 榜 / 英雄胜率 / 翻盘局 / 平均经济差曲线 / 教练生涯）、一键导出 CSV、全局搜索；
+4. 站点每页左下角出现「本地专业版」徽标，点击回到控制台。
+
+查询是只读的：仅允许 SELECT/WITH、拒绝多语句与 PRAGMA、6 秒超时、单次最多 2,000 行。改参数：`python server.py --port 8123 --no-browser --rebuild`。
+
+### 方式二：纯静态预览
+
+```bash
 python -m http.server 8000 --bind 127.0.0.1
 ```
 
-打开 http://127.0.0.1:8000/，无需 Node、构建步骤或模型权重。站点包含归档数据；自动采集和更新需另行配置。Three.js 已随站点提供，第三方图片仍可能需要联网。
+打开 http://127.0.0.1:8000/，无需 Node、构建步骤或模型权重。站点包含归档数据；自动采集和更新需另行配置。Three.js 已随站点提供，第三方图片仍可能需要联网。（此方式没有 SQL 控制台与数据 API。）
 
 ## 数据规模
 
