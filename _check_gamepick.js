@@ -90,13 +90,25 @@ async function main() {
     await sleep(settle);
     return errors;
   }
+  // 线上访问受网络与 307（/match.html → /match）影响，固定 settle 不可靠：轮询到条件成立为止
+  async function waitFor(expr, timeout = 15000, every = 300) {
+    const t0 = Date.now();
+    for (;;) {
+      const v = await evaluate(expr);
+      if (v && !v.__err) return v;
+      if (Date.now() - t0 > timeout) return v;
+      await sleep(every);
+    }
+  }
 
   /* ---- 1+2：game.html 资源 / 分路 ---- */
-  let err = await visit("game.html?id=48251408_47_1793364935", 2200);
+  let err = await visit("game.html?id=48251408_47_1793364935", 400);
   check("game.html 无未捕获异常", err.length === 0, err.join(" | "));
 
+  await waitFor(`!!document.querySelector('#curveTabsTeam [data-t="res"]')`);
   await evaluate(`document.querySelector('#curveTabsTeam [data-t="res"]').click()`);
-  await sleep(600);
+  await waitFor(`document.querySelectorAll('#curveChart .rp-sm').length > 0`);
+  await sleep(400);
   const res = await evaluate(`(function(){
     var titles = Array.from(document.querySelectorAll('#curveChart .rp-sm-t')).map(function(x){return x.textContent.trim();});
     var ticks = Array.from(document.querySelectorAll('#curveChart svg text')).map(function(t){return t.textContent;});
@@ -108,7 +120,8 @@ async function main() {
   check("资源图纵轴为个位数整数计数", !!res && res.maxTick !== null && res.maxTick <= 12, "maxTick=" + (res && res.maxTick));
 
   await evaluate(`document.querySelector('#curveTabsLane [data-t="player"]').click()`);
-  await sleep(700);
+  await waitFor(`document.querySelectorAll('#curveChart .rp-sm').length > 0`);
+  await sleep(300);
   const lane = await evaluate(`(function(){
     var titles = Array.from(document.querySelectorAll('#curveChart .rp-sm-t')).map(function(x){return x.textContent.trim();});
     var paths = document.querySelectorAll('#curveChart svg path').length;
@@ -118,47 +131,49 @@ async function main() {
   check("分路小图实际画出曲线", !!lane && lane.paths > 0, "paths=" + (lane && lane.paths));
 
   await evaluate(`document.querySelector('#curveTabsLane [data-t="dmg"]').click()`);
-  await sleep(700);
+  await waitFor(`document.querySelectorAll('#curveChart .rp-sm').length > 0`);
+  await sleep(300);
   const dmg = await evaluate(`document.querySelectorAll('#curveChart .rp-sm').length`);
   check("分路输出渲染 5 张小图", dmg === 5, "n=" + dmg);
-  err = await visit("game.html?id=48251408_47_1793364935", 1200);
+  err = await visit("game.html?id=48251408_47_1793364935", 600);
   check("game.html 复检无异常（含分路切换后）", err.length === 0, err.join(" | "));
 
   /* ---- 3：match.html 对局选择弹窗 ---- */
-  err = await visit("match.html?id=2026103001", 2000);
+  err = await visit("match.html?id=2026103001", 300);
   check("match.html 无未捕获异常", err.length === 0, err.join(" | "));
-  const modal = await evaluate(`(function(){
+  const modal = await waitFor(`(function(){
     var m = document.getElementById('gselModal');
-    if (!m) return { on: false };
+    if (!m) return null;
     return { on: true, cards: m.querySelectorAll('.gsel-card').length,
              head: (m.querySelector('h3')||{}).textContent || '',
              sub: (m.querySelector('.gsel-sub')||{}).textContent || '' };
-  })()`);
+  })()`) || { on: false };
   check("已结束多局比赛先弹对局选择弹窗", !!modal && modal.on === true, "");
   check("弹窗卡片数 = 6 局", !!modal && modal.cards === 6, "cards=" + (modal && modal.cards));
   check("弹窗含比分与两队", !!modal && /上海EDG\.M/.test(modal.sub || "") && /杭州LGD\.NBW/.test(modal.sub || ""), modal && modal.sub);
 
-  // 点第一张卡 → 跳转到对应单局页
+  // 点第一张卡 → 跳转到对应单局页（线上 pretty URL 会把 /game.html 归一成 /game，两种都算过）
+  await waitFor(`!!document.querySelector('#gselModal .gsel-card')`);
   const firstBid = await evaluate(`document.querySelector('#gselModal .gsel-card').getAttribute('data-bid')`);
   await evaluate(`document.querySelector('#gselModal .gsel-card').click()`);
-  await sleep(1200);
-  const url1 = await send("Runtime.evaluate", { expression: "location.href", returnByValue: true });
-  const href1 = url1.result.result.value;
-  check("点卡片跳转到单局复盘空间", typeof href1 === "string" && href1.indexOf("game.html?id=" + firstBid) >= 0, href1);
+  const href1 = await waitFor(`(/\\/game(\\.html)?\\?/.test(location.pathname + location.search) || location.href.indexOf('game.html?id=') >= 0) && location.href.indexOf('id=${firstBid}') >= 0 ? location.href : null`, 15000) || "";
+  check("点卡片跳转到单局复盘空间", typeof href1 === "string" && href1.indexOf(firstBid) >= 0 && /\/game(\.html)?\?/.test(href1), String(href1));
 
   // 再开一次：Esc 关闭 → 弹窗消失 → 整场概览挂上复盘工作台
-  await visit("match.html?id=2026103001", 1600);
+  await visit("match.html?id=2026103001", 300);
+  await waitFor(`!!document.getElementById('gselModal')`);
   await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))`);
-  await sleep(400);
-  const afterEsc = await evaluate(`(function(){
-    return { modalGone: !document.getElementById('gselModal'),
-             workbench: !!document.getElementById('replayWorkbench') && document.getElementById('replayWorkbench').children.length > 0 };
-  })()`);
+  const afterEsc = await waitFor(`(function(){
+    return !document.getElementById('gselModal') &&
+           !!document.getElementById('replayWorkbench') && document.getElementById('replayWorkbench').children.length > 0
+      ? { modalGone: true, workbench: true } : null;
+  })()`) || { modalGone: false, workbench: false };
   check("Esc 关闭后回落整场概览并挂默认复盘", !!afterEsc && afterEsc.modalGone && afterEsc.workbench, JSON.stringify(afterEsc));
 
   /* ---- 4：分享深链不弹窗 ---- */
-  await visit("match.html?id=2026062603&g=3&m=13", 1800);
-  const deep = await evaluate(`({ modal: !!document.getElementById('gselModal'), rp: !!document.getElementById('rpRange') })`);
+  await visit("match.html?id=2026062603&g=3&m=13", 300);
+  const deep = await waitFor(`document.getElementById('rpRange') ? { modal: !!document.getElementById('gselModal'), rp: true } : null`, 15000)
+    || { modal: null, rp: false };
   check("分享深链 ?g=3 不弹窗且直接进复盘", !!deep && deep.modal === false && deep.rp === true, JSON.stringify(deep));
 
   await send("Browser.close").catch(() => {});
