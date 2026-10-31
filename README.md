@@ -19,7 +19,7 @@
 
 ## 本地运行
 
-### 方式一：本地专业版（推荐，一条命令）
+### 方式一：本地工作台（推荐，一条命令）
 
 ```bash
 git clone https://github.com/hccccc01333/KPLdata-site.git
@@ -32,9 +32,9 @@ Windows 也可以直接双击 `启动本地版.bat`。脚本只依赖 Python 标
 启动后它会：
 
 1. **首次自动建库**：把 `assets/` 里的全量数据（2,901 场比赛、11,162 局对局、111,620 条选手对局行、逐帧快照、教练任期）导入本地 SQLite（约 17 MB，缓存在 `.cache/`，数据更新后重启自动重建）；
-2. **起一个常驻进程**：静态站 + 只读数据 API（`/api/status`、`/api/schema`、`/api/query`、`/api/search`、`/api/battle/<id>`）；
-3. **自动打开 SQL 控制台**（`/local.html`）：任意 SELECT 查询、内置示例（大场胜率 / MVP 榜 / 英雄胜率 / 翻盘局 / 平均经济差曲线 / 教练生涯）、一键导出 CSV、全局搜索；
-4. 站点每页左下角出现「本地专业版」徽标，点击回到控制台。
+2. **起一个常驻进程**：还是同一个站点前端，只是多了只读数据 API（`/api/status`、`/api/schema`、`/api/query`、`/api/search`、`/api/battle/<id>`）；
+3. **「数据查询」页长出 SQL 页签**：任意 SELECT 查询、内置示例（大场胜率 / MVP 榜 / 英雄胜率 / 翻盘局 / 平均经济差曲线 / 教练生涯）、一键导出 CSV。不是第二个前端——同一个站，本地跑起来就多了这一层能力；
+4. 站点每页左下角出现「本地工作台」徽标，点击直达 SQL 页签。
 
 查询是只读的：仅允许 SELECT/WITH、拒绝多语句与 PRAGMA、6 秒超时、单次最多 2,000 行。改参数：`python server.py --port 8123 --no-browser --rebuild`。
 
