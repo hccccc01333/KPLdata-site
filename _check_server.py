@@ -56,11 +56,11 @@ def main():
                                  "--port", str(PORT), "--no-browser"],
                                 cwd=HERE, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         up = False
-        for _ in range(120):
+        for _ in range(240):
             time.sleep(0.5)
             try:
                 code, d = jget("/api/health")
-                if d.get("ok"):
+                if d.get("ok") and d.get("ready"):
                     up = True
                     break
             except Exception:
@@ -73,13 +73,24 @@ def main():
     try:
         code, st = jget("/api/status")
         check("/api/status 可用", code == 200 and st.get("ok") is not False)
-        check("状态含版本与数据库大小（本地工作台）", st.get("version") == "V6.8.0" and "本地工作台" in (st.get("service") or "") and st.get("dbMB", 0) > 0,
+        check("状态含版本与数据库大小（本地工作台）", st.get("version") == "V6.9.0" and "本地工作台" in (st.get("service") or "") and st.get("dbMB", 0) > 0,
               "%s / %sMB" % (st.get("version"), st.get("dbMB")))
         c = st.get("counts", {})
         check("全量数据已入库（schedule ≥ 1000 / battles ≥ 5000 / players ≥ 25000）",
               c.get("schedule", 0) >= 1000 and c.get("battles", 0) >= 5000 and c.get("battle_players", 0) >= 25000,
               json.dumps({k: c.get(k) for k in ("schedule", "battles", "battle_players", "frames", "coaches")}))
         check("数据范围从 2019 开始", (st.get("dateRange") or ["x"])[0].startswith("2019"), st.get("dateRange"))
+        check("分钟归档已入库（pts_live ≥ 3500 行）", c.get("pts_live", 0) >= 3500, "pts_live=" + str(c.get("pts_live")))
+        code, sch = jget("/api/schema")
+        names = {t["name"]: t["type"] for t in sch.get("tables", [])}
+        check("视图就位（v_player_game / v_team_season / v_player_season / v_hero_pick）",
+              all(names.get(v) == "view" for v in ("v_player_game", "v_team_season", "v_player_season", "v_hero_pick")),
+              sorted(k for k in names if k.startswith("v_")))
+        code, q = jget("/api/query", "POST", {"sql": "SELECT COUNT(*) AS n FROM v_player_season"})
+        check("视图可查询", code == 200 and q.get("ok") and q["rows"][0][0] > 100, q.get("rows"))
+        code, lv = jget("/api/live")
+        check("/api/live 实时快照", code == 200 and lv.get("ok") and isinstance(lv.get("battles"), list),
+              "battles=" + str(len(lv.get("battles") or [])))
 
         code, q = jget("/api/query", "POST", {"sql": "SELECT COUNT(*) AS n FROM battle_players"})
         check("SQL 控制台可查询", code == 200 and q.get("ok") and q["rows"][0][0] == c.get("battle_players"),

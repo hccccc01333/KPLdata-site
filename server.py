@@ -93,6 +93,52 @@ CREATE INDEX idx_pts_battle ON pts_live(battleId);
 CREATE INDEX idx_frames_battle ON frames(battleId);
 CREATE INDEX idx_events_battle ON battle_events(battleId);
 CREATE INDEX idx_schedule_date ON schedule(date);
+CREATE UNIQUE INDEX idx_pts_bm ON pts_live(battleId, m);
+CREATE TABLE live_battles (
+  battleId TEXT PRIMARY KEY, matchId TEXT, date TEXT, seq INTEGER,
+  t1 TEXT, t2 TEXT, win INTEGER, score1 INTEGER, score2 INTEGER,
+  namesJson TEXT, updated TEXT
+);
+
+-- 视图：把常问口径固化，SQL 页签示例直接引用
+CREATE VIEW v_player_game AS
+SELECT b.battleId, b.matchId, s.date, s.leagueName, s.year,
+       p.camp, p.name, p.hero, p.k, p.d, p.a, p.gold,
+       p.dmgShare, p.tankShare, p.mvp,
+       b.win, b.t1, b.t2
+FROM battle_players p
+JOIN battles b ON b.battleId = p.battleId
+LEFT JOIN schedule s ON s.matchId = b.matchId;
+
+CREATE VIEW v_team_season AS
+SELECT year, leagueName, team1 AS team, COUNT(*) AS matches,
+       SUM(CASE WHEN score1 > score2 THEN 1 ELSE 0 END) AS wins,
+       SUM(CASE WHEN score1 < score2 THEN 1 ELSE 0 END) AS losses,
+       SUM(score1) AS scoreFor, SUM(score2) AS scoreAgainst
+FROM schedule WHERE score1 IS NOT NULL GROUP BY year, leagueName, team1
+UNION ALL
+SELECT year, leagueName, team2 AS team, COUNT(*) AS matches,
+       SUM(CASE WHEN score2 > score1 THEN 1 ELSE 0 END) AS wins,
+       SUM(CASE WHEN score2 < score1 THEN 1 ELSE 0 END) AS losses,
+       SUM(score2) AS scoreFor, SUM(score1) AS scoreAgainst
+FROM schedule WHERE score2 IS NOT NULL GROUP BY year, leagueName, team2;
+
+CREATE VIEW v_player_season AS
+SELECT name, year, COUNT(*) AS games,
+       SUM(k) AS kills, SUM(d) AS deaths, SUM(a) AS assists,
+       SUM(mvp) AS mvp,
+       ROUND(AVG(dmgShare), 1) AS dmgShareAvg,
+       ROUND(AVG(tankShare), 1) AS tankShareAvg,
+       ROUND(SUM(CASE WHEN (camp = 1 AND win = 1) OR (camp = 2 AND win = 2) THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 1) AS winRate
+FROM v_player_game GROUP BY name, year;
+
+CREATE VIEW v_hero_pick AS
+SELECT p.hero, s.year, COUNT(*) AS picks,
+       SUM(CASE WHEN (p.camp = 1 AND b.win = 1) OR (p.camp = 2 AND b.win = 2) THEN 1 ELSE 0 END) AS wins
+FROM battle_players p
+JOIN battles b ON b.battleId = p.battleId
+LEFT JOIN schedule s ON s.matchId = b.matchId
+GROUP BY p.hero, s.year;
 """
 
 
@@ -134,19 +180,36 @@ def build_db(log=print):
                 n_p += 1
     log("  battles: %d rows, players: %d rows" % (n_b, n_p))
 
-    # 直播分钟序列（live.js 的 matches + history）
+    # 直播分钟序列（live.js 的 matches + history）+ 历史归档分片（live_hist/，247 局 3,535 行）
     n_pts = 0
     try:
         live = load_js_json(os.path.join(ASSETS, "live.js"))
-        for m in (live.get("matches") or []) + (live.get("history") or []):
-            for r in (m.get("pts") or []):
-                con.execute("INSERT INTO pts_live VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        entries = list((live.get("matches") or [])) + list((live.get("history") or []))
+    except Exception as e:
+        log("  live.js skipped: %s" % e)
+        entries = []
+    hdir = os.path.join(ASSETS, "live_hist")
+    if os.path.isdir(hdir):
+        for fn in sorted(os.listdir(hdir)):
+            if not fn.endswith(".js"):
+                continue
+            try:
+                entries.extend(load_js_json(os.path.join(hdir, fn)))
+            except Exception:
+                pass
+    for m in entries:
+        rows = m.get("pts") or []
+        if rows:
+            con.execute("INSERT OR REPLACE INTO live_battles VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                        (m.get("battleId"), m.get("matchId"), m.get("date"), m.get("seq"),
+                         m.get("t1"), m.get("t2"), m.get("win"), m.get("score1"), m.get("score2"),
+                         json.dumps(m.get("names") or [], ensure_ascii=False), m.get("updated")))
+            for r in rows:
+                con.execute("INSERT OR IGNORE INTO pts_live VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                             (m.get("battleId"), r[0], r[1], r[2], r[3], r[4], r[5],
                              r[6], r[7], r[8], r[9], r[10], r[11]))
                 n_pts += 1
-    except Exception as e:
-        log("  live.js skipped: %s" % e)
-    log("  pts_live: %d rows" % n_pts)
+    log("  pts_live: %d rows (含归档 %d 局)" % (n_pts, len(entries)))
 
     # 复盘包逐帧 + 事件（assets/replay/<matchId>.json）
     n_f, n_e = 0, 0
@@ -276,6 +339,48 @@ MIME = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
 
 BADGE_TAG = '<script src="/local-badge.js"></script>'.encode("utf-8")
 
+# 服务状态：建库在后台线程跑，静态站先起来，API 就绪前返回 503
+STATE = {"ready": False, "building": False}
+LIVE_LOCK = threading.Lock()
+LIVE_STATE = {"updatedAt": None, "health": None, "battles": []}
+
+
+def refresh_live_state():
+    """读 assets/live.js 到内存：比赛日 02 管线更新 live.js 后，这里 15s 内感知。"""
+    try:
+        live = load_js_json(os.path.join(ASSETS, "live.js"))
+        ms = list(live.get("matches") or [])
+        hs = list(live.get("history") or [])
+        battles = [{
+            "battleId": m.get("battleId"), "matchId": m.get("matchId"), "seq": m.get("seq"),
+            "t1": m.get("t1"), "t2": m.get("t2"), "minute": m.get("minute"),
+            "st": (m.get("pts") or []) and 1 or 0,
+        } for m in ms + hs]
+        with LIVE_LOCK:
+            LIVE_STATE.clear()
+            LIVE_STATE.update({
+                "updatedAt": live.get("updatedAt"),
+                "health": live.get("health"),
+                "battles": battles,
+            })
+        return True
+    except Exception:
+        return False
+
+
+def live_sync_loop():
+    refresh_live_state()
+    last_src = None
+    while True:
+        try:
+            src = os.path.getmtime(os.path.join(ASSETS, "live.js"))
+            if last_src is not None and src != last_src:
+                refresh_live_state()
+            last_src = src
+        except OSError:
+            pass
+        time.sleep(15)
+
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "KPLDataLocal/1.0"
@@ -329,7 +434,16 @@ class Handler(BaseHTTPRequestHandler):
         p = u.path
         try:
             if p == "/api/health":
-                return self._json({"ok": True, "service": "kpldata-local"})
+                return self._json({"ok": True, "service": "kpldata-local",
+                                   "ready": STATE["ready"], "building": STATE["building"]})
+            if p == "/api/live/stream":
+                return self.api_live_stream()
+            if p == "/api/live":
+                with LIVE_LOCK:
+                    return self._json({"ok": True, **LIVE_STATE})
+            if not STATE["ready"]:
+                return self._json({"ok": False, "building": True,
+                                   "error": "数据库构建中，静态页可正常浏览；查询 API 数秒后就绪"}, 503)
             if p == "/api/status":
                 return self._json(self.api_status())
             if p == "/api/schema":
@@ -354,6 +468,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if urlparse(self.path).path != "/api/query":
             return self._json({"ok": False, "error": "not found"}, 404)
+        if not STATE["ready"]:
+            return self._json({"ok": False, "building": True, "error": "数据库构建中，请稍候"}, 503)
         try:
             n = int(self.headers.get("Content-Length") or 0)
             payload = json.loads(self.rfile.read(n) or b"{}")
@@ -361,23 +477,42 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             return self._json({"ok": False, "error": str(e)}, 400)
 
+    def api_live_stream(self):
+        """SSE：每 5 秒推一次实时快照摘要，断连自动结束。"""
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        try:
+            for _ in range(720):  # 最长 1 小时，断连即止
+                with LIVE_LOCK:
+                    payload = json.dumps(LIVE_STATE, ensure_ascii=False)
+                self.wfile.write(b"data: " + payload.encode("utf-8") + b"\n\n")
+                self.wfile.flush()
+                time.sleep(5)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+
     # -- API 实现 --
     def api_status(self):
-        counts = table_counts()
-        con = ro_connect()
-        rng = con.execute("SELECT MIN(date), MAX(date) FROM schedule").fetchone()
+        counts = table_counts() if STATE["ready"] else {}
+        rng = [None, None]
+        if STATE["ready"]:
+            con = ro_connect()
+            rng = con.execute("SELECT MIN(date), MAX(date) FROM schedule").fetchone()
+            con.close()
         site = {}
         try:
             site = load_js_json(os.path.join(ASSETS, "data.js"))
         except Exception:
             pass
-        con.close()
         return {
             "service": "峡谷有数 · 本地工作台",
-            "version": "V6.8.0",
+            "version": "V6.9.0",
+            "ready": STATE["ready"],
             "db": os.path.basename(DB_PATH),
-            "dbMB": round(os.path.getsize(DB_PATH) / 1048576, 1),
-            "builtAt": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(DB_PATH))),
+            "dbMB": round(os.path.getsize(DB_PATH) / 1048576, 1) if os.path.exists(DB_PATH) else 0,
+            "builtAt": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(os.path.getmtime(DB_PATH))) if os.path.exists(DB_PATH) else None,
             "dateRange": [rng[0], rng[1]],
             "counts": counts,
             "siteStats": (site.get("stats") or {}),
@@ -386,11 +521,11 @@ class Handler(BaseHTTPRequestHandler):
     def api_schema(self):
         con = ro_connect()
         tables = []
-        for (name, sql) in con.execute(
-                "SELECT name, sql FROM sqlite_master WHERE type='table' ORDER BY name"):
+        for (name, typ, sql) in con.execute(
+                "SELECT name, type, sql FROM sqlite_master WHERE type IN ('table','view') ORDER BY type, name"):
             cols = [r[1] for r in con.execute("PRAGMA table_info(\"%s\")" % name)]
             n = con.execute("SELECT COUNT(*) FROM \"%s\"" % name).fetchone()[0]
-            tables.append({"name": name, "columns": cols, "rows": n, "ddl": sql})
+            tables.append({"name": name, "type": typ, "columns": cols, "rows": n, "ddl": sql})
         con.close()
         return {"tables": tables}
 
@@ -448,27 +583,42 @@ def main():
     args = ap.parse_args()
 
     print("=" * 56)
-    print("  峡谷有数 · 本地工作台 (V6.8.0)")
+    print("  峡谷有数 · 本地工作台 (V6.9.0)")
     print("=" * 56)
-    if args.rebuild or db_is_stale():
-        why = "--rebuild" if args.rebuild else "数据比缓存新"
-        print("[%s] 正在建立本地数据库（首次约几秒，之后有缓存）…" % why)
-        build_db()
-    else:
-        print("[cache] 本地数据库已是最新: %s" % DB_PATH)
+
+    def warmup():
+        STATE["building"] = True
+        try:
+            if args.rebuild or db_is_stale():
+                why = "--rebuild" if args.rebuild else "数据比缓存新"
+                print("[%s] 后台建立本地数据库（约 10-30 秒，期间站点可浏览）…" % why)
+                build_db()
+                print("[done] 数据库就绪，查询 API 已可用")
+            else:
+                print("[cache] 本地数据库已是最新: %s" % DB_PATH)
+            STATE["ready"] = True
+        except Exception as e:
+            print("[error] 建库失败:", e)
+        finally:
+            STATE["building"] = False
+
+    threading.Thread(target=warmup, daemon=True).start()
+    threading.Thread(target=live_sync_loop, daemon=True).start()
 
     url = "http://%s:%d" % (args.host, args.port)
     print()
     print("  站点首页      %s/" % url)
     print("  SQL 控制台    %s/query.html?m=sql" % url)
     print("  数据接口      %s/api/status" % url)
+    print("  实时推送(SSE) %s/api/live/stream" % url)
     print()
     print("  Ctrl+C 停止。数据只读：所有查询跑在本地 SQLite 上。")
+    print("  比赛日实时：跑 02 项目监视器采集，本服务每 15s 感知 live.js 更新。")
     print("-" * 56)
 
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     if not args.no_browser:
-        threading.Timer(0.6, lambda: webbrowser.open(url + "/query.html?m=sql")).start()
+        threading.Timer(1.2, lambda: webbrowser.open(url + "/query.html?m=sql")).start()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
