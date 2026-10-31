@@ -7,7 +7,7 @@
 <title>对局详情 · 峡谷有数</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%230A111C'/%3E%3Crect x='3' y='3' width='26' height='26' rx='4' fill='none' stroke='%23F6C021' stroke-width='2'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='16' font-weight='bold' fill='%23F6C021' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/style.css?v=85">
-<link rel="stylesheet" href="assets/pages.css?v=20261031a">
+<link rel="stylesheet" href="assets/pages.css?v=20261031c">
 <link rel="stylesheet" href="assets/v55.css?v=87">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="峡谷有数">
@@ -34,11 +34,11 @@
 <script src="assets/seasons.js?v=85"></script>
 <script src="assets/replay/index.js?v=85"></script>
 <script src="assets/coverage.js?v=85"></script>
-<script src="assets/replay.js?v=20261030a"></script>
+<script src="assets/replay.js?v=20261031c"></script>
 <script src="assets/schedule_all.js?v=85"></script>
 <script src="assets/games/index.js?v=85"></script>
 <script src="assets/equip_icons.js?v=85"></script>
-<script src="assets/common.js?v=20261031a"></script>
+<script src="assets/common.js?v=20261031c"></script>
 <script>
 (function () {
   "use strict";
@@ -202,7 +202,7 @@
   function renderCurves(h) {
     var pts = h.pts;
     var LANES = ["对抗路", "打野", "中路", "发育路", "游走"];
-    var laneNames = null, curTab = "win";
+    var laneNames = null, curTab = "win", curveEvents = [];
     var TEAM_TABS = [
       ["win", "胜率"], ["eco", "经济"], ["gd", "经济差"], ["kill", "击杀"],
       ["tower", "推塔"], ["res", "资源"]
@@ -226,6 +226,7 @@
           LANE_TABS.map(function (t) { return '<button type="button" data-t="' + t[0] + '">' + t[1] + "</button>"; }).join("") +
           "</div></div>" +
       "</div>" +
+      '<div class="curve-summary" id="curveSummary"></div>' +
       '<div class="live-chart" id="curveChart"></div>' +
       '<div class="panel-foot mono" id="curveNote"></div>';
     var main = document.getElementById("main");
@@ -240,8 +241,31 @@
           }
         }
         if (bt && bt.names && bt.names.length === 10) laneNames = bt.names;
-        if (laneNames && ["player", "dmg", "playerDiff", "dmgDiff"].indexOf(curTab) >= 0) draw(curTab);
+        if (bt && bt.events) curveEvents = bt.events || [];
+        if (["player", "dmg", "playerDiff", "dmgDiff", "win", "eco", "gd", "kill", "tower", "res"].indexOf(curTab) >= 0) draw(curTab);
       });
+    }
+
+    function kFmt(v) {
+      var n = Number(v || 0);
+      return (n > 0 ? "+" : n < 0 ? "-" : "") + Math.abs(Math.round(n / 1000)) + "k";
+    }
+    function absFmt(v) {
+      return Math.round(Math.abs(Number(v || 0)) / 1000) + "k";
+    }
+    function updateSummary(m) {
+      var box2 = document.getElementById("curveSummary");
+      if (!box2) return;
+      var best = pts.reduce(function (a, r) {
+        return Math.abs(Number(r[0]) - m) < Math.abs(Number(a[0]) - m) ? r : a;
+      }, pts[0]);
+      var evs = (curveEvents || []).filter(function (e) { return Math.abs(Number(e.m) - Number(best[0])) <= 0.75; }).slice(0, 2);
+      box2.innerHTML =
+        '<div><span>分钟</span><b>' + Number(best[0]).toFixed(0) + "′</b></div>" +
+        '<div><span>模型胜率</span><b>' + Math.round(Number(best[1]) * 100) + "%</b></div>" +
+        '<div><span>金差</span><b class="' + (best[2] - best[3] >= 0 ? "up" : "down") + '">' + kFmt(best[2] - best[3]) + "</b></div>" +
+        '<div><span>击杀</span><b>' + best[4] + ":" + best[5] + "</b></div>" +
+        '<div><span>事件</span><b>' + (evs.length ? evs.map(function (e) { return K.esc(e.label); }).join(" · ") : "—") + "</b></div>";
     }
 
     function teamSeries(idx) {
@@ -255,51 +279,82 @@
       var el2 = document.getElementById("curveChart");
       var note = document.getElementById("curveNote");
       curTab = id;
+      var common = {
+        height: 420, yTicks: 5, events: curveEvents,
+        onHover: function (d) { updateSummary(d.m); },
+        xEvery: Math.max(1, Math.ceil((pts[pts.length - 1][0] - pts[0][0]) / 6))
+      };
       if (id === "win") {
-        K.lineChart(el2, { height: 420, yMin0: true, yTicks: 5,
+        K.lineChart(el2, Object.assign({}, common, {
+          yDomain: [0, Math.max(1, Math.max.apply(null, pts.map(function (r) { return Number(r[1]); })))],
           yFmt: function (v) { return Math.round(v * 100) + "%"; },
-          series: [{ name: h.t1 + " 胜率（模型）", color: CP.mark, fill: true,
-                     pts: pts.map(function (r) { return [r[0], r[1]]; }) }] });
-        note.textContent = "模型对 " + h.t1 + " 的实时胜率推算 · 每分钟一个采样点";
+          refLines: [{ v: 0.5, label: "五五开", color: "#8FA0B8", opacity: 0.55 }],
+          series: [{ name: h.t1 + " 胜率", color: CP.mark, fill: true, fillOpacity: 0.18,
+                     pts: pts.map(function (r) { return [r[0], r[1]]; }) }]
+        }));
+        note.textContent = "模型对 " + h.t1 + " 的实时胜率推算；紫色竖线为官方 / 结构性事件。";
       } else if (id === "eco") {
-        K.lineChart(el2, { height: 420, yTicks: 5, yFmt: function (v) { return Math.round(v / 1000) + "k"; },
-          series: teamSeries(2) });
-        note.textContent = "两队总经济随比赛发展";
+        K.lineChart(el2, Object.assign({}, common, {
+          yDomain: [0, Math.max.apply(null, pts.map(function (r) { return Math.max(Number(r[2]), Number(r[3])); })) * 1.08],
+          yFmt: absFmt,
+          series: teamSeries(2)
+        }));
+        note.textContent = "两队总经济随比赛发展；差值看「经济差」页签更直观。";
       } else if (id === "gd") {
-        var ser = [{ name: "实际经济差", color: CP.mark, fill: true,
-                     pts: pts.map(function (r) { return [r[0], r[2] - r[3]]; }) }];
+        var diffs = pts.map(function (r) { return Number(r[2]) - Number(r[3]); });
+        var maxAbs = Math.max(1000, Math.max.apply(null, diffs.map(Math.abs))) * 1.12;
+        var ser = [{ name: "实际经济差", color: CP.mark, fill: true, fillOpacity: 0.16,
+                     pts: pts.map(function (r) { return [r[0], Number(r[2]) - Number(r[3])]; }) }];
         if ((h.gpred || []).length >= 3) {
-          ser.push({ name: "5 分钟前的预测值", color: CP.label, dash: true, pts: h.gpred });
+          ser.push({ name: "5 分钟前外推", color: CP.label, dash: true, width: 1.8, pts: h.gpred });
         }
-        K.lineChart(el2, { height: 420, yZero: true, yTicks: 5,
-          yFmt: function (v) { return (v > 0 ? "+" : "") + Math.round(v / 1000) + "k"; }, series: ser });
-        note.textContent = "紫色虚线 = 用 5 分钟前的走势外推出的此刻经济差——与实际曲线越贴合，说明节奏越稳定";
+        K.lineChart(el2, Object.assign({}, common, {
+          yDomain: [-maxAbs, maxAbs], yFmt: kFmt,
+          refLines: [{ v: 0, label: "均势", color: "#8FA0B8", opacity: 0.55 }],
+          series: ser
+        }));
+        note.textContent = "主系列是实际金差；虚线是用 5 分钟前走势外推的对照，两者贴合度越高节奏越稳定。";
       } else if (id === "kill") {
-        K.lineChart(el2, { height: 420, yTicks: 5, yFmt: Math.round, series: teamSeries(4) });
-        note.textContent = "两队累计击杀";
+        K.lineChart(el2, Object.assign({}, common, {
+          yDomain: [0, Math.max.apply(null, pts.map(function (r) { return Math.max(Number(r[4]), Number(r[5])); })) * 1.12],
+          yFmt: Math.round, series: teamSeries(4)
+        }));
+        note.textContent = "两队累计击杀；早期波动大，建议结合经济差看。";
       } else if (id === "tower") {
-        K.lineChart(el2, { height: 420, yTicks: 5, yFmt: Math.round, series: teamSeries(6) });
-        note.textContent = "两队累计推塔数";
+        K.lineChart(el2, Object.assign({}, common, {
+          yDomain: [0, Math.max.apply(null, pts.map(function (r) { return Math.max(Number(r[6]), Number(r[7])); })) * 1.12],
+          yFmt: Math.round, series: teamSeries(6)
+        }));
+        note.textContent = "两队累计推塔；推进节奏通常比单点击杀更能解释胜率摆动。";
       } else if (id === "res") {
         drawResources(el2, note);
       } else {
         drawLanes(el2, note, id);
       }
+      updateSummary(pts[pts.length - 1][0]);
     }
 
     function drawResources(el2, note) {
       var names = ["暴君", "黑暗暴君", "主宰", "风暴龙王"];
+      var maxV = 1;
+      pts.forEach(function (r) {
+        for (var i = 0; i < 4; i++) maxV = Math.max(maxV, Number(r[8 + i * 2]), Number(r[9 + i * 2]));
+      });
       el2.innerHTML = '<div class="rp-sm-grid">' + names.map(function (nm, i) {
         return '<div class="rp-sm"><div class="rp-sm-t mono">' + nm + '</div><div class="rp-sm-c" id="resc' + i + '"></div></div>';
       }).join("") + "</div>";
       names.forEach(function (nm, i) {
         var base = 8 + i * 2;
-        K.lineChart(document.getElementById("resc" + i), { height: 240, yFmt: Math.round, series: [
-          { name: h.t1, color: CP.mark, width: 2, pts: pts.map(function (r) { return [r[0], r[base]]; }) },
-          { name: h.t2, color: CP.line, width: 2, pts: pts.map(function (r) { return [r[0], r[base + 1]]; }) }
-        ] });
+        K.lineChart(document.getElementById("resc" + i), {
+          height: 240, yTicks: 4, xEvery: Math.max(1, Math.ceil((pts[pts.length - 1][0] - pts[0][0]) / 5)),
+          yDomain: [0, maxV * 1.08], yFmt: Math.round,
+          series: [
+            { name: h.t1, color: CP.mark, width: 2.2, pts: pts.map(function (r) { return [r[0], r[base]]; }) },
+            { name: h.t2, color: CP.line, width: 2.2, pts: pts.map(function (r) { return [r[0], r[base + 1]]; }) }
+          ]
+        });
       });
-      note.textContent = "四类中立资源按 2×2 展开；同图对比两队累计数量，避免 8 条线挤在一张图里。";
+      note.textContent = "四类中立资源共享同一纵轴，方便横向比较控制量；不把 8 条线挤进一张图。";
     }
 
     function lanePairs() {
@@ -322,7 +377,6 @@
       var isGold = mode === "player" || mode === "playerDiff";
       var isDiff = mode === "playerDiff" || mode === "dmgDiff";
       var what = isGold ? "个人经济" : "累计输出伤害";
-      var yf = function (v) { return (v < 0 ? "" : "+") + Math.round(v / 1000) + "k"; };
       if (!pairs) {
         var C1 = ["#FFFFFF", "#E8A33D", "#D98A2B", "#C47421", "#A85F1A"];
         var C2 = ["#9DB2CC", "#8AA2BE", "#2E71B0", "#225A94", "#174378"];
@@ -337,11 +391,22 @@
             });
           })(i2);
         }
-        K.lineChart(el2, { height: 380, yFmt: function (v) { return Math.round(v / 1000) + "k"; }, series: ser });
+        K.lineChart(el2, { height: 380, yFmt: absFmt, series: ser });
         note.textContent = "10 名选手的" + what + "曲线（金系 = " + h.t1 + "，蓝系 = " + h.t2 +
           "）· 本局无分钟级复盘名单，无法做同位置对位";
         return;
       }
+      var sharedMax = 1, diffMax = 1;
+      pairs.forEach(function (pk) {
+        pts.forEach(function (r) {
+          var a = isGold ? Number(r[12 + pk.a * 2] || 0) : Number(r[12 + pk.a * 2 + 1] || 0);
+          var b = isGold ? Number(r[12 + pk.b * 2] || 0) : Number(r[12 + pk.b * 2 + 1] || 0);
+          sharedMax = Math.max(sharedMax, a, b);
+          diffMax = Math.max(diffMax, Math.abs(a - b));
+        });
+      });
+      sharedMax *= 1.08;
+      diffMax *= 1.12;
       el2.innerHTML = '<div class="rp-sm-grid">' + pairs.map(function (pk, i) {
         return '<div class="rp-sm"><div class="rp-sm-t mono">' + pk.lane + " · " + esc(pk.n1) + " vs " + esc(pk.n2) + "</div>" +
           '<div class="rp-sm-c" id="smc' + i + '"></div></div>';
@@ -349,32 +414,35 @@
       pairs.forEach(function (pk, i) {
         if (isDiff) {
           K.lineChart(document.getElementById("smc" + i), {
-            height: 280, yZero: true, yTicks: 4, yFmt: yf,
+            height: 280, yTicks: 4, yDomain: [-diffMax, diffMax], yFmt: kFmt,
+            xEvery: Math.max(1, Math.ceil((pts[pts.length - 1][0] - pts[0][0]) / 5)),
             series: [{
               name: pk.n1 + " − " + pk.n2,
-              color: CP.mark, fill: true, width: 2.2,
+              color: CP.mark, fill: true, fillOpacity: 0.16, width: 2.4,
               pts: pts.map(function (r) {
-                var a = isGold ? (r[12 + pk.a * 2] || 0) : (r[12 + pk.a * 2 + 1] || 0);
-                var b = isGold ? (r[12 + pk.b * 2] || 0) : (r[12 + pk.b * 2 + 1] || 0);
+                var a = isGold ? Number(r[12 + pk.a * 2] || 0) : Number(r[12 + pk.a * 2 + 1] || 0);
+                var b = isGold ? Number(r[12 + pk.b * 2] || 0) : Number(r[12 + pk.b * 2 + 1] || 0);
                 return [r[0], a - b];
               })
-            }]
+            }],
+            refLines: [{ v: 0, color: "#8FA0B8", opacity: 0.55 }]
           });
         } else {
           K.lineChart(document.getElementById("smc" + i), {
-            height: 280, yTicks: 4, yFmt: function (v) { return Math.round(v / 1000) + "k"; },
+            height: 280, yTicks: 4, yDomain: [0, sharedMax], yFmt: absFmt,
+            xEvery: Math.max(1, Math.ceil((pts[pts.length - 1][0] - pts[0][0]) / 5)),
             series: [
-              { name: pk.n1, color: "#F6C021", width: 2.2,
-                pts: pts.map(function (r) { return [r[0], isGold ? (r[12 + pk.a * 2] || 0) : (r[12 + pk.a * 2 + 1] || 0)]; }) },
-              { name: pk.n2, color: "#8FC7F0", width: 2.2,
-                pts: pts.map(function (r) { return [r[0], isGold ? (r[12 + pk.b * 2] || 0) : (r[12 + pk.b * 2 + 1] || 0)]; }) }
+              { name: pk.n1, color: "#F6C021", width: 2.4,
+                pts: pts.map(function (r) { return [r[0], isGold ? Number(r[12 + pk.a * 2] || 0) : Number(r[12 + pk.a * 2 + 1] || 0)]; }) },
+              { name: pk.n2, color: "#8FC7F0", width: 2.4,
+                pts: pts.map(function (r) { return [r[0], isGold ? Number(r[12 + pk.b * 2] || 0) : Number(r[12 + pk.b * 2 + 1] || 0)]; }) }
             ]
           });
         }
       });
       note.textContent = isDiff
-        ? "五条分路分别看「" + h.t1 + " − " + h.t2 + "」的差值；0 线上方 = " + h.t1 + " 领先。"
-        : "按分路拆成 5 张同位置对位小图（金 = " + h.t1 + "，蓝 = " + h.t2 + "，顺序 对抗路→游走）。";
+        ? "五张小图共享对称纵轴；0 线上方 = " + h.t1 + " 领先，可直接比较哪条分路差距最大。"
+        : "五张小图共享纵轴（金 = " + h.t1 + "，蓝 = " + h.t2 + "），顺序 对抗路→游走。";
     }
 
     function bindTabs() {
@@ -393,6 +461,7 @@
     }
     bindTabs();
     draw("win");
+
 }
 })();
 </script>

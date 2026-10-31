@@ -33,7 +33,7 @@ window.KPL_REPLAY = (function () {
   }
 
   /* ---------- 时间轴曲线 ---------- */
-  function curveSVG(frames, t1, t2, curIdx) {
+  function curveSVG(frames, t1, t2, curIdx, b) {
     var W = 1040, H = 240, P = { l: 46, r: 54, t: 16, b: 28 };
     var maxM = Math.max(10, frames[frames.length - 1].m);
     var gds = frames.map(function (f) { return f.gd || 0; });
@@ -69,6 +69,17 @@ window.KPL_REPLAY = (function () {
     s += '<polyline points="' + pts + '" fill="none" stroke=' + CP.mark + ' stroke-width="2.2" stroke-linejoin="round"/>';
     var cf = frames[curIdx] || frames[frames.length - 1];
     var cx = X(cf.m).toFixed(1), cy = Y(cf.p == null ? 0.5 : cf.p).toFixed(1);
+    var EV_COLOR = { first_blood: "#F0C36A", tyrant: "#7BE0A3", dark_tyrant: "#7BE0A3", lord: "#F6C021", storm: "#F6C021", big_dragon: "#F6C021" };
+    (b.events || []).forEach(function (e) {
+      var ex = X(e.m);
+      if (ex < P.l || ex > W - P.r) return;
+      var color = EV_COLOR[e.type] || CP.label;
+      s += '<g class="rp-ev-mark">' +
+        '<line x1="' + ex.toFixed(1) + '" y1="' + P.t + '" x2="' + ex.toFixed(1) + '" y2="' + (H - P.b) +
+        '" stroke="' + color + '" stroke-width="1" stroke-dasharray="3 4" opacity=".28"/>' +
+        '<circle cx="' + ex.toFixed(1) + '" cy="' + (P.t + 5) + '" r="3.2" fill="' + color + '" opacity=".92"/>' +
+        '<title>' + esc(e.m.toFixed(0) + "′ " + e.l) + "</title></g>";
+    });
     s += '<line x1="' + cx + '" y1="' + P.t + '" x2="' + cx + '" y2="' + (H - P.b) + '" stroke=' + CP.label + ' stroke-width="1" stroke-dasharray="3 4"/>';
     s += '<circle cx="' + cx + '" cy="' + cy + '" r="4.5" fill=' + CP.dot + ' stroke=' + CP.mark + ' stroke-width="2.4"/>';
     s += "</svg>";
@@ -662,7 +673,7 @@ window.KPL_REPLAY = (function () {
         var prev = frameIdx > 0 ? b.frames[frameIdx - 1] : null;
 
         var chart = document.getElementById("rpChart");
-        if (chart) chart.innerHTML = curveSVG(b.frames, b.t1, b.t2, frameIdx);
+        if (chart) chart.innerHTML = curveSVG(b.frames, b.t1, b.t2, frameIdx, b);
 
         var gold = document.getElementById("rpGridGold");
         if (gold) gold.innerHTML = goldPanel(b, f, prev, layerMode);

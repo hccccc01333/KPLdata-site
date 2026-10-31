@@ -907,113 +907,212 @@ window.KPL = (function () {
     }
     return d;
   }
+  /* ---------- 多系列折线图（指标曲线 V2） ---------- */
+  var _lcSeq = 0;
+  function smoothPath(pts, X, Y) {
+    if (pts.length < 3) return pts.map(function (pt, i) { return (i ? "L" : "M") + X(pt[0]).toFixed(1) + " " + Y(pt[1]).toFixed(1); }).join(" ");
+    var d = "M" + X(pts[0][0]).toFixed(1) + " " + Y(pts[0][1]).toFixed(1);
+    for (var i = 0; i < pts.length - 1; i++) {
+      var p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+      var t = 0.18;
+      var c1x = X(p1[0]) + (X(p2[0]) - X(p0[0])) * t;
+      var c1y = Y(p1[1]) + (Y(p2[1]) - Y(p0[1])) * t;
+      var c2x = X(p2[0]) - (X(p3[0]) - X(p1[0])) * t;
+      var c2y = Y(p2[1]) - (Y(p3[1]) - Y(p1[1])) * t;
+      d += " C" + c1x.toFixed(1) + " " + c1y.toFixed(1) + " " + c2x.toFixed(1) + " " + c2y.toFixed(1) + " " +
+        X(p2[0]).toFixed(1) + " " + Y(p2[1]).toFixed(1);
+    }
+    return d;
+  }
   function lineChart(el, opts) {
     var CP2 = chartPalette();
     if (!el) return;
     var series = (opts.series || []).filter(function (se) { return se.pts && se.pts.length > 1; });
     if (!series.length) { el.innerHTML = '<div class="empty-tip">暂无可展示的曲线</div>'; return; }
-    var W = 1040, H = opts.height || 280, P = { l: 62, r: 18, t: 20, b: 34 };
+    var events = (opts.events || []).filter(function (e) { return e && isFinite(Number(e.m)) && e.label; });
+    var refLines = (opts.refLines || []).filter(function (r) { return isFinite(Number(r.v)); });
+    var W = 1040, H = opts.height || 280;
+    var P = {
+      l: opts.padLeft == null ? 62 : opts.padLeft,
+      r: opts.padRight == null ? 20 : opts.padRight,
+      t: opts.padTop == null ? 22 : opts.padTop,
+      b: opts.padBottom == null ? 36 : opts.padBottom
+    };
     var xs = [], ys = [];
-    series.forEach(function (se) {
-      se.pts.forEach(function (pt) { xs.push(pt[0]); ys.push(pt[1]); });
-    });
+    series.forEach(function (se) { se.pts.forEach(function (pt) { xs.push(Number(pt[0])); ys.push(Number(pt[1])); }); });
     var xMin = Math.min.apply(null, xs), xMax = Math.max.apply(null, xs);
-    var yMin = Math.min.apply(null, ys), yMax = Math.max.apply(null, ys);
-    if (opts.yZero) { yMin = Math.min(0, yMin); yMax = Math.max(0, yMax); }
-    if (opts.yMin0) { yMin = Math.max(0, yMin); }
-    var pad = (yMax - yMin) * 0.08 || 1;
-    yMin -= pad; yMax += pad;
+    var yMin, yMax;
+    if (opts.yDomain && opts.yDomain.length === 2 && isFinite(opts.yDomain[0]) && isFinite(opts.yDomain[1])) {
+      yMin = Number(opts.yDomain[0]);
+      yMax = Number(opts.yDomain[1]);
+    } else {
+      yMin = Math.min.apply(null, ys);
+      yMax = Math.max.apply(null, ys);
+      if (opts.yZero) yMin = Math.min(0, yMin);
+      if (opts.yMin0) yMin = Math.max(0, yMin);
+      if (opts.symmetric) {
+        var abMax = Math.max(Math.abs(yMin), Math.abs(yMax));
+        yMin = -abMax;
+        yMax = abMax;
+      }
+      var yPad = opts.yPad == null ? (yMax - yMin) * 0.08 : opts.yPad;
+      if (yMax - yMin < 1e-9) yPad = Math.max(1, Math.abs(yMax) * 0.08);
+      yMin -= yPad;
+      yMax += yPad;
+    }
     if (xMax - xMin < 1) xMax = xMin + 1;
-    var X = function (v) { return P.l + (v - xMin) / (xMax - xMin) * (W - P.l - P.r); };
-    var Y = function (v) { return P.t + (1 - (v - yMin) / (yMax - yMin)) * (H - P.t - P.b); };
+    var X = function (v) { return P.l + (Number(v) - xMin) / (xMax - xMin) * (W - P.l - P.r); };
+    var Y = function (v) { return P.t + (1 - (Number(v) - yMin) / (yMax - yMin)) * (H - P.t - P.b); };
     var yFmt = opts.yFmt || function (v) { return Math.round(v); };
+    var xFmt = opts.xFmt || function (v) { return Math.round(v) + "′"; };
     var yTicks = opts.yTicks || 4;
     var xEvery = opts.xEvery || 5;
     var smooth = opts.smooth !== false;
     _lcSeq++;
-    var gradId = "lcg" + _lcSeq;
-    var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="指标曲线">';
-    if (series.some(function (se) { return se.fill; })) {
-      s += '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
-        '<stop offset="0%" stop-color="' + CP2.mark + '" stop-opacity=".22"/>' +
-        '<stop offset="100%" stop-color="' + CP2.mark + '" stop-opacity="0"/></linearGradient></defs>';
-    }
+    var uid = "lc" + _lcSeq;
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" preserveAspectRatio="none" role="img" aria-label="' + esc(opts.ariaLabel || "指标曲线") + '" tabindex="0">';
+    s += '<defs>';
+    series.forEach(function (se, si) {
+      if (!se.fill) return;
+      s += '<linearGradient id="' + uid + "g" + si + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="' + se.color + '" stop-opacity="' + (se.fillOpacity == null ? 0.18 : se.fillOpacity) + '"/>' +
+        '<stop offset="100%" stop-color="' + se.color + '" stop-opacity="0"/></linearGradient>';
+    });
+    s += '</defs>';
     for (var gi = 0; gi <= yTicks; gi++) {
       var gv = yMin + (yMax - yMin) * gi / yTicks;
       var gy = Y(gv).toFixed(1);
       s += '<line x1="' + P.l + '" y1="' + gy + '" x2="' + (W - P.r) + '" y2="' + gy +
-        '" stroke=' + JSON.stringify(CP2.grid) + ' stroke-dasharray="4 6"/>' +
-        '<text x="' + (P.l - 8) + '" y="' + (parseFloat(gy) + 4) + '" text-anchor="end" font-size="10.5" fill=' + JSON.stringify(CP2.label) + ' font-family="Inter,monospace">' + yFmt(gv) + "</text>";
+        '" stroke=' + JSON.stringify(CP2.grid) + ' stroke-dasharray="4 6" opacity=".72"/>' +
+        '<text x="' + (P.l - 9) + '" y="' + (parseFloat(gy) + 4) + '" text-anchor="end" font-size="10.5" ' +
+        'fill=' + JSON.stringify(CP2.label) + ' font-family="Inter,monospace">' + yFmt(gv) + "</text>";
     }
+    refLines.forEach(function (r) {
+      var ry = Y(Number(r.v));
+      if (ry < P.t || ry > H - P.b) return;
+      s += '<line x1="' + P.l + '" y1="' + ry.toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + ry.toFixed(1) +
+        '" stroke="' + (r.color || CP2.axis) + '" stroke-width="' + (r.width || 1.5) + '"' +
+        (r.dash === false ? "" : ' stroke-dasharray="5 4"') + ' opacity="' + (r.opacity == null ? 0.72 : r.opacity) + '"/>';
+      if (r.label) s += '<text x="' + (W - P.r - 4) + '" y="' + (ry - 5).toFixed(1) + '" text-anchor="end" font-size="10" ' +
+        'fill="' + (r.labelColor || r.color || CP2.label) + '" font-family="Inter,monospace">' + esc(r.label) + "</text>";
+    });
     if (yMin < 0 && yMax > 0) {
-      s += '<line x1="' + P.l + '" y1="' + Y(0).toFixed(1) + '" x2="' + (W - P.r) + '" y2="' + Y(0).toFixed(1) + '" stroke=' + JSON.stringify(CP2.axis) + ' />';
+      var zy = Y(0).toFixed(1);
+      s += '<line x1="' + P.l + '" y1="' + zy + '" x2="' + (W - P.r) + '" y2="' + zy + '" stroke=' +
+        JSON.stringify(CP2.axis) + ' opacity=".8"/>';
     }
     var x0 = Math.ceil(xMin / xEvery) * xEvery;
     for (var m = x0; m <= xMax; m += xEvery) {
-      s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10.5" fill=' + JSON.stringify(CP2.label) + ' font-family="Inter,monospace">' + m + "′</text>";
+      s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10.5" ' +
+        'fill=' + JSON.stringify(CP2.label) + ' font-family="Inter,monospace">' + esc(xFmt(m)) + "</text>";
     }
-    series.forEach(function (se) {
+    series.forEach(function (se, si) {
       var d = smooth ? smoothPath(se.pts, X, Y) : se.pts.map(function (pt, i) {
         return (i ? "L" : "M") + X(pt[0]).toFixed(1) + " " + Y(pt[1]).toFixed(1);
       }).join(" ");
       if (se.fill && se.pts.length > 1) {
-        var area = d + " L" + X(se.pts[se.pts.length - 1][0]).toFixed(1) + " " + Y(Math.max(0, yMin)).toFixed(1) +
-          " L" + X(se.pts[0][0]).toFixed(1) + " " + Y(Math.max(0, yMin)).toFixed(1) + " Z";
-        s += '<path d="' + area + '" fill="url(#' + gradId + ')" stroke="none"/>';
+        var baseY = se.fillTo == null ? Math.max(yMin, 0) : Number(se.fillTo);
+        var area = d + " L" + X(se.pts[se.pts.length - 1][0]).toFixed(1) + " " + Y(baseY).toFixed(1) +
+          " L" + X(se.pts[0][0]).toFixed(1) + " " + Y(baseY).toFixed(1) + " Z";
+        s += '<path d="' + area + '" fill="url(#' + uid + "g" + si + ')" stroke="none"/>';
       }
-      s += '<path d="' + d + '" fill="none" stroke="' + se.color + '" stroke-width="' + (se.width || 2.2) + '"' +
+      s += '<path d="' + d + '" fill="none" stroke="' + se.color + '" stroke-width="' + (se.width || 2.5) + '"' +
         (se.dash ? ' stroke-dasharray="6 5"' : "") + ' stroke-linejoin="round" stroke-linecap="round" opacity="' + (se.opacity || 1) + '"/>';
-      if (se.dots) {
+      if (se.dots && se.pts.length <= 24) {
         se.pts.forEach(function (pt) {
-          s += '<circle cx="' + X(pt[0]).toFixed(1) + '" cy="' + Y(pt[1]).toFixed(1) + '" r="2.6" fill="' + se.color + '"/>';
+          s += '<circle cx="' + X(pt[0]).toFixed(1) + '" cy="' + Y(pt[1]).toFixed(1) + '" r="2.8" fill="' + se.color + '"/>';
         });
       }
     });
-    s += '<line id="lcCross' + _lcSeq + '" x1="0" y1="' + P.t + '" x2="0" y2="' + (H - P.b) +
-      '" stroke=' + JSON.stringify(CP2.axis) + ' stroke-dasharray="3 4" opacity="0"/>';
-    s += "</svg>";
-    var tip = '<div class="lc-tip" id="lcTip' + _lcSeq + '"></div>';
-    el.innerHTML = (opts.legend === false ? "" :
-      '<div class="lc-legend">' + series.map(function (se) {
+    events.forEach(function (e) {
+      var ex = X(Number(e.m));
+      if (ex < P.l || ex > W - P.r) return;
+      var color = e.color || CP2.label;
+      s += '<g class="lc-event">' +
+        '<line x1="' + ex.toFixed(1) + '" y1="' + P.t + '" x2="' + ex.toFixed(1) + '" y2="' + (H - P.b) +
+        '" stroke="' + color + '" stroke-width="1" stroke-dasharray="3 4" opacity=".38"/>' +
+        '<circle cx="' + ex.toFixed(1) + '" cy="' + (P.t + 5) + '" r="3.4" fill="' + color + '" opacity=".92"/>' +
+        '<title>' + esc(Number(e.m).toFixed(0) + "′ " + e.label) + "</title></g>";
+    });
+    s += '<line id="' + uid + 'cross" x1="0" y1="' + P.t + '" x2="0" y2="' + (H - P.b) +
+      '" stroke=' + JSON.stringify(CP2.axis) + ' stroke-width="1" stroke-dasharray="3 4" opacity="0"/>' +
+      '<circle id="' + uid + 'dot" r="4" fill="' + CP2.dot + '" stroke="' + CP2.mark + '" stroke-width="2.4" opacity="0"/>' +
+      "</svg>";
+    var tip = '<div class="lc-tip" id="' + uid + 'tip"></div>';
+    var legend = "";
+    if (opts.legend !== false) {
+      legend = '<div class="lc-legend">' + series.map(function (se) {
         return '<span><i style="background:' + se.color + (se.dash ? ';opacity:.65' : "") + '"></i>' + esc(se.name) + "</span>";
-      }).join("") + "</div>") + s + tip;
-    if (opts.tooltip !== false) {
-      var svg = el.querySelector("svg"), tipEl = el.querySelector(".lc-tip"), cross = el.querySelector("#lcCross" + _lcSeq);
-      if (svg && tipEl && cross) {
-        svg.addEventListener("mousemove", function (e) {
-          var rect = svg.getBoundingClientRect();
-          var ratio = (e.clientX - rect.left) / rect.width;
-          var target = xMin + ratio * (xMax - xMin);
-          var best = null;
-          series.forEach(function (se) {
-            se.pts.forEach(function (pt) {
-              var d = Math.abs(pt[0] - target);
-              if (!best || d < best.d) best = { d: d, m: pt[0] };
-            });
-          });
-          if (!best) return;
-          var rows = series.map(function (se) {
-            var near = se.pts.reduce(function (a, pt) {
-              return Math.abs(pt[0] - best.m) < Math.abs(a[0] - best.m) ? pt : a;
-            }, se.pts[0]);
-            return '<div><i style="background:' + se.color + '"></i>' + esc(se.name) + " <b>" + yFmt(near[1]) + "</b></div>";
-          }).join("");
-          tipEl.innerHTML = "<b>" + best.m.toFixed(0) + "′</b>" + rows;
-          tipEl.style.opacity = "1";
-          var box = el.getBoundingClientRect();
-          var left = Math.min(Math.max(e.clientX - box.left + 12, 6), box.width - 160);
-          var top = Math.min(Math.max(e.clientY - box.top - 8, 6), box.height - 72);
-          tipEl.style.left = left + "px";
-          tipEl.style.top = top + "px";
-          cross.setAttribute("x1", X(best.m).toFixed(1));
-          cross.setAttribute("x2", X(best.m).toFixed(1));
-          cross.setAttribute("opacity", ".55");
-        });
-        svg.addEventListener("mouseleave", function () {
-          tipEl.style.opacity = "0";
-          cross.setAttribute("opacity", "0");
-        });
+      }).join("") + "</div>";
+    }
+    el.innerHTML = legend + s + tip;
+
+    var svg = el.querySelector("svg");
+    var tipEl = el.querySelector(".lc-tip");
+    var cross = el.querySelector("#" + uid + "cross");
+    var dot = el.querySelector("#" + uid + "dot");
+    var allPts = [];
+    series.forEach(function (se) { se.pts.forEach(function (pt) { allPts.push({ m: Number(pt[0]), v: Number(pt[1]), se: se }); }); });
+    var nearest = function (target) {
+      var best = null;
+      for (var i = 0; i < allPts.length; i++) {
+        var d = Math.abs(allPts[i].m - target);
+        if (!best || d < best.d) best = { d: d, m: allPts[i].m };
       }
+      return best;
+    };
+    var nearEvents = function (m) {
+      return events.filter(function (e) { return Math.abs(Number(e.m) - m) <= 0.75; }).slice(0, 2);
+    };
+    var paintHover = function (target, clientX, clientY) {
+      var best = nearest(target);
+      if (!best) return;
+      var evs = nearEvents(best.m);
+      var rows = series.map(function (se) {
+        var near = se.pts.reduce(function (a, pt) {
+          return Math.abs(Number(pt[0]) - best.m) < Math.abs(Number(a[0]) - best.m) ? pt : a;
+        }, se.pts[0]);
+        return '<div><i style="background:' + se.color + '"></i><span>' + esc(se.name) + "</span><b>" + yFmt(Number(near[1])) + "</b></div>";
+      }).join("");
+      var evRows = evs.map(function (e) {
+        return '<div class="ev"><span></span>' + esc(e.label) + "</div>";
+      }).join("");
+      tipEl.innerHTML = '<b>' + esc(xFmt(best.m)) + "</b>" + rows + evRows;
+      tipEl.style.opacity = "1";
+      var box = el.getBoundingClientRect();
+      var left = Math.min(Math.max((clientX == null ? X(best.m) / W * box.width : clientX - box.left) + 12, 6), Math.max(6, box.width - 180));
+      var top = Math.min(Math.max((clientY == null ? P.t / H * box.height : clientY - box.top) - 8, 6), Math.max(6, box.height - 90));
+      tipEl.style.left = left + "px";
+      tipEl.style.top = top + "px";
+      cross.setAttribute("x1", X(best.m).toFixed(1));
+      cross.setAttribute("x2", X(best.m).toFixed(1));
+      cross.setAttribute("opacity", ".62");
+      var first = allPts.filter(function (p) { return p.m === best.m; })[0] || allPts[0];
+      dot.setAttribute("cx", X(first.m).toFixed(1));
+      dot.setAttribute("cy", Y(first.v).toFixed(1));
+      dot.setAttribute("opacity", "1");
+      if (opts.onHover) opts.onHover({ m: best.m, tip: tipEl });
+    };
+    var clearHover = function () {
+      tipEl.style.opacity = "0";
+      cross.setAttribute("opacity", "0");
+      dot.setAttribute("opacity", "0");
+      if (opts.onLeave) opts.onLeave();
+    };
+    if (opts.tooltip !== false) {
+      svg.addEventListener("mousemove", function (e) { paintHover(xMin + ((e.clientX - svg.getBoundingClientRect().left) / svg.getBoundingClientRect().width) * (xMax - xMin), e.clientX, e.clientY); });
+      svg.addEventListener("mouseleave", clearHover);
+      svg.addEventListener("focus", function () { paintHover(xMin + (xMax - xMin) / 2, null, null); });
+      svg.addEventListener("blur", clearHover);
+      svg.addEventListener("keydown", function (e) {
+        var cur = nearest(xMin + (xMax - xMin) / 2);
+        if (!cur) return;
+        var step = opts.keyStep || 1;
+        if (e.key === "ArrowLeft") { paintHover(cur.m - step, null, null); e.preventDefault(); }
+        else if (e.key === "ArrowRight") { paintHover(cur.m + step, null, null); e.preventDefault(); }
+        else if (e.key === "Home") { paintHover(xMin, null, null); e.preventDefault(); }
+        else if (e.key === "End") { paintHover(xMax, null, null); e.preventDefault(); }
+      });
     }
   }
 

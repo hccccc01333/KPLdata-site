@@ -1758,3 +1758,36 @@ select:disabled{opacity:.55 !important;cursor:not-allowed}
   .rel-row{gap:8px}
   .rel-avatar{width:24px;height:24px}
 }
+
+/* V6.7 · 数据曲线当前帧摘要 */
+.curve-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:8px 0 12px}
+.curve-summary div{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card2);min-width:0}
+.curve-summary span{display:block;font-size:10px;color:var(--muted)}
+.curve-summary b{display:block;font-family:var(--mono);font-size:15px;font-weight:800;margin-top:3px;color:var(--ink)}
+.curve-summary b.up{color:#7BE0A3}
+.curve-summary b.down{color:#F2A3AE}
+@media(max-width:760px){.curve-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* V6.7 · 雷达对比与差值 */
+.cmp-arrow{font-size:8.5px;margin-right:3px;opacity:.85}
+
+/* V6.7 · 教练 BP 指纹与任期时间轴 */
+.cfp-bars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.cfp-bars span{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:5px}
+.cfp-bar{display:flex;height:16px;border-radius:8px;overflow:hidden;background:rgba(157,178,204,.14)}
+.cfp-bar i{display:block;height:100%;min-width:2px;transition:width .28s cubic-bezier(.2,.7,.3,1)}
+.cfp-empty{padding:4px 0;font-size:10.5px;color:var(--muted)}
+.ct-timeline{margin-bottom:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--card2)}
+.ct-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.ct-head b{font-size:13px;font-weight:800;color:var(--ink)}
+.ct-head span{font-size:10.5px;color:var(--muted)}
+.ct-row{display:grid;grid-template-columns:130px minmax(0,1fr) 82px;gap:9px;align-items:center;padding:4px 0;font-size:11px}
+.ct-team{color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ct-track{position:relative;height:12px;border-radius:6px;background:rgba(157,178,204,.14)}
+.ct-track i{position:absolute;top:0;height:100%;min-width:6px;border-radius:6px;background:linear-gradient(90deg,#F6C021,#F2A3AE)}
+.ct-track i.nobp{background:transparent;border:1px dashed rgba(157,178,204,.72)}
+.ct-meta{text-align:right;color:var(--muted)}
+@media(max-width:760px){
+  .cfp-bars{grid-template-columns:1fr}
+  .ct-row{grid-template-columns:94px minmax(0,1fr) 70px;gap:6px}
+}
