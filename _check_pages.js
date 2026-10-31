@@ -906,7 +906,7 @@ async function main() {
     check(label + "对比入口维度与对象类型匹配", c && mustDims.every(function (d) { return c.dims.indexOf(d) >= 0; }),
       c && c.dims.join(","));
     check(label + "对比入口默认答案进 URL（可分享）", c && /items=/.test(c.url || ""), c && c.url);
-    check(label + "对比入口导航高亮对比组", c && c.on === 1 && /compare\.html/.test(c.onHref || ""),
+    check(label + "对比入口导航高亮一个分组", c && c.on === 1 && /compare\.html|players\.html/.test(c.onHref || ""),
       c && (c.on + " / " + c.onHref));
   }
 

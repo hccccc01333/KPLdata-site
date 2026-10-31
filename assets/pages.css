@@ -1702,3 +1702,59 @@ select:disabled{opacity:.55 !important;cursor:not-allowed}
 .match-tabs .seg{margin-left:0}
 .match-tab-note{font-size:10.5px;color:var(--muted)}
 @media(max-width:760px){.match-tabs{align-items:flex-start;flex-direction:column}.match-tabs .seg{width:100%;overflow-x:auto}}
+
+/* ==================================================================
+   V6.6 · 选手页「搭档与对位」排版优化
+   ================================================================== */
+.rel-panel .panel-title{align-items:baseline;flex-wrap:wrap;gap:6px 10px}
+.rel-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.rel-block{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card2);min-width:0}
+.rel-block h4{margin:0;font-size:14px;font-weight:800;color:var(--ink)}
+.rel-sub{margin:5px 0 10px;font-size:10.5px;color:var(--muted);line-height:1.5}
+.rel-card{padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--card);margin-bottom:9px;min-width:0}
+.rel-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.rel-people{display:flex;align-items:center;flex-wrap:wrap;gap:5px;font-size:12px;font-weight:700;color:var(--ink)}
+.rel-sep{width:4px;height:4px;border-radius:50%;background:var(--line2);display:inline-block}
+.rel-score{font-family:var(--mono);font-size:12.5px;font-weight:800;white-space:nowrap}
+.rel-score.up{color:#7BE0A3}
+.rel-score.down{color:#F2A3AE}
+.rel-kv{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;font-size:10.5px;color:var(--muted)}
+.rel-kv span{white-space:nowrap}
+.rel-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.rel-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border:1px solid var(--line2);
+  border-radius:999px;background:var(--card2);color:var(--ink2);font-size:10.5px}
+.rel-chip img{width:16px;height:16px;border-radius:4px;object-fit:cover}
+.rel-chip em{font-style:normal;color:var(--muted);font-size:9.5px}
+.rel-row{display:flex;align-items:center;gap:9px;width:100%;padding:7px 5px;border:0;border-bottom:1px solid var(--line);
+  background:transparent;color:var(--ink2);font:inherit;text-align:left;text-decoration:none;cursor:pointer}
+.rel-row:last-child{border-bottom:0}
+.rel-row:hover{background:rgba(255,255,255,.04)}
+.rel-avatar{width:26px;height:26px;border-radius:8px;object-fit:cover;border:1px solid var(--line2);background:var(--card2);
+  display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--muted);flex:none}
+.rel-avatar.alt{border-radius:50%}
+.rel-main{flex:1;min-width:0}
+.rel-main b{display:block;font-size:12px;font-weight:700;color:var(--ink)}
+.rel-main small{display:block;font-size:10px;color:var(--muted);margin-top:1px}
+.rel-delta{font-family:var(--mono);font-size:11.5px;font-weight:800;white-space:nowrap}
+.rel-delta.up{color:#7BE0A3}
+.rel-delta.down{color:#F2A3AE}
+.rel-empty{padding:12px;border-radius:9px;background:var(--card);color:var(--muted);font-size:11px}
+.rel-note{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.rel-note b{display:block;font-size:11px;color:var(--ink2);margin-bottom:5px}
+.rel-note span{display:block;font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:3px}
+.rel-rival-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:14px;align-items:start}
+.rel-rival-list{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card2);min-width:0}
+.rel-rival-list h4{margin:0 0 8px;font-size:13px;font-weight:800;color:var(--ink)}
+.rel-rival-list .rel-sub{margin-top:8px}
+.rival-node text{cursor:pointer}
+.rival-node:hover circle{stroke-width:3.2}
+@media(max-width:1000px){
+  .rel-grid{grid-template-columns:1fr}
+  .rel-rival-grid{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  .rel-block{padding:12px}
+  .rel-card{padding:9px}
+  .rel-row{gap:8px}
+  .rel-avatar{width:24px;height:24px}
+}
