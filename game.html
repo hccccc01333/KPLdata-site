@@ -190,8 +190,18 @@
         var L = window.KPL_LIVE || {};
         var all = (L.history || []).concat(L.matches || []);
         var h = all.filter(function (x) { return x.battleId === BID; })[0];
-        if (!h || !(h.pts || []).length || h.pts.length < 3) return;
-        renderCurves(h, g);
+        if (h && (h.pts || []).length >= 3) { renderCurves(h, g); return; }
+        /* live.js 只内联最近几局；更早的局从归档分片（KPL_LIVE_HIST）回退加载 */
+        var s2 = document.createElement("script");
+        s2.src = "assets/live_hist/" + MID + ".js?ts=" + Date.now();
+        s2.onload = function () {
+          s2.remove();
+          var arr = window.KPL_LIVE_HIST || [];
+          var h2 = (Array.isArray(arr) ? arr : []).filter(function (x) { return x.battleId === BID; })[0];
+          if (h2 && (h2.pts || []).length >= 3) renderCurves(h2, g);
+        };
+        s2.onerror = function () { s2.remove(); };
+        document.head.appendChild(s2);
       };
       sc.onerror = function () { sc.remove(); };
       document.head.appendChild(sc);
@@ -505,7 +515,8 @@
         '<div class="duel-topbar"><div class="duel-chips" id="duelChips"></div>' +
           '<div class="seg duel-metric" id="duelMetric">' +
           '<button type="button" data-m="gold" class="on">经济</button>' +
-          '<button type="button" data-m="dmg">输出</button></div></div>' +
+          '<button type="button" data-m="dmg">输出</button>' +
+          '<button type="button" data-m="tank">承伤</button></div></div>' +
         '<div class="duel-head" id="duelHead"></div>' +
         '<div class="duel-tug" id="duelTug"></div>' +
         '<div class="duel-slider"><span class="mono" id="duelMin"></span>' +
@@ -528,6 +539,33 @@
           return [r[0], a, b, a - b];
         });
       };
+      /* 承伤分钟序列：懒加载 assets/minute_hist/<matchId>.js（原始快照回填），无数据的局回退终局占比 */
+      var MIN = undefined;
+      function ensureMinute(cb) {
+        if (MIN !== undefined) return cb(MIN);
+        var s = document.createElement("script");
+        s.src = "assets/minute_hist/" + BID.split("_")[0] + ".js?ts=" + Date.now();  // 分片按 battleId 前缀命名
+        s.onload = function () { MIN = window.KPL_MINUTE || {}; try { delete window.KPL_MINUTE; } catch (e) {} s.remove(); cb(MIN); };  /* 顶层键 = 完整 battleId */
+        s.onerror = function () { MIN = {}; s.remove(); cb(MIN); };
+        document.head.appendChild(s);
+      }
+      function minuteSeq(mn, pk) {
+        var mb = (mn || {})[BID];
+        if (!mb || !mb.rows || mb.rows.length < 2) return null;
+        var mi = {};
+        (mb.names || []).forEach(function (n, i) { if (n && mi[n] == null) mi[n] = i; });
+        var ia = mi[pk.n1], ib = mi[pk.n2];
+        if (ia == null || ib == null) return null;
+        return mb.rows.map(function (r) {
+          var a = Number(r[21 + ia * 3]) || 0;   // tank = [m]+18队级+i×3 的第 3 个
+          var b = Number(r[21 + ib * 3]) || 0;
+          return [r[0], a, b, a - b];
+        });
+      }
+      function endSeqFor(pk) {
+        if (metric === "tank") return minuteSeq(MIN, pk);
+        return seqOf(pk, metric === "gold");
+      }
       function setMinute(m) {
         var best = curSeq.reduce(function (a, q) {
           return Math.abs(Number(q[0]) - m) < Math.abs(Number(a[0]) - m) ? q : a;
@@ -541,24 +579,34 @@
       }
       function renderDuel() {
         curPk = pairs[sel];
+        if (metric === "tank") {
+          ensureMinute(function () { renderDuelByMetric(); });
+          return;
+        }
+        renderDuelByMetric();
+      }
+      function renderDuelByMetric() {
         var isGold = metric === "gold";
-        curSeq = seqOf(curPk, isGold);
+        var mseq = metric === "tank" ? minuteSeq(MIN, curPk) : null;
+        if (metric === "tank" && !mseq) { renderTankStatic(); return; }
+        curSeq = mseq || seqOf(curPk, isGold);
         var endQ = curSeq[curSeq.length - 1];
         var endD = endQ[3];
         chipsEl.innerHTML = pairs.map(function (p2, i) {
-          var s2 = seqOf(p2, isGold);
-          var d2 = s2[s2.length - 1][3];
+          var s2 = endSeqFor(p2);
+          var d2 = s2 ? s2[s2.length - 1][3] : null;
           return '<button type="button" class="duel-chip' + (i === sel ? " on" : "") + '" data-i="' + i + '" title="' +
-            K.esc(p2.n1 + " vs " + p2.n2) + '"><b>' + p2.lane + '</b><span class="dc-diff" style="color:' +
-            (d2 >= 0 ? TC.t1 : TC.t2) + '">' + (d2 >= 0 ? "+" : "−") + kOut(d2) + "</span></button>";
+            K.esc(p2.n1 + " vs " + p2.n2) + '"><b>' + p2.lane + '</b><span class="dc-diff" style="' +
+            (d2 == null ? "color:var(--muted)" : "color:" + (d2 >= 0 ? TC.t1 : TC.t2)) + '">' +
+            (d2 == null ? "—" : (d2 >= 0 ? "+" : "−") + kOut(d2)) + "</span></button>";
         }).join("");
         headEl.innerHTML =
           '<div class="duel-p"><b style="color:' + TC.t1 + '">' + K.esc(curPk.n1) +
           '</b><span class="dp-v mono" style="color:' + TC.t1 + '">' + kOut(endQ[1]) + "</span></div>" +
-          '<span class="duel-vs mono">VS</span>' +
+          '<span class="duel-vs mono">' + (isGold ? "经济" : metric === "dmg" ? "输出" : "承伤") + " · VS</span>" +
           '<div class="duel-p r"><span class="dp-v mono" style="color:' + TC.t2 + '">' + kOut(endQ[2]) +
           '</span><b style="color:' + TC.t2 + '">' + K.esc(curPk.n2) + "</b></div>";
-        rangeEl.max = String(last[0]);
+        rangeEl.max = String(curSeq[curSeq.length - 1][0]);
         var diffs = curSeq.map(function (q) { return q[3]; });
         var upAbs = Math.max(300, Math.max.apply(null, diffs)) * 1.15;
         var dnAbs = Math.min(-300, Math.min.apply(null, diffs)) * 1.15;
@@ -598,6 +646,34 @@
           (endD >= 0 ? "+" : "−") + kOut(Math.abs(endD)) + "</b></div>";
         setMinute(Number(last[0]));
         renderButterfly();
+        note.textContent = "点上方切换分路（对抗路→游走）与口径（经济 / 输出 / 承伤）；拖动滑杆或悬停曲线逐分钟看这一路的拔河与领先差——色块厚薄即领先幅度，0 线上下翻转即领先易手。";
+      }
+      /* 承伤无分钟快照的局：诚实回退到终局占比，不造假曲线 */
+      function renderTankStatic() {
+        var p1 = statByName[curPk.n1] || {}, p2 = statByName[curPk.n2] || {};
+        chipsEl.innerHTML = pairs.map(function (p2, i) {
+          return '<button type="button" class="duel-chip' + (i === sel ? " on" : "") + '" data-i="' + i + '" title="' +
+            K.esc(p2.n1 + " vs " + p2.n2) + '"><b>' + p2.lane + '</b><span class="dc-diff" style="color:var(--muted)">—</span></button>';
+        }).join("");
+        headEl.innerHTML =
+          '<div class="duel-p"><b style="color:' + TC.t1 + '">' + K.esc(curPk.n1) +
+          '</b><span class="dp-v mono" style="color:' + TC.t1 + '">' + (Number(p1.bh) || 0).toFixed(1) + "%</span></div>" +
+          '<span class="duel-vs mono">承伤占比 · VS</span>' +
+          '<div class="duel-p r"><span class="dp-v mono" style="color:' + TC.t2 + '">' + (Number(p2.bh) || 0).toFixed(1) +
+          '%</span><b style="color:' + TC.t2 + '">' + K.esc(curPk.n2) + "</b></div>";
+        tugEl.innerHTML = '<i style="width:50%;background:' + TC.t1 + '"></i><i style="flex:1;background:' + TC.t2 + '"></i>';
+        minEl.textContent = "—";
+        leadEl.innerHTML = '<div class="empty-tip" style="padding:34px 20px;text-align:center;color:var(--muted);font-size:13px">' +
+          "本局没有逐分钟承伤快照（目前回填 2026-10 起的比赛，之后每场自动入库）。<br>上方为两人终局承伤占比（队内口径），更细的对比见下方终局贡献。</div>";
+        insEl.innerHTML =
+          '<div><span>承受占比</span><b><i style="color:' + TC.t1 + ';font-style:normal">' + (Number(p1.bh) || 0).toFixed(1) +
+          '%</i> · <i style="color:' + TC.t2 + ';font-style:normal">' + (Number(p2.bh) || 0).toFixed(1) + '%</i></b></div>' +
+          '<div><span>输出占比</span><b><i style="color:' + TC.t1 + ';font-style:normal">' + (Number(p1.dmg) || 0).toFixed(1) +
+          '%</i> · <i style="color:' + TC.t2 + ';font-style:normal">' + (Number(p2.dmg) || 0).toFixed(1) + '%</i></b></div>' +
+          '<div><span>K / D / A</span><b class="mono">' + (Number(p1.k) || 0) + "/" + (Number(p1.d) || 0) + "/" + (Number(p1.a) || 0) +
+          " vs " + (Number(p2.k) || 0) + "/" + (Number(p2.d) || 0) + "/" + (Number(p2.a) || 0) + "</b></div>" +
+          '<div><span>口径</span><b style="font-size:11px">官方终局 · 无逐分钟</b></div>';
+        note.textContent = "承伤口径本局只有终局值；「经济 / 输出」两个口径有逐分钟序列可看。";
       }
       /* 终局贡献蝶形对比：承伤等官方只有终局口径（队内占比），没有逐分钟采集，诚实展示 */
       function renderButterfly() {
@@ -614,7 +690,7 @@
           { lb: "参团率", v1: kt1v / teamK1 * 100, v2: kt2v / teamK2 * 100, fmt: function (v) { return Math.round(v) + "%"; } },
           { lb: "分均经济", v1: kt1, v2: kt2, fmt: function (v) { return v.toFixed(2) + "k"; } }
         ];
-        var html = '<div class="duel-bfly-h mono">终局贡献对比 <em>官方逐局数据 · 承伤等无逐分钟采集，占比为队内口径</em></div>';
+        var html = '<div class="duel-bfly-h mono">终局贡献对比 <em>官方逐局数据 · 占比为队内口径；逐分钟序列看上方口径切换</em></div>';
         rows.forEach(function (r) {
           var mx = Math.max(r.v1, r.v2, 0.01);
           html += '<div class="bf-row">' +
@@ -642,7 +718,7 @@
       });
       rangeEl.addEventListener("input", function () { setMinute(Number(rangeEl.value)); });
       renderDuel();
-      note.textContent = "点上方切换分路（对抗路→游走）与口径；拖动滑杆或悬停曲线逐分钟看这一路的拔河与领先差——" +
+      note.textContent = "点上方切换分路（对抗路→游走）与口径（经济 / 输出 / 承伤，承伤已回填 2026-10 起的比赛）；拖动滑杆或悬停曲线逐分钟看这一路的拔河与领先差——" +
         "色块厚薄即领先幅度，0 线上下翻转即领先易手。";
     }
 

@@ -327,7 +327,9 @@
     ["前期金差与胜负", "SELECT CASE WHEN f.goldDiff >= 0 THEN u.t1 ELSE u.t2 END AS 前期领先方,\n       CASE WHEN f.goldDiff >= 0 THEN\n         CASE WHEN u.win=1 THEN 1 ELSE 0 END ELSE\n         CASE WHEN u.win=2 THEN 1 ELSE 0 END END AS 领先方最终胜,\n       COUNT(*) AS 样本\nFROM (SELECT battleId, goldDiff, ROW_NUMBER() OVER (PARTITION BY battleId ORDER BY m) rn\n      FROM frames WHERE m BETWEEN 4 AND 6) f\nJOIN battles u USING(battleId)\nWHERE f.rn = 1 GROUP BY 前期领先方;"],
     ["让二追三的系列赛", "SELECT matchId, team1, team2, score1, score2, date FROM schedule\nWHERE (score1=3 AND score2=2) OR (score1=2 AND score2=3)\nORDER BY date DESC LIMIT 12;"],
     ["平均经济差曲线", "SELECT CAST(m AS INT) AS 分钟, ROUND(AVG(goldDiff)/1000,2) AS 平均金差k, COUNT(*) AS 样本\nFROM frames GROUP BY CAST(m AS INT) ORDER BY 分钟 LIMIT 40;"],
-    ["教练生涯样本", "SELECT coach AS 教练, series AS 系列, seriesWins AS 胜, games AS 局, bpGames AS BP局\nFROM coach_stats ORDER BY series DESC LIMIT 12;"]
+    ["教练生涯样本", "SELECT coach AS 教练, series AS 系列, seriesWins AS 胜, games AS 局, bpGames AS BP局\nFROM coach_stats ORDER BY series DESC LIMIT 12;"],
+    ["场均承伤榜（末帧）", "SELECT mp.name AS 选手, mp.hero AS 英雄, COUNT(*) AS 局,\n       ROUND(AVG(mp.tank)/10000,1) AS 场均承伤w\nFROM minute_players mp\nWHERE mp.m = (SELECT MAX(m2.m) FROM minute_players m2 WHERE m2.battleId = mp.battleId)\nGROUP BY mp.name HAVING 局 >= 5 ORDER BY 场均承伤w DESC LIMIT 12;"],
+    ["单局承伤对比曲线", "SELECT CAST(m AS INT) AS 分钟,\n       ROUND(SUM(CASE WHEN camp=1 THEN tank ELSE 0 END)/5.0/10000,2) AS 蓝方均承伤w,\n       ROUND(SUM(CASE WHEN camp=2 THEN tank ELSE 0 END)/5.0/10000,2) AS 红方均承伤w\nFROM minute_players WHERE battleId = '48251408_41_1793354660'\nGROUP BY CAST(m AS INT) ORDER BY 分钟 LIMIT 40;"]
   ];
   function initSql() {
     if (!sqlBound) { sqlBound = true; bindSql(); }

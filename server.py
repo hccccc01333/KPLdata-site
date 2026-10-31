@@ -99,6 +99,21 @@ CREATE TABLE live_battles (
   t1 TEXT, t2 TEXT, win INTEGER, score1 INTEGER, score2 INTEGER,
   namesJson TEXT, updated TEXT
 );
+CREATE TABLE minute_teams (
+  battleId TEXT, m REAL,
+  gold1 INTEGER, gold2 INTEGER, kill1 INTEGER, kill2 INTEGER,
+  tower1 INTEGER, tower2 INTEGER,
+  tyrant1 INTEGER, tyrant2 INTEGER, dark1 INTEGER, dark2 INTEGER,
+  prophet1 INTEGER, prophet2 INTEGER, shadow1 INTEGER, shadow2 INTEGER,
+  storm1 INTEGER, storm2 INTEGER, big1 INTEGER, big2 INTEGER
+);
+CREATE TABLE minute_players (
+  battleId TEXT, m REAL, camp INTEGER, idx INTEGER, name TEXT, hero TEXT,
+  gold INTEGER, dmg INTEGER, tank INTEGER
+);
+CREATE INDEX idx_mteams_battle ON minute_teams(battleId);
+CREATE INDEX idx_mplayers_battle ON minute_players(battleId);
+CREATE INDEX idx_mplayers_name ON minute_players(name);
 
 -- 视图：把常问口径固化，SQL 页签示例直接引用
 CREATE VIEW v_player_game AS
@@ -144,9 +159,7 @@ GROUP BY p.hero, s.year;
 
 def build_db(log=print):
     os.makedirs(CACHE_DIR, exist_ok=True)
-    tmp = DB_PATH + ".building"
-    if os.path.exists(tmp):
-        os.remove(tmp)
+    tmp = DB_PATH + ".building.%d" % os.getpid()  # 唯一临时名：多实例 / 残留进程不会互踩
     con = sqlite3.connect(tmp)
     con.executescript(SCHEMA)
     t0 = time.time()
@@ -210,6 +223,35 @@ def build_db(log=print):
                              r[6], r[7], r[8], r[9], r[10], r[11]))
                 n_pts += 1
     log("  pts_live: %d rows (含归档 %d 局)" % (n_pts, len(entries)))
+
+    # 逐分钟选手 / 队伍全量字段（assets/minute_hist/，原始快照回填：输出 / 承伤数值、资源分类计数）
+    n_mt, n_mp = 0, 0
+    mdir = os.path.join(ASSETS, "minute_hist")
+    if os.path.isdir(mdir):
+        for fn in sorted(os.listdir(mdir)):
+            if not fn.endswith(".js"):
+                continue
+            try:
+                shard = load_js_json(os.path.join(mdir, fn))
+            except Exception:
+                continue
+            for bid, b in shard.items():
+                names = b.get("names") or []
+                pcamps = b.get("pcamp") or []
+                for r in b.get("rows") or []:
+                    r = (list(r) + [0] * 49)[:49]  # 防御：旧行短于 49 列时补零
+                    con.execute("INSERT OR REPLACE INTO minute_teams VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                (bid, r[0], *r[1:19]))
+                    for i in range(10):
+                        base = 19 + i * 3  # 行布局: [m] + 18 队级 + 10×(gold,dmg,tank)
+                        con.execute("INSERT OR REPLACE INTO minute_players VALUES (?,?,?,?,?,?,?,?,?)",
+                                    (bid, r[0], pcamps[i] if i < len(pcamps) else (1 if i < 5 else 2),
+                                     i, names[i] if i < len(names) else "",
+                                     b.get("heroes", [""] * 10)[i] if i < len(b.get("heroes") or []) else "",
+                                     r[base], r[base + 1], r[base + 2]))
+                    n_mt += 1
+                    n_mp += 10
+    log("  minute_teams: %d rows, minute_players: %d rows" % (n_mt, n_mp))
 
     # 复盘包逐帧 + 事件（assets/replay/<matchId>.json）
     n_f, n_e = 0, 0
@@ -508,7 +550,7 @@ class Handler(BaseHTTPRequestHandler):
             pass
         return {
             "service": "峡谷有数 · 本地工作台",
-            "version": "V6.9.0",
+            "version": "V6.10.0",
             "ready": STATE["ready"],
             "db": os.path.basename(DB_PATH),
             "dbMB": round(os.path.getsize(DB_PATH) / 1048576, 1) if os.path.exists(DB_PATH) else 0,
@@ -583,7 +625,7 @@ def main():
     args = ap.parse_args()
 
     print("=" * 56)
-    print("  峡谷有数 · 本地工作台 (V6.9.0)")
+    print("  峡谷有数 · 本地工作台 (V6.10.0)")
     print("=" * 56)
 
     def warmup():

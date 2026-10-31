@@ -73,7 +73,7 @@ def main():
     try:
         code, st = jget("/api/status")
         check("/api/status 可用", code == 200 and st.get("ok") is not False)
-        check("状态含版本与数据库大小（本地工作台）", st.get("version") == "V6.9.0" and "本地工作台" in (st.get("service") or "") and st.get("dbMB", 0) > 0,
+        check("状态含版本与数据库大小（本地工作台）", st.get("version") == "V6.10.0" and "本地工作台" in (st.get("service") or "") and st.get("dbMB", 0) > 0,
               "%s / %sMB" % (st.get("version"), st.get("dbMB")))
         c = st.get("counts", {})
         check("全量数据已入库（schedule ≥ 1000 / battles ≥ 5000 / players ≥ 25000）",
@@ -81,6 +81,11 @@ def main():
               json.dumps({k: c.get(k) for k in ("schedule", "battles", "battle_players", "frames", "coaches")}))
         check("数据范围从 2019 开始", (st.get("dateRange") or ["x"])[0].startswith("2019"), st.get("dateRange"))
         check("分钟归档已入库（pts_live ≥ 3500 行）", c.get("pts_live", 0) >= 3500, "pts_live=" + str(c.get("pts_live")))
+        check("逐分钟承伤已入库（minute_players ≥ 40000 行）", c.get("minute_players", 0) >= 40000,
+              "minute_players=" + str(c.get("minute_players")))
+        code, q = jget("/api/query", "POST",
+                       {"sql": "SELECT COUNT(*) AS n FROM minute_players WHERE tank > 0"})
+        check("承伤数值真实存在", code == 200 and q.get("ok") and q["rows"][0][0] > 30000, q.get("rows"))
         code, sch = jget("/api/schema")
         names = {t["name"]: t["type"] for t in sch.get("tables", [])}
         check("视图就位（v_player_game / v_team_season / v_player_season / v_hero_pick）",
