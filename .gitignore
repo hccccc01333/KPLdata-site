@@ -30,3 +30,4 @@ assets/replay/.manifest.json
 *.docx
 *.fig
 *.sketch
+.cache/
