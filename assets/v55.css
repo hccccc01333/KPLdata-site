@@ -699,3 +699,12 @@ html.v55 .rec-row.openable:hover .rec-who b{border-bottom-color:var(--brand)}
 .bf-cell i{display:block;height:13px;border-radius:6px;opacity:.82;transition:width .2s ease}
 .bf-cell.l{justify-content:flex-end}
 .bf-cell b{font-family:var(--mono);font-size:12.5px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;flex:none}
+/* 团战账本 */
+.fight-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.fight-card{position:relative;text-align:left;border:1px solid var(--line);border-radius:11px;background:var(--card2);
+  padding:11px 13px;cursor:pointer;font-family:inherit;display:block;transition:border-color .15s,transform .15s}
+.fight-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.fight-card .fc-t{display:block;font-size:10.5px;color:var(--muted);letter-spacing:.08em}
+.fight-card .fc-k{display:block;margin-top:4px;font-size:15px;font-weight:800;color:var(--ink)}
+.fight-card .fc-s{display:block;margin-top:3px;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.fight-card .fc-res{display:block;margin-top:4px;font-size:10.5px;color:var(--gold);min-height:16px}
