@@ -1,6 +1,6 @@
-# 峡谷有数 · KPL Insight 交互网站
+# KPL赛研 · KPL Research 交互网站
 
-[峡谷有数 KPL Insight](https://github.com/hccccc01333/kpl-insight) 的交互网站与静态数据展示端：赛程比分、战队 / 选手 / 英雄数据、BP 分析、逐局复盘、实时胜率、预测公开统计、精选对局、系列赛研究、荣誉与纪录。
+[KPL赛研 KPL Research](https://github.com/hccccc01333/kpl-research) 的交互网站与静态数据展示端：赛程比分、战队 / 选手 / 英雄数据、BP 分析、逐局复盘、实时胜率、预测公开统计、精选对局、系列赛研究、荣誉与纪录。
 
 - 数据来源：腾讯 KPL 官方公开接口（赛程 / 对局 / 局内快照）；个人搭建的赛事数据产品，**非官方、与腾讯无关联**
 - 技术：纯静态 HTML + 原生 JS，无框架、无构建步骤；数据由 Python 脚本离线生成为 `assets/*.js`
@@ -11,7 +11,7 @@
 
 ## 体验与参与
 
-[在线体验](https://hccccc01333.github.io/KPLdata-site/) · [项目源码与 Star](https://github.com/hccccc01333/kpl-insight) · [反馈问题](https://github.com/hccccc01333/kpl-insight/issues) · [贡献指南](https://github.com/hccccc01333/kpl-insight/blob/main/CONTRIBUTING.md)
+[在线体验](https://hccccc01333.github.io/KPLdata-site/) · [项目源码与 Star](https://github.com/hccccc01333/kpl-research) · [反馈问题](https://github.com/hccccc01333/kpl-research/issues) · [贡献指南](https://github.com/hccccc01333/kpl-research/blob/main/CONTRIBUTING.md)
 
 本仓库负责网页、交互与静态数据构建；数据采集、特征、模型和回测工具在主项目。喜欢这个项目，欢迎给主项目点一颗 Star，也欢迎用具体比赛和使用场景帮助我们改进。
 
