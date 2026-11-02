@@ -1,4 +1,4 @@
-/* 峡谷有数 · 最小匿名事件端点
+/* KPL赛研 · 最小匿名事件端点
    仅接收 5 个产品事件 + page_view；不写 Cookie、不存 IP、不接收查询参数或选手/战队名称。
    当前账号未启用 Analytics Engine，先用 KV 记录：每条事件一个 90 天 TTL 的独立 key。 */
 const ALLOWED = new Set([

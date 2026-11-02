@@ -294,7 +294,7 @@ async function main() {
     return { name: (document.querySelector('.brand-name') || {}).textContent || '',
              sub: (document.querySelector('.brand-sub') || {}).textContent || '' };
   })()`);
-  check("品牌统一为峡谷有数 / KPL Insight", brand && brand.name === "峡谷有数" && /KPL INSIGHT/i.test(brand.sub),
+  check("品牌统一为KPL赛研 / KPL Research", brand && brand.name === "KPL赛研" && /KPL RESEARCH/i.test(brand.sub),
     brand && brand.name + " / " + brand.sub);
 
   console.log("\n=== 复盘交互（拖动 / 键盘 / 切局 / 点曲线 / 分享）===");

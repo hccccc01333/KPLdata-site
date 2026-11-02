@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""峡谷有数 · 本地工作台
+"""KPL赛研 · 本地工作台
 
 一条命令把整个数据台跑在自己电脑上：
     python server.py
@@ -549,7 +549,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception:
             pass
         return {
-            "service": "峡谷有数 · 本地工作台",
+            "service": "KPL赛研 · 本地工作台",
             "version": "V6.10.0",
             "ready": STATE["ready"],
             "db": os.path.basename(DB_PATH),
@@ -617,7 +617,7 @@ class Handler(BaseHTTPRequestHandler):
 # ---------------------------------------------------------------------------
 
 def main():
-    ap = argparse.ArgumentParser(description="峡谷有数 · 本地工作台")
+    ap = argparse.ArgumentParser(description="KPL赛研 · 本地工作台")
     ap.add_argument("--port", type=int, default=8123)
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--no-browser", action="store_true", help="启动后不自动打开浏览器")
@@ -625,7 +625,7 @@ def main():
     args = ap.parse_args()
 
     print("=" * 56)
-    print("  峡谷有数 · 本地工作台 (V6.10.0)")
+    print("  KPL赛研 · 本地工作台 (V6.10.0)")
     print("=" * 56)
 
     def warmup():

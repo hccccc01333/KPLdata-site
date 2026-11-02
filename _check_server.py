@@ -122,7 +122,7 @@ def main():
         check("未知对局返回空对象", code == 200 and b.get("battle") is None, "")
 
         code, raw = get("/")
-        check("静态站首页由 server 提供", code == 200 and "峡谷有数" in raw.decode("utf-8", "ignore"))
+        check("静态站首页由 server 提供", code == 200 and "KPL赛研" in raw.decode("utf-8", "ignore"))
         check("HTML 注入本地徽标", b"local-badge.js" in raw)
         code, raw = get("/query.html?m=sql")
         qhtml = raw.decode("utf-8", "ignore")
