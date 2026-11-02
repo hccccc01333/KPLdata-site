@@ -164,7 +164,7 @@ def build_db(log=print):
     con.executescript(SCHEMA)
     t0 = time.time()
 
-    # 赛程（2019–2026 全量）
+    # 赛程（2016–2026 全量）
     sched = load_js_json(os.path.join(ASSETS, "schedule_all.js"))
     con.executemany(
         "INSERT OR REPLACE INTO schedule VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",

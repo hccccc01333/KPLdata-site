@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL赛研">
 <meta property="og:title" content="比赛详情 · KPL赛研">
-<meta property="og:description" content="KPL 赛事数据产品：赛程比分、战队/选手/英雄数据、BP 分析、逐局复盘与实时胜率预测。2019–2026 全历史。">
+<meta property="og:description" content="KPL 赛事数据产品：赛程比分、战队/选手/英雄数据、BP 分析、逐局复盘与实时胜率预测。2016–2026 全历史。">
 <meta property="og:image" content="https://hccccc01333.github.io/KPLdata-site/assets/brand/kpl-research-social.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="assets/arena.css?v=1">
@@ -65,7 +65,7 @@
         ["比分", done ? sr.score1 + " : " + sr.score2 : "—"],
         ["胜方", winner || "—"],
         ["比赛日期", sr.date || "—"],
-        ["数据范围", "2019–2026 全部赛事"]
+        ["数据范围", "2016–2026 全部赛事"]
       ],
       note: "口径：官方赛程与逐局结果；比分以官方赛事接口为准，逐局明细与胜率曲线以站内复盘页为准。",
       url: "kpldata-site.hccccc01333.workers.dev/match.html?id=" + encodeURIComponent(id)
@@ -81,7 +81,7 @@
     if (!schedRow) {
       $("#wrapHero").innerHTML = '<header class="page-hero"><div class="wrap">' +
         '<div class="ph-kicker mono">MATCH · 比赛详情</div><h1>未找到该场比赛</h1>' +
-        "<p>2019–2026 全部赛程可在赛程中心查看；有逐分钟曲线的场次显示完整复盘。</p>" +
+        "<p>2016–2026 全部赛程可在赛程中心查看；有逐分钟曲线的场次显示完整复盘。</p>" +
         '<div class="slide-cta" style="margin-top:18px"><a class="btn primary" href="schedule.html">返回赛程中心</a></div>' +
         "</div></header>";
       return;

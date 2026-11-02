@@ -243,7 +243,7 @@
     ? { matches: KPL_TOTALS.matches, battles: KPL_TOTALS.battles }
     : ((window.KPL_SEASONS && KPL_SEASONS.scopes && KPL_SEASONS.scopes.all)
       ? KPL_SEASONS.scopes.all.totals : { matches: D.stats.matches, battles: D.stats.battles });
-  $("#kvRange").textContent = "2019–2026 全历史 · " + ((window.KPL_TOTALS && KPL_TOTALS.leagues) || 33) +
+  $("#kvRange").textContent = "2016–2026 全历史（2016–2018 为外部补充口径） · " + ((window.KPL_TOTALS && KPL_TOTALS.leagues) || 33) +
     " 个赛事（联赛 / 世冠 / 挑战者杯 / 年度总决赛）· 已收录 " +
     K.fmtInt(T.matches) + " 场比赛 / " + K.fmtInt(T.battles) + " 局";
 
@@ -258,7 +258,7 @@
   if ($("#covPct")) $("#covPct").textContent = T.battles ? (covN / T.battles * 100).toFixed(1) + "%" : "—";
 
   var stack = [
-    { k: "覆盖赛事", v: (window.KPL_TOTALS && KPL_TOTALS.leagues) || 33, s: "2019–2026 八个年度" },
+    { k: "覆盖赛事", v: (window.KPL_TOTALS && KPL_TOTALS.leagues) || 33, s: "2016–2026 十一个年度" },
     { k: "收录比赛", v: T.matches, s: "大场 · 比分已核对" },
     { k: "收录对局", v: T.battles, s: "逐局 BP / 选手 / 出装" },
     { k: "局内快照", v: D.stats.snapshotDirs, s: "场次原始帧（实时链路）" }
@@ -297,7 +297,8 @@
     ["2026-08", "前端改版为模块化数据看板（赛程 / 战队 / 选手 / 英雄）"],
     ["2026-10", "数据批量回补 + 模型重训（当口径下误差 0.199 → 0.143）"],
     ["2026-10", "接入年度总决赛；对外产品站上线"],
-    ["2026-10", "全历史接入：2019–2026 全部 33 个赛事、11,000+ 局"],
+    ["2026-11", "2016–2018 外部历史补充接入：wanplus + scoregg 共 584 场大场 / 1,906 局，数据范围回溯到 2016-09-17"],
+    ["2026-10", "全历史接入：2016–2026 全部 38 个赛事、12,000+ 局"],
     ["2026-10", "实时链路：1 秒采集 + 30 秒实时页 + 全自动归档闭环"],
     ["2026-10", "BP 八维分析、英雄组合协同算法、模型预测公开统计页"],
     ["2026-10", "评估口径重构：训练 / 校准 / 考试三段硬隔离，作废旧口径指标并重算"]

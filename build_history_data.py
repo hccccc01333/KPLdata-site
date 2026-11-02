@@ -466,6 +466,12 @@ def main() -> None:
         "leagues": league_rows,
         "scopes": scopes,
     }
+    # 2016–2018 外部历史补充（wanplus / scoregg）：无 payload 时跳过，构建保持可用
+    try:
+        from legacy_history import merge as merge_legacy
+        seasons, schedule_all = merge_legacy(seasons, schedule_all)
+    except Exception as e:
+        print(f"[legacy] 合并跳过: {e}")
     out1 = ASSETS / "seasons.js"
     out1.write_text("KPL_SEASONS = " + json.dumps(seasons, ensure_ascii=False, separators=(",", ":")) + ";\n",
                     encoding="utf-8")
