@@ -463,12 +463,20 @@ class Handler(BaseHTTPRequestHandler):
             return
         ext = os.path.splitext(fs)[1].lower()
         ctype = MIME.get(ext, "application/octet-stream")
+        mtime = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(os.path.getmtime(fs)))
+        ims = self.headers.get("If-Modified-Since")
+        if ims == mtime:
+            self.send_response(304)
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Last-Modified", mtime)
+            self.end_headers()
+            return
         with open(fs, "rb") as f:
             body = f.read()
         # HTML 注入本地徽标：托管静态站上该脚本自动静默，不影响线上
         if ext == ".html" and b"</body>" in body:
             body = body.replace(b"</body>", BADGE_TAG + b"</body>", 1)
-        self._send(200, body, ctype)
+        self._send(200, body, ctype, {"Last-Modified": mtime})
 
     # -- 路由 --
     def do_GET(self):

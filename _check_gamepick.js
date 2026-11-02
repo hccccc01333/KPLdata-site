@@ -67,6 +67,8 @@ async function main() {
   await send("Runtime.enable");
   await send("Network.enable");
   await send("Network.setCacheDisabled", { cacheDisabled: true });
+  await send("Network.enable");
+  await send("Network.setCacheDisabled", { cacheDisabled: true });
   await send("Page.addScriptToEvaluateOnNewDocument", {
     source: `
       window.__kplUnhandled = [];
@@ -102,11 +104,20 @@ async function main() {
   }
 
   /* ---- 1+2：game.html 资源 / 分路 ---- */
-  let err = await visit("game.html?id=48251408_47_1793364935", 400);
+  let err = await visit("game.html?id=1054884368_10_1792581284", 400);
   check("game.html 无未捕获异常", err.length === 0, err.join(" | "));
 
   const score = await waitFor(`document.querySelectorAll('#curveScore .cs-k').length || null`, 15000) || 0;
   check("终局记分牌渲染（两队各 5 项指标）", score === 10, "chips=" + score);
+
+  /* 团战账本（10 秒粒度）+ 出装时点（用快照最密的局） */
+  await evaluate(`document.querySelector('#curveTabsTeam [data-t=fights]').click()`);
+  const fights = await waitFor(`document.querySelectorAll('.fight-card').length || (document.querySelector('#curveChart .empty-tip') ? -1 : 0)`, 15000) || 0;
+  check("团战账本检测出团战卡片", fights >= 1, "cards=" + fights);
+  const cov = await evaluate(`(document.querySelector('#curveChart .panel-foot')||{textContent:''}).textContent`);
+  check("团战账本带覆盖率口径", /10 秒粒度/.test(cov || ""), String(cov).slice(0, 50));
+  const tips = await evaluate(`document.querySelectorAll('.g-eq[title*="′ 购买"]').length`);
+  check("装备芯片带购买时点（出装时间轴）", tips >= 10, "chips=" + tips);
 
   await waitFor(`!!document.querySelector('#curveTabsTeam [data-t="res"]')`);
   await evaluate(`document.querySelector('#curveTabsTeam [data-t="res"]').click()`);
@@ -158,7 +169,7 @@ async function main() {
   })()`, 20000) || { rows: 0, bars: 0 };
   check("终局贡献蝶形图（含承伤占比 / 参团率 / KDA）", !!bfly && bfly.rows === 5 && bfly.hasTank && bfly.hasKda && bfly.bars === 8,
     "rows=" + (bfly && bfly.rows) + " bars=" + (bfly && bfly.bars));
-  err = await visit("game.html?id=48251408_47_1793364935", 600);
+  err = await visit("game.html?id=1054884368_10_1792581284", 600);
   check("game.html 复检无异常（含分路切换后）", err.length === 0, err.join(" | "));
 
   /* ---- 3：match.html 对局选择弹窗 ---- */
