@@ -1553,7 +1553,7 @@ body.sch-page .sch-hero .ph-kicker {
   font-weight: 600;
   letter-spacing: .21em !important;
 }
-body.sch-page .sch-hero h1 { letter-spacing: -.045em; }
+body.sch-page .sch-hero h1 { letter-spacing: -.035em; }
 body.sch-page .sch-hero h1 span {
   background: linear-gradient(100deg, #dce9ff 0%, #93bcff 42%, #6d9bff 100%);
   -webkit-background-clip: text;
