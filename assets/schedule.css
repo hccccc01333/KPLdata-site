@@ -367,6 +367,11 @@ body.sch-page .sch-feature-meta em {
   font-style: normal;
   font-size: 10.5px;
 }
+body.sch-page .sch-feature-meta span + span::before {
+  content: "·";
+  margin-right: 7px;
+  color: #5f7594;
+}
 body.sch-page .sch-feature-foot {
   position: relative;
   display: flex;
