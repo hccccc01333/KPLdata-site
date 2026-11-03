@@ -196,6 +196,12 @@
     $("#brFocus").innerHTML = L2.champion ? renderChampion(L2) : renderNow(L2);
     var ev = $("#brEvent");
     if (ev) ev.classList.toggle("is-live", !!(L2.next && isLiveRow(L2.next)));
+    var cta = $("#brToBracket");
+    if (cta) {
+      var hasKo = L2.stages.some(isKOStage);
+      cta.textContent = hasKo ? "查看淘汰赛" : "查看积分榜";
+      cta.setAttribute("href", hasKo ? "#brBracketSec" : "#brStandingsSec");
+    }
   }
 
   /* ---------- 赛段轨 ---------- */
@@ -488,7 +494,7 @@
     var toBracket = $("#brToBracket");
     if (toBracket) toBracket.addEventListener("click", function (e) {
       e.preventDefault();
-      var t = $("#brBracketSec");
+      var t = document.querySelector(toBracket.getAttribute("href") || "#brBracketSec");
       if (t) t.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     });
 
