@@ -473,6 +473,15 @@
     var today = todayCN();
     var live = rows.filter(isLiveRow)[0];
     var todayRows = rows.filter(function (r) { return r.date === today; });
+    var upcoming0 = rows.filter(function (r) { return !r.done; }).sort(function (a, b) { return matchMs(a) - matchMs(b); })[0];
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      var short = "共 <b>" + K.fmtInt(rows.length) + "</b> 场";
+      if (todayRows.length) short += " · 今天 <b>" + todayRows.length + "</b> 场";
+      if (live) short += " · 直播 <b>" + esc(live.team1) + " " + live.score1 + " : " + live.score2 + " " + esc(live.team2) + "</b>";
+      else if (upcoming0) short += " · 下一场 <b>" + esc(upcoming0.time || "") + " " + esc(upcoming0.team1) + " vs " + esc(upcoming0.team2) + "</b>";
+      K.brief("#brief", short + "。");
+      return;
+    }
     var txt = "当前范围共 <b>" + K.fmtInt(rows.length) + "</b> 场（已结束 " + K.fmtInt(fin) + " 场）。";
     if (live) {
       txt += "正在进行：<b>" + esc(live.team1) + " " + live.score1 + " : " + live.score2 + " " + esc(live.team2) + "</b>。";
