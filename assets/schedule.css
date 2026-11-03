@@ -1882,7 +1882,7 @@ html.dark-site body.sch-page .sch-backtop {
 }
 
 /* 桌面端字号精修（移动端保留原响应式字号） */
-@media (min-width: 901px) {
+@media (min-width: 1181px) {
   body.sch-page .sch-hero .wrap { padding-top: 62px; padding-bottom: 84px; }
   body.sch-page .sch-hero-deck { font-size: 15.5px; line-height: 1.95; max-width: 560px; }
   body.sch-page .sch-kpi b { font-size: 30px; }
