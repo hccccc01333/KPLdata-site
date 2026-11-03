@@ -43,8 +43,8 @@ html.dark-site body.sch-page {
   --sch-card-soft: #0d1624;
   --sch-ink: #eef4ff;
   --sch-ink-2: #b5c2d8;
-  --sch-muted: #8492a8;
-  --sch-faint: #69788f;
+  --sch-muted: #9aa8be;
+  --sch-faint: #7f8ea5;
   --sch-line: #233149;
   --sch-line-strong: #3a4b66;
   --sch-brand: #6fa5ff;
@@ -1365,6 +1365,11 @@ body.sch-page .sch-hero-copy > :nth-child(4) { animation-delay: .2s; }
     grid-template-columns: minmax(0, 1fr) minmax(380px, .95fr);
     gap: 34px;
   }
+  body.sch-page .sch-feature .sch-logo { width: 44px; height: 44px; }
+  body.sch-page .sch-fteam b { font-size: 16px; max-width: 120px; }
+  body.sch-page .sch-feature-main { gap: 10px; }
+  body.sch-page .sch-fscore b { font-size: 28px; }
+  body.sch-page .sch-stage-mini { display: flex; }
   body.sch-page .sch-layout {
     grid-template-columns: 1fr;
   }
