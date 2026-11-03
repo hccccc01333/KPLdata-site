@@ -200,6 +200,8 @@
 
   /* ---------- 赛段轨 ---------- */
   function renderRail(L2) {
+    var hint = $("#brRailHint");
+    if (hint) { hint.hidden = true; hint.textContent = ""; }
     var note = $("#brRailNote");
     var now = L2.nowIdx >= 0 ? stageName(L2.stages[L2.nowIdx]) : "";
     if (note) note.textContent = L2.stages.length + " 个赛段" + (now ? " · 当前 " + now : " · 已全部结束");
@@ -301,7 +303,7 @@
       var matches = s.rows.slice().sort(function (a, b) {
         return (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""));
       });
-      var wide = current && matches.length > 5;
+      var wide = matches.length > 7;
       return '<section class="br-col' + (current ? " is-now" : "") + (past && !current ? " is-past" : "") +
         (wide ? " is-wide" : "") +
         '" id="br-col-' + x.i + '" style="animation-delay:' + Math.min(n * 60, 240) + 'ms">' +
