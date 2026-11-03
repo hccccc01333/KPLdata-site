@@ -1416,3 +1416,7 @@ body.br-page .br-hero-deck b { white-space: nowrap; }
     font-weight: 400;
   }
 }
+
+@media (min-width: 1000px) {
+  body.br-page .br-col.is-wide .br-match-go { display: none; }
+}
