@@ -75,8 +75,6 @@
     countTo($("#mDone"), doneN);
     countTo($("#mDetail"), detailN);
     countTo($("#mVid"), vidN);
-    var totalEl = $("#heroTotal");
-    if (totalEl) totalEl.textContent = K.fmtInt(ALL.length);
   }
 
   /* ---------- 范围状态 ---------- */
