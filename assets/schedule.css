@@ -568,6 +568,7 @@ body.sch-page .sch-railbtn {
   transition: border-color .15s, color .15s;
 }
 body.sch-page .sch-railbtn:hover { border-color: var(--sch-brand); color: var(--sch-brand); }
+body.sch-page .sch-railbtn:disabled { opacity: .35; cursor: default; }
 body.sch-page .sch-filterbar {
   display: flex;
   align-items: flex-end;

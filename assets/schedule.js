@@ -716,6 +716,7 @@
       });
       list.addEventListener("keydown", function (e) {
         if (e.key !== "Enter" && e.key !== " ") return;
+        if (e.target.closest("a")) return;
         var row = e.target.closest(".sch-row[data-href]");
         if (!row) return;
         e.preventDefault();
