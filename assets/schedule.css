@@ -1668,3 +1668,250 @@ html.dark-site body.sch-page .sch-field select,
 html.dark-site body.sch-page .sch-field input {
   background-color: #121c2c;
   border-color: #2a3a54;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045);
+}
+body.sch-page .sch-field select:hover,
+body.sch-page .sch-field input:hover { border-color: #a7b9d4; }
+html.dark-site body.sch-page .sch-field select:hover,
+html.dark-site body.sch-page .sch-field input:hover { border-color: #3c5276; }
+body.sch-page .sch-field select:focus,
+body.sch-page .sch-field input:focus {
+  border-color: var(--sch-brand);
+  box-shadow: 0 0 0 3px rgba(47, 91, 215, .13), inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+html.dark-site body.sch-page .sch-field select:focus,
+html.dark-site body.sch-page .sch-field input:focus {
+  box-shadow: 0 0 0 3px rgba(111, 165, 255, .18), inset 0 1px 0 rgba(255, 255, 255, .045);
+}
+body.sch-page .sch-seg {
+  background: linear-gradient(180deg, #eef3fa, #e8eef7);
+  border-color: #d5dfec;
+  box-shadow: inset 0 1px 2px rgba(24, 43, 82, .055);
+}
+html.dark-site body.sch-page .sch-seg {
+  background: linear-gradient(180deg, #101a2a, #0d1624);
+  border-color: #2a3a54;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .3);
+}
+body.sch-page .sch-seg button.on {
+  background: linear-gradient(180deg, #fff, #f7faff);
+  box-shadow: 0 1px 2px rgba(24, 43, 82, .1), 0 5px 12px -8px rgba(24, 43, 82, .22);
+}
+html.dark-site body.sch-page .sch-seg button.on {
+  background: linear-gradient(180deg, #1d2b42, #172337);
+  color: #eef4ff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .045);
+}
+body.sch-page .sch-count { font-size: 12px; }
+body.sch-page .sch-reset { transition: background .16s var(--sch-ease), color .16s var(--sch-ease), transform .16s var(--sch-ease); }
+body.sch-page .sch-reset:hover { transform: translateY(-1px); }
+
+/* 动态简报：编辑式提示条 */
+body.sch-page .sch-brief {
+  padding: 12px 15px 12px 14px;
+  border: 1px solid var(--sch-line);
+  border-left: 2px solid rgba(47, 91, 215, .45);
+  border-radius: 0 9px 9px 0;
+  background: linear-gradient(90deg, rgba(47, 91, 215, .055), transparent 62%);
+  font-size: 13px;
+}
+html.dark-site body.sch-page .sch-brief {
+  border-left-color: rgba(111, 165, 255, .5);
+  background: linear-gradient(90deg, rgba(111, 165, 255, .08), transparent 62%);
+}
+
+/* 列表 */
+body.sch-page .sch-listhead h2 { letter-spacing: -.025em; }
+body.sch-page .sch-dayhead { position: relative; border-bottom: 0; }
+body.sch-page .sch-dayhead::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--sch-line), rgba(198, 209, 226, .15));
+}
+html.dark-site body.sch-page .sch-dayhead::after {
+  background: linear-gradient(90deg, #263550, rgba(38, 53, 80, .12));
+}
+body.sch-page .sch-dayhead b { letter-spacing: -.015em; }
+body.sch-page .sch-dayhead em { color: var(--sch-faint); }
+body.sch-page .sch-today-tag {
+  background: linear-gradient(180deg, #eef4ff, #e6eeff);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+html.dark-site body.sch-page .sch-today-tag {
+  background: linear-gradient(180deg, #1b2d4e, #152541);
+  color: #9fc2ff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+body.sch-page .sch-row {
+  border-color: #e4eaf3;
+  background: linear-gradient(180deg, #fff, #fdfefe);
+  box-shadow: 0 1px 2px rgba(24, 43, 82, .028);
+  transition: border-color .18s var(--sch-ease), background .18s var(--sch-ease), transform .18s var(--sch-ease), box-shadow .18s var(--sch-ease);
+}
+body.sch-page .sch-row:hover {
+  border-color: #b6c7e6;
+  background: linear-gradient(90deg, #fbfdff, #f5f9ff);
+  box-shadow: 0 16px 32px -22px rgba(24, 43, 82, .38), 0 2px 6px rgba(24, 43, 82, .04);
+}
+html.dark-site body.sch-page .sch-row {
+  border-color: #22314a;
+  background: linear-gradient(180deg, #121c2c, #101927);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .18);
+}
+html.dark-site body.sch-page .sch-row:hover {
+  border-color: #3f5d8c;
+  background: linear-gradient(90deg, #172235, #141e30);
+  box-shadow: 0 16px 32px -22px rgba(0, 0, 0, .6), 0 2px 6px rgba(0, 0, 0, .18);
+}
+body.sch-page .sch-logo {
+  background: linear-gradient(180deg, #fff, #f4f7fc);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(24, 43, 82, .08);
+  transition: transform .18s var(--sch-ease), border-color .18s var(--sch-ease);
+}
+html.dark-site body.sch-page .sch-logo {
+  background: linear-gradient(180deg, #1a2639, #121b2a);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+body.sch-page .sch-row:hover .sch-logo { transform: scale(1.045); }
+body.sch-page .sch-feature .sch-logo {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .1), rgba(255, 255, 255, .035));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 8px 24px -12px rgba(0, 0, 0, .55);
+}
+body.sch-page .sch-score { gap: 2px; }
+body.sch-page .sch-score i { color: var(--sch-muted); font-size: 12px; }
+body.sch-page .sch-score b { letter-spacing: .01em; }
+body.sch-page .sch-team b { font-weight: 600; letter-spacing: -.005em; }
+body.sch-page .sch-status {
+  border: 1px solid transparent;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+body.sch-page .sch-status.done {
+  background: linear-gradient(180deg, #eef2f8, #e8eef6);
+  border-color: #dfe7f1;
+}
+body.sch-page .sch-status.next {
+  background: linear-gradient(180deg, #eef4ff, #e7efff);
+  border-color: #d7e3ff;
+}
+body.sch-page .sch-status.live {
+  background: linear-gradient(180deg, #fff0f3, #fde7ec);
+  border-color: #f7d3dc;
+}
+html.dark-site body.sch-page .sch-status.done {
+  background: linear-gradient(180deg, #1b2739, #162133);
+  border-color: #263650;
+  color: #a6b4c9;
+}
+html.dark-site body.sch-page .sch-status.next {
+  background: linear-gradient(180deg, #172a4a, #132540);
+  border-color: #25436e;
+  color: #9fc2ff;
+}
+html.dark-site body.sch-page .sch-status.live {
+  background: linear-gradient(180deg, #341923, #2b151d);
+  border-color: #572b37;
+  color: #ff9aa8;
+}
+body.sch-page .sch-cov-i { transition: background .16s var(--sch-ease); }
+body.sch-page .sch-cov-n { color: var(--sch-muted); }
+body.sch-page .sch-go { transition: color .16s var(--sch-ease); }
+
+/* 侧栏卡片 */
+body.sch-page .sch-card {
+  border-color: #e2e8f2;
+  background: linear-gradient(180deg, #fff, #fdfefe);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 16px 36px -28px rgba(24, 43, 82, .28), 0 2px 6px rgba(24, 43, 82, .025);
+}
+html.dark-site body.sch-page .sch-card {
+  border-color: #22314a;
+  background: linear-gradient(180deg, #121c2c, #101927);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 18px 38px -28px rgba(0, 0, 0, .6), 0 2px 6px rgba(0, 0, 0, .16);
+}
+body.sch-page .sch-cardhead h2 { letter-spacing: -.015em; }
+body.sch-page .sch-step { transition: background .16s var(--sch-ease), box-shadow .16s var(--sch-ease); }
+body.sch-page .sch-step.on {
+  background: linear-gradient(90deg, var(--sch-brand-soft), rgba(47, 91, 215, .025));
+  box-shadow: inset 0 0 0 1px rgba(47, 91, 215, .1);
+}
+html.dark-site body.sch-page .sch-step.on {
+  background: linear-gradient(90deg, #172a4a, rgba(23, 42, 74, .24));
+  box-shadow: inset 0 0 0 1px rgba(111, 165, 255, .16);
+}
+body.sch-page .sch-step.on .sch-step-i {
+  background: linear-gradient(180deg, #4d7cf8, #2f5fd9);
+  box-shadow: 0 4px 10px -5px rgba(47, 91, 215, .6);
+}
+body.sch-page .sch-step.on .sch-step-bar i,
+body.sch-page .sch-step.done .sch-step-bar i {
+  background: linear-gradient(90deg, #6f9cff, #2f5bd7);
+}
+body.sch-page .sch-recent-row {
+  border-radius: 6px;
+  transition: background .16s var(--sch-ease), transform .16s var(--sch-ease);
+}
+body.sch-page .sch-recent-row:hover {
+  background: linear-gradient(90deg, var(--sch-bg-soft), transparent);
+  transform: translateX(2px);
+}
+html.dark-site body.sch-page .sch-recent-row:hover {
+  background: linear-gradient(90deg, #172235, transparent);
+}
+body.sch-page .sch-legend p { color: var(--sch-muted); }
+
+/* 空态、回到顶部 */
+body.sch-page .sch-empty {
+  background: linear-gradient(180deg, var(--sch-card-soft), var(--sch-card));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .85);
+}
+html.dark-site body.sch-page .sch-empty { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04); }
+body.sch-page .sch-backtop {
+  border-color: #d5dfec;
+  background: linear-gradient(180deg, #fff, #f7faff);
+  box-shadow: 0 10px 24px -12px rgba(24, 43, 82, .28), inset 0 1px 0 #fff;
+}
+body.sch-page .sch-backtop:hover { transform: translateY(-2px); }
+html.dark-site body.sch-page .sch-backtop {
+  border-color: #2a3a54;
+  background: linear-gradient(180deg, #182438, #111a29);
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(255, 255, 255, .045);
+}
+
+/* 桌面端字号精修（移动端保留原响应式字号） */
+@media (min-width: 901px) {
+  body.sch-page .sch-hero .wrap { padding-top: 62px; padding-bottom: 84px; }
+  body.sch-page .sch-hero-deck { font-size: 15.5px; line-height: 1.95; max-width: 560px; }
+  body.sch-page .sch-kpi b { font-size: 30px; }
+  body.sch-page .sch-kpi span { font-size: 10.5px; }
+  body.sch-page .sch-fteam b { font-size: 18.5px; }
+  body.sch-page .sch-fscore b { font-size: 34px; }
+  body.sch-page .sch-fscore .vs { font-size: 17px; letter-spacing: .16em; }
+  body.sch-page .sch-listhead h2 { font-size: 21px; }
+  body.sch-page .sch-dayhead b { font-size: 15px; }
+  body.sch-page .sch-dayhead span { font-size: 11.5px; }
+  body.sch-page .sch-dayhead em { font-size: 11px; }
+  body.sch-page .sch-row { min-height: 66px; padding: 11px 18px; gap: 14px; }
+  body.sch-page .sch-team b { font-size: 14.5px; max-width: 220px; }
+  body.sch-page .sch-time b { font-size: 14.5px; }
+  body.sch-page .sch-score b { font-size: 22px; }
+  body.sch-page .sch-status { font-size: 10.5px; padding: 3px 8px; }
+  body.sch-page .sch-cov-n { font-size: 10px; }
+  body.sch-page .sch-go { font-size: 12.5px; }
+  body.sch-page .sch-card { padding: 18px 20px; }
+  body.sch-page .sch-cardhead h2 { font-size: 15px; }
+  body.sch-page .sch-brief { margin-top: 16px; }
+}
+
+/* 移动端只保留更轻的阴影，避免卡片发灰 */
+@media (max-width: 900px) {
+  body.sch-page .sch-feature {
+    box-shadow: 0 24px 54px -26px rgba(0, 0, 0, .6), 0 8px 20px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .07);
+  }
+  body.sch-page .sch-row { box-shadow: 0 1px 2px rgba(24, 43, 82, .025); }
+  html.dark-site body.sch-page .sch-row { box-shadow: 0 1px 2px rgba(0, 0, 0, .16); }
+  body.sch-page .sch-brief { padding: 11px 12px; }
+}
