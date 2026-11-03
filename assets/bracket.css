@@ -1332,3 +1332,87 @@ body.br-page .br-hero-copy > :nth-child(4) { animation-delay: .2s; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   8. 细节修正（2026-11-03）：下拉、赛段头、宽轮次、移动积分榜标签
+   ========================================================================== */
+html.v55.light-site body.br-page .br-event-pick select,
+html.v55.dark-site body.br-page .br-event-pick select {
+  background-color: #0c1728 !important;
+  color: #dce9ff !important;
+  border-color: rgba(158, 190, 250, .25) !important;
+  color-scheme: dark !important;
+}
+html.v55.light-site body.br-page .br-event-pick select option,
+html.v55.light-site body.br-page .br-event-pick select optgroup,
+html.v55.dark-site body.br-page .br-event-pick select option,
+html.v55.dark-site body.br-page .br-event-pick select optgroup {
+  background: #0c1728 !important;
+  color: #dce9ff !important;
+}
+html.v55.light-site body.br-page .br-event-pick select option:checked,
+html.v55.dark-site body.br-page .br-event-pick select option:checked {
+  background: #1a2c4a !important;
+  color: #ffffff !important;
+}
+body.br-page .br-event-pick button {
+  border-color: rgba(158, 190, 250, .35);
+  background: rgba(255, 255, 255, .06);
+  color: #c7d8f2;
+}
+body.br-page .br-event-pick button:hover { border-color: #8bb4ff; color: #ffffff; }
+body.br-page .br-hero-deck b { white-space: nowrap; }
+
+@media (min-width: 1000px) {
+  body.br-page .br-col.is-wide { flex-grow: 1.75; }
+  body.br-page .br-col.is-wide .br-matches {
+    display: block;
+    columns: 2;
+    column-gap: 7px;
+  }
+  body.br-page .br-col.is-wide .br-match {
+    break-inside: avoid;
+    margin-bottom: 7px;
+  }
+}
+
+@media (min-width: 901px) {
+  body.br-page .br-stand-head,
+  body.br-page .br-stand-row {
+    grid-template-columns: 54px minmax(0, 1.2fr) 84px 84px minmax(150px, 1fr) 68px;
+  }
+}
+
+@media (max-width: 900px) {
+  body.br-page .br-strip-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 4px 10px;
+  }
+  body.br-page .br-strip-head > div:first-child { grid-column: 1; grid-row: 1; }
+  body.br-page .br-railbtns { grid-column: 2; grid-row: 1; align-self: center; }
+  body.br-page .br-strip-note {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: auto;
+    margin-left: 0;
+    text-align: left;
+  }
+  body.br-page .br-stand-record::before {
+    content: "大场 ";
+    color: var(--br-muted);
+    font-weight: 400;
+  }
+  body.br-page .br-stand-record::after {
+    content: " · " attr(data-m) " 场";
+    color: var(--br-muted);
+    font-size: 10px;
+    font-weight: 400;
+  }
+  body.br-page .br-stand-diff::before {
+    content: "净胜 ";
+    color: var(--br-muted);
+    font-weight: 400;
+  }
+}

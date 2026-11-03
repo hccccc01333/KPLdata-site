@@ -28,7 +28,14 @@
     var s = String(name || "?").replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g, "");
     return (s.slice(0, 1) || "?").toUpperCase();
   }
+  function usableIcon(icon) {
+    if (!icon) return "";
+    // 官方接口对缺图标战队会回一个通用 team.png，它是空图，不能再让文字垫在下面。
+    if (/\/team\/team\.png(?:$|\?)/.test(icon)) return "";
+    return icon;
+  }
   function logoHTML(name, icon, cls) {
+    icon = usableIcon(icon);
     var initial = esc(initialOf(name));
     return '<span class="br-logo' + (cls ? " " + cls : "") + (icon ? "" : " is-fallback") +
       '" data-initial="' + initial + '">' +
@@ -294,7 +301,9 @@
       var matches = s.rows.slice().sort(function (a, b) {
         return (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""));
       });
+      var wide = current && matches.length > 5;
       return '<section class="br-col' + (current ? " is-now" : "") + (past && !current ? " is-past" : "") +
+        (wide ? " is-wide" : "") +
         '" id="br-col-' + x.i + '" style="animation-delay:' + Math.min(n * 60, 240) + 'ms">' +
         '<div class="br-colhead"><span class="br-col-kicker">ROUND ' + String(n + 1).padStart(2, "0") + "</span>" +
         "<h3><i></i>" + esc(stageName(s)) + "</h3>" +
@@ -352,7 +361,7 @@
         '<span class="br-rank' + (i < 3 ? " r" + (i + 1) : "") + '">' + (i + 1) + "</span>" +
         '<span class="br-stand-team">' + logoHTML(t.team, t.icon) +
         '<a href="team.html?id=' + encodeURIComponent(t.team) + '">' + esc(t.team) + "</a></span>" +
-        '<span class="br-stand-record">' + t.w + "-" + t.l + "</span>" +
+        '<span class="br-stand-record" data-m="' + t.m + '">' + t.w + "-" + t.l + "</span>" +
         '<span class="br-stand-diff ' + diffCls + '">' + diffTxt + "</span>" +
         '<span class="br-stand-wr"><span class="bar"><i style="width:' + wr.toFixed(1) + '%"></i></span>' +
         "<em>" + K.pct(t.wr, 1) + "</em></span>" +
