@@ -262,7 +262,7 @@
     var initial = esc(initialOf(name));
     return '<span class="sch-logo' + (icon ? "" : " is-fallback") + '" data-initial="' + initial + '">' +
       (icon ? '<img src="' + esc(icon) + '" alt=""' + (big ? "" : ' loading="lazy"') +
-        ' onerror="this.parentNode.classList.add('is-fallback');this.remove()">' : "") +
+        " onerror=\"this.parentNode.classList.add('is-fallback');this.remove()\">" : "") +
       "</span>";
   }
   function teamHTML(name, icon, side, win) {
