@@ -138,10 +138,14 @@
     var next = $("#railNext");
     if (!rail || !prev || !next) return;
     var over = rail.scrollWidth > rail.clientWidth + 4;
+    var atEnd = rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - 2;
     prev.style.display = over ? "" : "none";
     next.style.display = over ? "" : "none";
     prev.disabled = !over || rail.scrollLeft <= 2;
-    next.disabled = !over || rail.scrollLeft >= rail.scrollWidth - rail.clientWidth - 2;
+    next.disabled = !over || atEnd;
+    rail.classList.toggle("is-scrollable", over);
+    rail.classList.toggle("at-end", over && atEnd);
+    rail.classList.toggle("at-start", !over || rail.scrollLeft <= 2);
   }
 
   function scrollRail(dir) {
