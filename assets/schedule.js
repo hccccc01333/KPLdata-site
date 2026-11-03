@@ -259,9 +259,11 @@
     return (s.slice(0, 1) || "?").toUpperCase();
   }
   function logoHTML(name, icon, big) {
-    return '<span class="sch-logo">' +
-      (icon ? '<img src="' + esc(icon) + '" alt=""' + (big ? "" : ' loading="lazy"') + ' onerror="this.remove()">' : "") +
-      "<i>" + esc(initialOf(name)) + "</i></span>";
+    var initial = esc(initialOf(name));
+    return '<span class="sch-logo' + (icon ? "" : " is-fallback") + '" data-initial="' + initial + '">' +
+      (icon ? '<img src="' + esc(icon) + '" alt=""' + (big ? "" : ' loading="lazy"') +
+        ' onerror="this.parentNode.classList.add('is-fallback');this.remove()">' : "") +
+      "</span>";
   }
   function teamHTML(name, icon, side, win) {
     var logo = logoHTML(name, icon);
