@@ -10,9 +10,11 @@
   var $ = function (s, root) { return (root || document).querySelector(s); };
   var $$ = function (s, root) { return Array.prototype.slice.call((root || document).querySelectorAll(s)); };
   var ALL = window.KPL_SCHEDULE_ALL || [];
-  var KO_SKIP = /常规赛|擂台赛|季前|小组赛/;
+  var STAGE_LIMIT = 24;
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var curId = "";
+  var selectedStage = 0;
+  var stageShown = STAGE_LIMIT;
 
   /* ---------- 工具 ---------- */
   function esc(v) { return K.esc(v); }
@@ -23,7 +25,6 @@
   }
   function isLiveRow(r) { return !r.done && (r.st === 1 || K.isLive(r)); }
   function stageName(s) { return s.label || "未标注赛段"; }
-  function isKOStage(s) { return !!s.key && !KO_SKIP.test(s.label); }
   function initialOf(name) {
     var s = String(name || "?").replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g, "");
     return (s.slice(0, 1) || "?").toUpperCase();
@@ -198,29 +199,26 @@
     if (ev) ev.classList.toggle("is-live", !!(L2.next && isLiveRow(L2.next)));
     var cta = $("#brToBracket");
     if (cta) {
-      var hasKo = L2.stages.some(isKOStage);
-      cta.textContent = hasKo ? "查看淘汰赛" : "查看积分榜";
-      cta.setAttribute("href", hasKo ? "#brBracketSec" : "#brStandingsSec");
+      cta.textContent = "查看赛事进程";
+      cta.setAttribute("href", "#brBracketSec");
     }
   }
 
-  /* ---------- 赛段轨 ---------- */
+  /* ---------- 赛段轨：所有赛段都可以查看 ---------- */
   function renderRail(L2) {
-    var hint = $("#brRailHint");
-    if (hint) { hint.hidden = true; hint.textContent = ""; }
     var note = $("#brRailNote");
-    var now = L2.nowIdx >= 0 ? stageName(L2.stages[L2.nowIdx]) : "";
-    if (note) note.textContent = L2.stages.length + " 个赛段" + (now ? " · 当前 " + now : " · 已全部结束");
+    var view = L2.stages[selectedStage];
+    if (note) note.textContent = L2.stages.length + " 个赛段" + (view ? " · 正在查看 " + stageName(view) : " · 暂无赛段");
     var rail = $("#brRail");
     if (!rail) return;
     rail.innerHTML = L2.stages.map(function (s, i) {
       var pct = s.n ? Math.round(s.doneN / s.n * 100) : 0;
-      var ko = isKOStage(s);
       var current = i === L2.nowIdx;
-      var cls = "br-stage" + (s.done ? " is-done" : "") + (current ? " is-now" : "") + (!ko ? " is-readonly" : "");
+      var selected = i === selectedStage;
+      var cls = "br-stage" + (s.done ? " is-done" : "") + (current ? " is-now" : "") + (selected ? " is-selected" : "");
       var state = s.done ? "已结束" : (current ? "当前" : "未开始");
-      return '<button type="button" class="' + cls + '" data-stage="' + i + '" data-ko="' + (ko ? "1" : "0") + '"' +
-        (current ? ' aria-current="step"' : "") + ' title="' + (ko ? "查看该赛段对阵" : "该赛段不进入淘汰赛对阵") + '">' +
+      return '<button type="button" class="' + cls + '" data-stage="' + i + '"' +
+        (current ? ' aria-current="step"' : "") + ' title="查看该赛段比赛">' +
         '<span class="br-stage-top"><span class="br-stage-no">' + String(i + 1).padStart(2, "0") + "</span>" +
         '<span class="br-stage-state">' + state + "</span></span>" +
         '<span class="br-stage-name">' + esc(stageName(s)) + "</span>" +
@@ -228,6 +226,11 @@
         '<span class="br-stage-bar"><i style="width:' + pct + '%"></i></span>' +
         '<span class="br-stage-meta"><b>' + s.doneN + "/" + s.n + " 场</b><span>" + pct + "%</span></span></button>";
     }).join("");
+    var active = rail.querySelector(".br-stage.is-selected");
+    if (active) {
+      var left = active.offsetLeft - rail.clientWidth / 2 + active.offsetWidth / 2;
+      rail.scrollLeft = Math.max(0, left);
+    }
     updateRailButtons();
   }
 
@@ -249,7 +252,7 @@
     rail.scrollBy({ left: dir * 300, behavior: reduce ? "auto" : "smooth" });
   }
 
-  /* ---------- 对阵 ---------- */
+  /* ---------- 比赛卡 ---------- */
   function matchCard(r, i) {
     var tbd = r.team1 === "待定" || r.team2 === "待定" || !r.team1 || !r.team2;
     var live = isLiveRow(r);
@@ -263,7 +266,7 @@
       : '<span class="br-match-go">' + (tbd ? "待定" : h.label) + "</span>";
     var top = '<span class="br-match-meta">' + meta + '<span class="br-status ' + status + '">' +
       (live ? "<i></i>" : "") + statusText + "</span>" + action + "</span>";
-    var delay = ' style="animation-delay:' + Math.min(i * 24, 280) + 'ms"';
+    var delay = ' style="animation-delay:' + Math.min(i * 20, 260) + 'ms"';
 
     if (tbd) {
       return '<div class="br-match is-tbd"' + delay + ">" + top +
@@ -287,64 +290,79 @@
       (h.external ? ' target="_blank" rel="noopener"' : "") + delay + ">" + inner + "</a>";
   }
 
-  function renderBracket(L2) {
-    var cols = $("#brCols");
-    var note = $("#brNote");
-    if (!cols) return;
-    var ko = L2.stages.map(function (s, i) { return { s: s, i: i }; })
-      .filter(function (x) { return isKOStage(x.s); });
-    if (!ko.length) {
-      cols.innerHTML = '<div class="br-empty"><b>该赛事没有可展开的淘汰赛对阵</b>' +
-        "<span>老赛事的赛段字段可能只到常规赛一级。完整比赛与比分可以到" +
-        ' <a href="schedule.html">赛程中心</a> 查看。</span></div>';
-      if (note) note.innerHTML = "";
-      updateBracketButtons();
+  /* ---------- 选中赛段的比赛网格 ---------- */
+  function defaultStage(L2) {
+    return L2.nowIdx >= 0 ? L2.nowIdx : Math.max(0, L2.stages.length - 1);
+  }
+
+  function renderStageView(L2) {
+    var kicker = $("#brStageKicker");
+    var name = $("#brStageName");
+    var meta = $("#brStageMeta");
+    var bar = $("#brStageBar");
+    var grid = $("#brMatchGrid");
+    var more = $("#brStageMore");
+    var prev = $("#brStagePrev");
+    var next = $("#brStageNext");
+    var stage = L2.stages[selectedStage];
+    if (!stage) {
+      if (kicker) kicker.textContent = "STAGE";
+      if (name) name.textContent = "暂无赛段数据";
+      if (meta) meta.textContent = "";
+      if (bar) bar.style.width = "0%";
+      if (grid) grid.innerHTML = '<div class="br-empty"><b>该赛事暂无赛段数据</b><span>完整比赛与比分可以到 <a href="schedule.html">赛程中心</a> 查看。</span></div>';
+      if (more) more.hidden = true;
+      if (prev) prev.disabled = true;
+      if (next) next.disabled = true;
       return;
     }
-    cols.innerHTML = ko.map(function (x, n) {
-      var s = x.s;
-      var current = x.i === L2.nowIdx;
-      var past = s.done;
-      var pct = s.n ? Math.round(s.doneN / s.n * 100) : 0;
-      var matches = s.rows.slice().sort(function (a, b) {
-        return (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""));
-      });
-      var wide = matches.length > 7;
-      return '<section class="br-col' + (current ? " is-now" : "") + (past && !current ? " is-past" : "") +
-        (wide ? " is-wide" : "") +
-        '" id="br-col-' + x.i + '" style="animation-delay:' + Math.min(n * 60, 240) + 'ms">' +
-        '<div class="br-colhead"><span class="br-col-kicker">ROUND ' + String(n + 1).padStart(2, "0") + "</span>" +
-        "<h3><i></i>" + esc(stageName(s)) + "</h3>" +
-        '<span class="br-colmeta">' + esc(md(s.from) + (s.to !== s.from ? " — " + md(s.to) : "")) +
-        " · " + s.n + " 场 · " + (s.done ? "已结束" : s.doneN + "/" + s.n + " 完成") + "</span>" +
-        '<span class="br-colbar"><i style="width:' + pct + '%"></i></span></div>' +
-        '<div class="br-matches">' + matches.map(matchCard).join("") + "</div></section>";
-    }).join("");
-    if (note) {
-      note.innerHTML = "按官方赛段归组；同一赛段内按时间排列。<b>不推断</b>官方未公布的对阵关系——" +
-        "轮次之间的晋级连线以官方发布为准，这里只呈现已确定的比赛。";
+    var pct = stage.n ? Math.round(stage.doneN / stage.n * 100) : 0;
+    if (kicker) kicker.textContent = "STAGE " + String(selectedStage + 1).padStart(2, "0");
+    if (name) name.textContent = stageName(stage);
+    if (meta) {
+      meta.textContent = md(stage.from) + (stage.to !== stage.from ? " — " + md(stage.to) : "") +
+        " · " + stage.n + " 场 · " + (stage.done ? "已结束" : stage.doneN + "/" + stage.n + " 完成");
     }
-    updateBracketButtons();
+    if (bar) bar.style.width = pct + "%";
+    if (prev) prev.disabled = selectedStage <= 0;
+    if (next) next.disabled = selectedStage >= L2.stages.length - 1;
+
+    var matches = stage.rows.slice().sort(function (a, b) {
+      return (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""));
+    });
+    if (!matches.length) {
+      grid.innerHTML = '<div class="br-empty"><b>该赛段暂无比赛</b></div>';
+      if (more) more.hidden = true;
+      return;
+    }
+    var shown = Math.min(stageShown, matches.length);
+    grid.innerHTML = matches.slice(0, shown).map(matchCard).join("");
+    if (more) {
+      more.hidden = shown >= matches.length;
+      more.textContent = "显示更多（已显示 " + shown + " / " + matches.length + "）";
+    }
+    var note = $("#brNote");
+    if (note) {
+      note.innerHTML = "按官方赛段归组；同一赛段内按时间排列。切换上方赛段可以查看其他赛段。" +
+        "<b>不推断</b>官方未公布的对阵关系——完整赛程与比分以官方发布为准。";
+    }
   }
 
-  function updateBracketButtons() {
-    var box = $("#brCols");
-    var prev = $("#brColPrev");
-    var next = $("#brColNext");
-    if (!box || !prev || !next) return;
-    var over = box.scrollWidth > box.clientWidth + 4;
-    prev.style.display = over ? "" : "none";
-    next.style.display = over ? "" : "none";
-    prev.disabled = !over || box.scrollLeft <= 2;
-    next.disabled = !over || box.scrollLeft >= box.scrollWidth - box.clientWidth - 2;
+  function selectStage(i, scroll) {
+    var L2 = K.leagueInfo(curId);
+    if (!L2 || !L2.stages[i]) return;
+    selectedStage = i;
+    stageShown = STAGE_LIMIT;
+    renderRail(L2);
+    renderStageView(L2);
+    if (scroll !== false) {
+      var t = $("#brBracketSec");
+      if (t) t.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    }
   }
 
-  function scrollCols(dir) {
-    var box = $("#brCols");
-    if (!box) return;
-    var col = box.querySelector(".br-col");
-    var amount = col ? col.getBoundingClientRect().width + 14 : 320;
-    box.scrollBy({ left: dir * amount, behavior: reduce ? "auto" : "smooth" });
+  function moveStage(delta) {
+    selectStage(selectedStage + delta, true);
   }
 
   /* ---------- 积分榜 ---------- */
@@ -410,16 +428,20 @@
       $("#brMeta").innerHTML = "";
       $("#brFocus").innerHTML = '<div class="br-now-next">换一个赛事，或回到 <a href="schedule.html">赛程中心</a>。</div>';
       $("#brRail").innerHTML = "";
-      $("#brCols").innerHTML = '<div class="br-empty"><b>未找到该赛事</b><span>请从右上角重新选择赛事。</span></div>';
+      $("#brStageName").textContent = "未找到该赛事";
+      $("#brStageMeta").textContent = "";
+      $("#brMatchGrid").innerHTML = "";
       $("#brStandings").innerHTML = "";
       $("#brRules").innerHTML = "";
       return;
     }
+    selectedStage = defaultStage(L2);
+    stageShown = STAGE_LIMIT;
     document.title = L2.name + " 赛事进程 · KPL赛研";
     renderKpis(L2);
     renderEvent(L2);
     renderRail(L2);
-    renderBracket(L2);
+    renderStageView(L2);
     renderStandings(L2);
     renderRules(L2);
   }
@@ -451,25 +473,11 @@
     if (next) next.addEventListener("click", function () { move(1); });
 
     var rail = $("#brRail");
-    var hint = $("#brRailHint");
     if (rail) {
       rail.addEventListener("click", function (e) {
         var b = e.target.closest(".br-stage");
         if (!b) return;
-        var i = Number(b.getAttribute("data-stage"));
-        var ko = b.getAttribute("data-ko") === "1";
-        var L2 = K.leagueInfo(curId);
-        if (!L2) return;
-        var s = L2.stages[i];
-        if (ko) {
-          if (hint) hint.hidden = true;
-          var target = document.getElementById("br-col-" + i);
-          if (target) target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-        } else if (hint) {
-          hint.hidden = false;
-          hint.innerHTML = "「" + esc(stageName(s)) + "」是赛程阶段，不进入淘汰赛对阵；" +
-            '完整比赛与比分见 <a href="schedule.html">赛程中心</a>。';
-        }
+        selectStage(Number(b.getAttribute("data-stage")), true);
       });
       rail.addEventListener("scroll", updateRailButtons, { passive: true });
       rail.addEventListener("wheel", function (e) {
@@ -484,12 +492,17 @@
     if (railPrev) railPrev.addEventListener("click", function () { scrollRail(-1); });
     if (railNext) railNext.addEventListener("click", function () { scrollRail(1); });
 
-    var cols = $("#brCols");
-    if (cols) cols.addEventListener("scroll", updateBracketButtons, { passive: true });
-    var colPrev = $("#brColPrev");
-    var colNext = $("#brColNext");
-    if (colPrev) colPrev.addEventListener("click", function () { scrollCols(-1); });
-    if (colNext) colNext.addEventListener("click", function () { scrollCols(1); });
+    var stagePrev = $("#brStagePrev");
+    var stageNext = $("#brStageNext");
+    if (stagePrev) stagePrev.addEventListener("click", function () { moveStage(-1); });
+    if (stageNext) stageNext.addEventListener("click", function () { moveStage(1); });
+
+    var more = $("#brStageMore");
+    if (more) more.addEventListener("click", function () {
+      stageShown += STAGE_LIMIT;
+      var L2 = K.leagueInfo(curId);
+      if (L2) renderStageView(L2);
+    });
 
     var toBracket = $("#brToBracket");
     if (toBracket) toBracket.addEventListener("click", function (e) {
@@ -505,13 +518,9 @@
     function onScroll() {
       if (backTop) backTop.classList.toggle("show", window.scrollY > 720);
       updateRailButtons();
-      updateBracketButtons();
     }
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", function () {
-      updateRailButtons();
-      updateBracketButtons();
-    });
+    window.addEventListener("resize", updateRailButtons);
     onScroll();
   }
 
@@ -529,8 +538,6 @@
   render(initial);
   if (initial !== requested) setUrl(initial);
   bind();
-  if (location.hash && /^#stage-\d+$/.test(location.hash)) {
-    var t = document.querySelector(location.hash);
-    if (t) setTimeout(function () { t.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }); }, 300);
-  }
+  var hash = String(location.hash || "").match(/^#stage-(\d+)$/);
+  if (hash) selectStage(Number(hash[1]), true);
 })();
