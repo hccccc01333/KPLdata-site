@@ -1956,3 +1956,19 @@ body.sch-page .sch-cardlinks {
   flex-wrap: wrap;
   margin-top: 12px;
 }
+body.sch-page .sch-logo.is-fallback::after {
+  content: attr(data-initial);
+  color: var(--sch-muted);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+}
+body.sch-page .sch-feature .sch-logo.is-fallback::after {
+  color: #c1d4f0;
+  font-size: 17px;
+}
+@media (max-width: 900px) {
+  body.sch-page .sch-logo.is-fallback::after { font-size: 10px; }
+  body.sch-page .sch-feature .sch-logo.is-fallback::after { font-size: 15px; }
+}
