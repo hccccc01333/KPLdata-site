@@ -655,6 +655,7 @@ body.sch-page .sch-input {
   align-items: center;
 }
 body.sch-page .sch-input input { width: 100%; padding-right: 30px; }
+body.sch-page .sch-input input::-webkit-search-cancel-button { display: none; }
 body.sch-page .sch-clear {
   position: absolute;
   right: 6px;

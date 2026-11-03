@@ -724,11 +724,14 @@
       var b = e.target.closest(".sch-step");
       if (!b) return;
       var s = b.getAttribute("data-stage") || "";
+      var lg = currentStageInfo && currentStageInfo.league;
+      if (lg && String(curScope) !== String(lg.id)) setScope(lg.id, { scroll: false });
       stageFilter = stageFilter === s ? "" : s;
       shown = PAGE;
       renderList();
       renderStages();
       updateStageMini();
+      syncControls();
       scrollToResults();
     });
 
