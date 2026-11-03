@@ -366,12 +366,12 @@
     } else {
       score = '<span class="vs">VS</span>';
     }
-    var hasMatch = !!(r.hasDetail || live || r.st === 1);
+    var hasMatch = !!(r.hasDetail || live || r.st === 1 || !r.done);
     var href = hasMatch ? "match.html?id=" + encodeURIComponent(r.matchId) : (r.video || "");
     var status = live ? '<span class="sch-status live"><i></i>进行中</span>'
       : done ? '<span class="sch-status done">已结束</span>'
         : '<span class="sch-status next">未开始</span>';
-    var label = live ? "实时" : (r.hasDetail ? "复盘" : (r.video ? "回放" : "详情"));
+    var label = live ? "实时" : (!done ? "赛前" : (r.hasDetail ? "复盘" : (r.video ? "回放" : "详情")));
     var go = href
       ? '<span class="sch-go">' + label + '<span class="arr">→</span></span>'
       : '<span class="sch-go off">—</span>';
@@ -734,7 +734,8 @@
 
     var toolbar = $("#schToolbar");
     function onScroll() {
-      if (toolbar) toolbar.classList.toggle("is-stuck", toolbar.getBoundingClientRect().top <= 0);
+      var headerH = (document.getElementById("siteHeader") || {}).offsetHeight || 72;
+      if (toolbar) toolbar.classList.toggle("is-stuck", toolbar.getBoundingClientRect().top <= headerH + 1);
       if (backTop) backTop.classList.toggle("show", window.scrollY > 720);
     }
     window.addEventListener("scroll", onScroll, { passive: true });

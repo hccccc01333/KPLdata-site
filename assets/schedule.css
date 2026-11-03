@@ -58,7 +58,10 @@ html.dark-site body.sch-page {
 }
 
 html.v55.dark-site body.sch-page {
-  background: var(--sch-bg) !important;
+  background:
+    radial-gradient(900px 520px at 86% -8%, rgba(43, 86, 168, .18), transparent 62%),
+    radial-gradient(760px 500px at 4% 108%, rgba(19, 92, 118, .12), transparent 66%),
+    var(--sch-bg) !important;
   color: var(--sch-ink);
 }
 
