@@ -121,8 +121,8 @@
     var html = '<button type="button" class="sch-year' + (curScope === "all" ? " on" : "") +
       '" data-year="all" aria-pressed="' + (curScope === "all" ? "true" : "false") + '">全部<em>' + K.fmtInt(ALL.length) + "</em></button>";
     html += years.map(function (y) {
-      return '<button type="button" class="sch-year' + (curYear === String(y) && !curLeagueId ? " on" : "") +
-        '" data-year="' + y + '" aria-pressed="' + (curYear === String(y) && !curLeagueId ? "true" : "false") + '">' + y +
+      return '<button type="button" class="sch-year' + (curYear === String(y) ? " on" : "") +
+        '" data-year="' + y + '" aria-pressed="' + (curYear === String(y) ? "true" : "false") + '">' + y +
         "<em>" + K.fmtInt(yearCounts[y] || 0) + "</em></button>";
     }).join("");
     rail.innerHTML = html;

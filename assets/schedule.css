@@ -1384,6 +1384,7 @@ body.sch-page .sch-hero-copy > :nth-child(4) { animation-delay: .2s; }
   body.sch-page .sch-feature-main { gap: 10px; }
   body.sch-page .sch-fscore b { font-size: 28px; }
   body.sch-page .sch-stage-mini { display: flex; }
+  body.sch-page .sch-year em { display: none; }
   body.sch-page .sch-layout {
     grid-template-columns: 1fr;
   }
@@ -1429,6 +1430,7 @@ body.sch-page .sch-hero-copy > :nth-child(4) { animation-delay: .2s; }
   body.sch-page #list { scroll-margin-top: 18px; }
   body.sch-page .sch-aside { display: none; }
   body.sch-page .sch-stage-mini { display: flex; }
+  body.sch-page .sch-year em { display: none; }
   body.sch-page .sch-row {
     grid-template-columns: minmax(0, 1fr) 60px minmax(0, 1fr);
     grid-template-areas:
