@@ -1948,3 +1948,11 @@ body.sch-page .sch-years.is-scrollable:not(.at-end) {
   body.sch-page .sch-toolbar { margin-top: -26px; }
   body.sch-page .sch-brief { padding: 10px 11px; }
 }
+body.sch-page .sch-cardlinks {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
