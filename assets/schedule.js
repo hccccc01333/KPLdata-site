@@ -315,8 +315,15 @@
       score = "<b>" + Number(r.score1 || 0) + "</b><i>:</i><b>" + Number(r.score2 || 0) + "</b>" +
         (scoreSub ? "<span>" + esc(scoreSub) + "</span>" : "");
     }
-    var cta = mode === "live" ? "进入实时页" : (mode === "next" ? "查看赛前数据" : "查看复盘");
-    var note = mode === "live" ? "比分每 30 秒同步" : (mode === "next" ? "赛前可看交手、BP 与逐局数据" : "完整逐局数据与时间轴");
+    var known = r.team1 && r.team2 && r.team1 !== "待定" && r.team2 !== "待定";
+    var cta = mode === "live" ? "进入实时页" : (mode === "next" ? (r.hasDetail ? "查看赛前数据" : (known ? "看双方交手" : "查看赛事进程")) : "查看复盘");
+    var ctaHref = "match.html?id=" + encodeURIComponent(r.matchId);
+    if (mode === "next" && !r.hasDetail) {
+      ctaHref = known
+        ? "h2h.html?a=" + encodeURIComponent(r.team1) + "&b=" + encodeURIComponent(r.team2)
+        : "bracket.html?id=" + encodeURIComponent(r.leagueId || "");
+    }
+    var note = mode === "live" ? "比分每 30 秒同步" : (mode === "next" ? (r.hasDetail ? "赛前可看交手、BP 与逐局数据" : (known ? "看双方历史交手记录" : "阵容待定，可查看赛事进程")) : "完整逐局数据与时间轴");
     var kick = mode === "live" ? "LIVE" : (mode === "next" ? "UP NEXT" : "FINAL");
     el.innerHTML =
       '<div class="sch-feature-top"><span class="sch-feature-label">' + label +
@@ -333,7 +340,7 @@
       "<span>" + esc(r.leagueName || "") + "</span>" +
       (r.stage ? "<span>" + esc(K.stageLabel(r.stage)) + "</span>" : "") + "</div>" +
       '<div class="sch-feature-foot">' +
-      '<a class="btn primary" href="match.html?id=' + encodeURIComponent(r.matchId) + '">' + cta + "</a>" +
+      '<a class="btn primary" href="' + ctaHref + '">' + cta + "</a>" +
       '<span class="sch-feature-note">' + note + "</span>" +
       (mode === "next" ? '<span class="sch-feature-cd" id="epCd"></span>' : "") +
       "</div>";
@@ -366,15 +373,27 @@
     } else {
       score = '<span class="vs">VS</span>';
     }
-    var hasMatch = !!(r.hasDetail || live || r.st === 1 || !r.done);
-    var href = hasMatch ? "match.html?id=" + encodeURIComponent(r.matchId) : (r.video || "");
+    var known = r.team1 && r.team2 && r.team1 !== "待定" && r.team2 !== "待定";
+    var hasMatch = !!(r.hasDetail || live || r.st === 1);
+    var href = "", label = "";
+    if (hasMatch) {
+      href = "match.html?id=" + encodeURIComponent(r.matchId);
+      label = live ? "实时" : (r.hasDetail ? "复盘" : "详情");
+    } else if (!done && known) {
+      href = "h2h.html?a=" + encodeURIComponent(r.team1) + "&b=" + encodeURIComponent(r.team2);
+      label = "交手";
+    } else if (!done) {
+      label = "待赛";
+    } else if (r.video) {
+      href = r.video;
+      label = "回放";
+    }
     var status = live ? '<span class="sch-status live"><i></i>进行中</span>'
       : done ? '<span class="sch-status done">已结束</span>'
         : '<span class="sch-status next">未开始</span>';
-    var label = live ? "实时" : (!done ? "赛前" : (r.hasDetail ? "复盘" : (r.video ? "回放" : "详情")));
     var go = href
       ? '<span class="sch-go">' + label + '<span class="arr">→</span></span>'
-      : '<span class="sch-go off">—</span>';
+      : '<span class="sch-go off">' + (label || "—") + "</span>";
     var video = r.video
       ? '<a class="sch-video" href="' + esc(r.video) + '" target="_blank" rel="noopener" title="官方回放" aria-label="官方回放">▶</a>'
       : "";
@@ -777,7 +796,13 @@
     row.classList.toggle("is-done", t.st === 2);
     row.classList.toggle("is-next", t.st !== 1 && t.st !== 2);
     var go = row.querySelector(".sch-go");
-    if (go && t.st === 1 && !go.classList.contains("off")) go.firstChild.nodeValue = "实时";
+    if (go && t.st === 1) {
+      row.setAttribute("data-href", "match.html?id=" + encodeURIComponent(t.matchId));
+      row.setAttribute("role", "link");
+      row.setAttribute("tabindex", "0");
+      go.classList.remove("off");
+      go.innerHTML = '实时<span class="arr">→</span>';
+    }
     var timeSpan = row.querySelector(".sch-time span");
     if (timeSpan) timeSpan.textContent = t.st === 1 ? "LIVE" : (t.st === 2 ? "已完赛" : "待开赛");
   }
