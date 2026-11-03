@@ -326,7 +326,7 @@
     var kick = mode === "live" ? "LIVE" : (mode === "next" ? "UP NEXT" : "FINAL");
     el.innerHTML =
       '<div class="sch-feature-top"><span class="sch-feature-label">' + label +
-      '<em class="mono" style="font-style:normal;opacity:.55;letter-spacing:.12em">' + kick + "</em></span>" +
+      '<em class="sch-feature-kick">' + kick + "</em></span>" +
       '<span class="sch-feature-sync mono">同步 <b id="liveAt">—</b></span></div>' +
       '<div class="sch-feature-main">' +
       '<a class="sch-fteam home" href="team.html?id=' + encodeURIComponent(r.team1) + '">' +
@@ -832,7 +832,7 @@
             feature.classList.add("is-live");
             var lab = feature.querySelector(".sch-feature-label");
             if (lab && lab.textContent.indexOf("正在") < 0) {
-              lab.innerHTML = '<i class="sch-live-dot"></i>正在进行<em class="mono" style="font-style:normal;opacity:.55;letter-spacing:.12em">LIVE</em>';
+              lab.innerHTML = '<i class="sch-live-dot"></i>正在进行<em class="sch-feature-kick">LIVE</em>';
             }
           }
         }
