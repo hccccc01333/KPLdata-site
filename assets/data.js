@@ -1,5 +1,5 @@
 window.SITE_DATA = {
- "generatedAt": "2026-11-03 11:55",
+ "generatedAt": "2026-11-03 13:17",
  "season": "2026 年度总决赛",
  "stats": {
   "matches": 173,
@@ -4721,7 +4721,7 @@ window.SITE_DATA = {
   {
    "ruleId": "HONOR_HERO_PICK",
    "title": "登场率最高英雄",
-   "names": "敖隐、戈娅",
+   "names": "戈娅、敖隐",
    "value": "33.7%",
    "n": 301,
    "detail": "301 次出场",
