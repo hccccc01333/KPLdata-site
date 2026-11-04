@@ -829,3 +829,23 @@ body.replay-page .picks-more button:hover {
 @media (max-width: 900px) {
   body.replay-page .picks-more button { width: 100%; min-width: 0; }
 }
+
+/* 暗色顶栏略高，桌面粘性标签同步下移 */
+@media (min-width: 901px) {
+  html.dark-site body.replay-page .match-tabs { top: 78px; }
+  html.dark-site body.replay-page.picks-page .filterbar { top: 78px; }
+}
+/* 移动端复盘表格滚动提示 */
+body.replay-page .rp-scroll-hint {
+  display: none;
+}
+@media (max-width: 900px) {
+  body.replay-page .rp-scroll-hint {
+    display: block;
+    margin: 4px 2px 0;
+    color: var(--rp-muted);
+    font-size: 9.5px;
+    text-align: right;
+    letter-spacing: .02em;
+  }
+}
