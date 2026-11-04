@@ -385,14 +385,14 @@ body.replay-page .filterbar {
   gap: 12px;
 }
 body.replay-page .filterbar .block-note { color: var(--rp-muted); }
-body.replay-page .picks-page .filterbar {
+body.replay-page.picks-page .filterbar {
   position: sticky;
   top: 72px;
   z-index: 35;
   background: linear-gradient(180deg, rgba(255, 255, 255, .99), #fff 42%) !important;
   box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 18px 34px -26px rgba(24, 43, 82, .3) !important;
 }
-html.dark-site body.replay-page .picks-page .filterbar {
+html.dark-site body.replay-page.picks-page .filterbar {
   background: linear-gradient(180deg, #141f31, #101927 42%) !important;
   box-shadow: 0 1px 0 rgba(255, 255, 255, .045) inset, 0 18px 34px -26px rgba(0, 0, 0, .6) !important;
 }
@@ -739,7 +739,7 @@ html.dark-site body.replay-page .replay-backtop {
   body.replay-page .block { margin-top: 22px; }
   body.replay-page .panel { padding: 15px 14px !important; }
   body.replay-page .filterbar { padding: 11px 12px !important; }
-  body.replay-page .picks-page .filterbar { position: static; }
+  body.replay-page.picks-page .filterbar { position: static; }
   body.replay-page .seg { width: 100%; overflow-x: auto; }
   body.replay-page .seg button { flex: none; }
   body.replay-page .rp-story { padding: 16px 15px 14px !important; border-radius: 14px !important; }
