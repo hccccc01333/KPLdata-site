@@ -1153,3 +1153,32 @@ html.dark-site body.replay-page .pk-foot { border-color: #22314a; }
   body.replay-page .pk-stat span { font-size: 8.5px; }
   body.replay-page .pk-stat b { font-size: 15px; }
 }
+
+/* 非翻盘局没有最低胜率时，用两列关键数值，不摆空占位 */
+body.replay-page .pk-stats.is-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* 移动端筛选条：标签一行，数量与入口同一行 */
+@media (max-width: 900px) {
+  body.replay-page.picks-page .filterbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px 10px;
+  }
+  body.replay-page.picks-page .filterbar .seg {
+    grid-column: 1 / -1;
+    width: 100%;
+    overflow-x: auto;
+  }
+  body.replay-page.picks-page .filterbar #pkNote {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+  }
+  body.replay-page.picks-page .filterbar .more {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    margin-left: 0 !important;
+  }
+}
