@@ -680,10 +680,10 @@ html.dark-site body.replay-page .pick-card:hover {
     linear-gradient(180deg, #172235, #141e30);
 }
 html.dark-site body.replay-page .pk-tag { background: #0d1624; border-color: #22314a; }
-html.dark-site body.replay-page .pk-tag.comeback { background: #2c1620; border-color: #572b37; color: #ff9aa8; }
-html.dark-site body.replay-page .pk-tag.swing { background: #2f2818; border-color: #5a472b; color: #e6c383; }
-html.dark-site body.replay-page .pk-tag.long { background: #172a4a; border-color: #25436e; color: #9fc2ff; }
-html.dark-site body.replay-page .pk-tag.events { background: #142a25; border-color: #2c544a; color: #8fd8c3; }
+html.dark-site body.replay-page .pk-tag.comeback { background: #2c1620; border-color: #6b3542; color: #ffb6c0; }
+html.dark-site body.replay-page .pk-tag.swing { background: #2f2818; border-color: #6b5636; color: #f0d299; }
+html.dark-site body.replay-page .pk-tag.long { background: #172a4a; border-color: #2f4f7d; color: #a9c8ff; }
+html.dark-site body.replay-page .pk-tag.events { background: #142a25; border-color: #35685d; color: #a5e5d3; }
 
 /* --------------------------------------------------------------------------
    6. 回到顶部
@@ -920,7 +920,7 @@ body.replay-page .pk-tag {
   border-radius: 999px;
   background: var(--rp-card-soft);
   color: var(--rp-ink-2);
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 600;
   line-height: 1.55;
   letter-spacing: .02em;
@@ -1118,10 +1118,10 @@ html.dark-site body.replay-page .pick-card:hover {
     linear-gradient(180deg, #172235, #141e30);
 }
 html.dark-site body.replay-page .pk-tag { background: #0d1624; border-color: #22314a; }
-html.dark-site body.replay-page .pk-tag.comeback { background: #2c1620; border-color: #572b37; color: #ff9aa8; }
-html.dark-site body.replay-page .pk-tag.long { background: #172a4a; border-color: #25436e; color: #9fc2ff; }
-html.dark-site body.replay-page .pk-tag.swing { background: #2f2818; border-color: #5a472b; color: #e6c383; }
-html.dark-site body.replay-page .pk-tag.events { background: #142a25; border-color: #2c544a; color: #8fd8c3; }
+html.dark-site body.replay-page .pk-tag.comeback { background: #2c1620; border-color: #6b3542; color: #ffb6c0; }
+html.dark-site body.replay-page .pk-tag.long { background: #172a4a; border-color: #2f4f7d; color: #a9c8ff; }
+html.dark-site body.replay-page .pk-tag.swing { background: #2f2818; border-color: #6b5636; color: #f0d299; }
+html.dark-site body.replay-page .pk-tag.events { background: #142a25; border-color: #35685d; color: #a5e5d3; }
 html.dark-site body.replay-page .pk-logo {
   background: linear-gradient(180deg, #1a2639, #121b2a);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
