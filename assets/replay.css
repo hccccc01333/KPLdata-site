@@ -849,3 +849,307 @@ body.replay-page .rp-scroll-hint {
     letter-spacing: .02em;
   }
 }
+/* ==========================================================================
+   10. 精选对局卡 v2（2026-11-04）：队徽对阵 + 关键数值 + 一句话看点
+   ========================================================================== */
+body.replay-page .pick-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 14px 16px 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f2;
+  border-radius: 14px;
+  background:
+    radial-gradient(320px 160px at 96% 0, rgba(47, 91, 215, .05), transparent 62%),
+    linear-gradient(180deg, #fff, #fdfefe);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 14px 30px -26px rgba(24, 43, 82, .25), 0 2px 6px rgba(24, 43, 82, .025);
+}
+body.replay-page .pick-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--pk-accent, transparent);
+}
+body.replay-page .pick-card:hover {
+  border-color: #b6c7e6 !important;
+  background:
+    radial-gradient(320px 160px at 96% 0, rgba(47, 91, 215, .075), transparent 62%),
+    linear-gradient(180deg, #fbfdff, #f6f9ff);
+  box-shadow: 0 18px 36px -26px rgba(24, 43, 82, .4), 0 2px 6px rgba(24, 43, 82, .04);
+  transform: translateY(-2px);
+}
+body.replay-page .pick-card.pk-lead-comeback { --pk-accent: #d8384f; --pk-soft: rgba(216, 56, 79, .075); }
+body.replay-page .pick-card.pk-lead-long { --pk-accent: #2f5bd7; --pk-soft: rgba(47, 91, 215, .065); }
+body.replay-page .pick-card.pk-lead-swing { --pk-accent: #b8862e; --pk-soft: rgba(201, 151, 63, .1); }
+body.replay-page .pick-card.pk-lead-events { --pk-accent: #167c69; --pk-soft: rgba(22, 124, 105, .075); }
+
+body.replay-page .pk-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+body.replay-page .pk-date {
+  flex: none;
+  color: var(--rp-faint);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .06em;
+}
+body.replay-page .pk-tags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+body.replay-page .pk-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  padding: 2px 7px;
+  border: 1px solid var(--rp-line);
+  border-radius: 999px;
+  background: var(--rp-card-soft);
+  color: var(--rp-ink-2);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.55;
+  letter-spacing: .02em;
+}
+body.replay-page .pk-tag::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: .85;
+}
+body.replay-page .pk-tag.comeback { color: #a83a4b; border-color: #f4d2d8; background: #fdf0f2; }
+body.replay-page .pk-tag.long { color: #2f5bd7; border-color: #d7e3ff; background: #eef4ff; }
+body.replay-page .pk-tag.swing { color: #8a5a00; border-color: #f2dca9; background: #fff7e6; }
+body.replay-page .pk-tag.events { color: #167c69; border-color: #cfeae2; background: #eaf7f3; }
+body.replay-page .pk-g {
+  flex: none;
+  margin-left: auto;
+  color: var(--rp-brand);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+body.replay-page .pk-match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 10px;
+}
+body.replay-page .pk-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+body.replay-page .pk-team.home { justify-content: flex-start; text-align: left; }
+body.replay-page .pk-team.away { justify-content: flex-end; text-align: right; }
+body.replay-page .pk-team b {
+  min-width: 0;
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--rp-muted);
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body.replay-page .pk-team.is-win b { color: var(--rp-ink); font-weight: 700; }
+body.replay-page .pk-team.is-win .pk-logo {
+  border-color: #9dbaf0;
+  box-shadow: 0 0 0 2px rgba(47, 91, 215, .1), inset 0 1px 0 #fff;
+}
+body.replay-page .pk-logo {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border: 1px solid var(--rp-line);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff, #f4f7fc);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(24, 43, 82, .08);
+}
+body.replay-page .pk-logo img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 5px;
+  object-fit: contain;
+}
+body.replay-page .pk-logo.is-fallback::after {
+  content: attr(data-initial);
+  color: var(--rp-muted);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+}
+body.replay-page .pk-mid { display: grid; place-items: center; }
+body.replay-page .pk-vs {
+  color: var(--rp-faint);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .14em;
+}
+
+body.replay-page .pk-hook {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0 0 10px;
+  padding: 7px 9px;
+  border-left: 2px solid var(--pk-accent, var(--rp-line-2));
+  border-radius: 0 7px 7px 0;
+  background: linear-gradient(90deg, var(--pk-soft, rgba(47, 91, 215, .04)), transparent 76%);
+  color: var(--rp-ink-2);
+  font-size: 11px;
+  line-height: 1.6;
+}
+body.replay-page .pk-hook-k {
+  flex: none;
+  color: var(--pk-accent, var(--rp-brand));
+  font-weight: 650;
+}
+
+body.replay-page .pk-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  margin-bottom: 10px;
+  border: 1px solid var(--rp-line);
+  border-radius: 9px;
+  background: var(--rp-card-soft);
+}
+body.replay-page .pk-stat {
+  min-width: 0;
+  padding: 7px 9px 8px;
+  border-left: 1px solid var(--rp-line);
+}
+body.replay-page .pk-stat:first-child { border-left: 0; }
+body.replay-page .pk-stat span {
+  display: block;
+  color: var(--rp-muted);
+  font-size: 9px;
+  line-height: 1.4;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+body.replay-page .pk-stat b {
+  display: block;
+  margin-top: 1px;
+  color: var(--rp-ink);
+  font-family: var(--rp-num);
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+body.replay-page .pk-stat b i {
+  margin-left: 1px;
+  color: var(--rp-muted);
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 400;
+}
+
+body.replay-page .pk-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--rp-line);
+  color: var(--rp-muted);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+body.replay-page .pk-foot b { color: var(--rp-ink); font-weight: 650; }
+body.replay-page .pk-go {
+  position: static;
+  flex: none;
+  color: var(--rp-brand);
+  font-size: 10.5px;
+  font-weight: 650;
+  opacity: 1;
+  white-space: nowrap;
+}
+body.replay-page .pk-go i {
+  font-style: normal;
+  display: inline-block;
+  transition: transform .16s var(--rp-ease);
+}
+body.replay-page .pick-card:hover .pk-go i { transform: translateX(3px); }
+
+html.dark-site body.replay-page .pick-card {
+  border-color: #22314a;
+  background:
+    radial-gradient(320px 160px at 96% 0, rgba(111, 165, 255, .09), transparent 62%),
+    linear-gradient(180deg, #121c2c, #101927);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset, 0 16px 32px -26px rgba(0, 0, 0, .6), 0 2px 6px rgba(0, 0, 0, .16);
+}
+html.dark-site body.replay-page .pick-card:hover {
+  border-color: #3f5d8c !important;
+  background:
+    radial-gradient(320px 160px at 96% 0, rgba(111, 165, 255, .13), transparent 62%),
+    linear-gradient(180deg, #172235, #141e30);
+}
+html.dark-site body.replay-page .pk-tag { background: #0d1624; border-color: #22314a; }
+html.dark-site body.replay-page .pk-tag.comeback { background: #2c1620; border-color: #572b37; color: #ff9aa8; }
+html.dark-site body.replay-page .pk-tag.long { background: #172a4a; border-color: #25436e; color: #9fc2ff; }
+html.dark-site body.replay-page .pk-tag.swing { background: #2f2818; border-color: #5a472b; color: #e6c383; }
+html.dark-site body.replay-page .pk-tag.events { background: #142a25; border-color: #2c544a; color: #8fd8c3; }
+html.dark-site body.replay-page .pk-logo {
+  background: linear-gradient(180deg, #1a2639, #121b2a);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+html.dark-site body.replay-page .pk-team.is-win .pk-logo {
+  border-color: #3f629c;
+  box-shadow: 0 0 0 2px rgba(111, 165, 255, .14), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+html.dark-site body.replay-page .pk-stats { background: #0d1624; border-color: #22314a; }
+html.dark-site body.replay-page .pk-stat { border-color: #22314a; }
+html.dark-site body.replay-page .pk-foot { border-color: #22314a; }
+
+@media (max-width: 1020px) {
+  body.replay-page .pk-team b { font-size: 13.5px; max-width: 150px; }
+  body.replay-page .pk-logo { width: 32px; height: 32px; }
+}
+@media (max-width: 900px) {
+  body.replay-page .pick-card { padding: 13px 13px 11px; }
+  body.replay-page .pk-team b { font-size: 14px; max-width: 120px; }
+  body.replay-page .pk-logo { width: 34px; height: 34px; }
+  body.replay-page .pk-stat b { font-size: 16px; }
+}
+@media (max-width: 520px) {
+  body.replay-page .pk-team b { font-size: 13px; max-width: 92px; }
+  body.replay-page .pk-team { gap: 6px; }
+  body.replay-page .pk-logo { width: 30px; height: 30px; }
+  body.replay-page .pk-logo img { padding: 4px; }
+  body.replay-page .pk-stat { padding: 6px 7px; }
+  body.replay-page .pk-stat span { font-size: 8.5px; }
+  body.replay-page .pk-stat b { font-size: 15px; }
+}
