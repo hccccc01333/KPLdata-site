@@ -1,5 +1,5 @@
 window.SITE_DETAILS = {
- "generatedAt": "2026-11-05 17:16",
+ "generatedAt": "2026-11-05 18:21",
  "matches": [
   {
    "matchId": "2026101601",
@@ -383,7 +383,7 @@ window.SITE_DETAILS = {
      },
      {
       "m": 8.016666666666667,
-      "p": 0.852764096860173,
+      "p": 0.8527640968601726,
       "gd": 2464.0
      },
      {
@@ -611,7 +611,7 @@ window.SITE_DETAILS = {
        "td": 3.0,
        "rd": 3.0
       },
-      "prob_mean": 0.8414303997268197
+      "prob_mean": 0.8414303997268195
      },
      {
       "code": "late",
@@ -3182,7 +3182,7 @@ window.SITE_DETAILS = {
      },
      {
       "m": 3.5833333333333335,
-      "p": 0.5555555555555556,
+      "p": 0.5555555555555554,
       "gd": -200.0
      },
      {
@@ -4303,7 +4303,7 @@ window.SITE_DETAILS = {
      },
      {
       "m": 3.0833333333333335,
-      "p": 0.26666666666666666,
+      "p": 0.26666666666667194,
       "gd": -687.0
      },
      {
@@ -5097,7 +5097,7 @@ window.SITE_DETAILS = {
        "td": 1.0,
        "rd": 1.0
       },
-      "prob_mean": 0.41257971508493585
+      "prob_mean": 0.412579715084936
      },
      {
       "code": "mid",
@@ -7353,11 +7353,11 @@ window.SITE_DETAILS = {
    "name": "敖隐",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/519.jpg",
    "games": 305,
-   "pickRate": 0.3370165745856354,
+   "pickRate": 0.336644591611479,
    "wr": 0.46885245901639344,
    "ciLo": 0.4135823068938306,
    "ciHi": 0.5248974833934882,
-   "banRate": 0.38232044198895027,
+   "banRate": 0.3818984547461369,
    "tier": "B",
    "players": [
     {
@@ -7595,11 +7595,11 @@ window.SITE_DETAILS = {
    "name": "戈娅",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/548.jpg",
    "games": 304,
-   "pickRate": 0.33591160220994476,
+   "pickRate": 0.3355408388520971,
    "wr": 0.5328947368421053,
    "ciLo": 0.47674868842695906,
    "ciHi": 0.5882197888678576,
-   "banRate": 0.14033149171270717,
+   "banRate": 0.1401766004415011,
    "tier": "A",
    "players": [
     {
@@ -7834,14 +7834,201 @@ window.SITE_DETAILS = {
    ]
   },
   {
+   "name": "夏洛特",
+   "icon": "https://res.edata.qq.com/sgame/static/images/hero/536.jpg",
+   "games": 299,
+   "pickRate": 0.33002207505518766,
+   "wr": 0.43478260869565216,
+   "ciLo": 0.37977062230600894,
+   "ciHi": 0.49144918369158197,
+   "banRate": 0.1390728476821192,
+   "tier": "C",
+   "players": [
+    {
+     "player": "轩染",
+     "team": "成都AG超玩会",
+     "games": 20,
+     "wins": 8,
+     "teamIcon": "https://smhtv-pic.tga.qq.com/02e0582db3b0766ad6fab97e95743e6c.png",
+     "wr": 0.4
+    },
+    {
+     "player": "流星",
+     "team": "上海EDG.M",
+     "games": 19,
+     "wins": 10,
+     "teamIcon": "https://smhtv-pic.tga.qq.com/7209fb2509e991052852dd872981c8f3.png",
+     "wr": 0.526
+    },
+    {
+     "player": "无幻",
+     "team": "长沙TES.A",
+     "games": 19,
+     "wins": 9,
+     "teamIcon": "https://smhtv-pic.tga.qq.com/48f18204fa257197ec49bb6345d14a33.png",
+     "wr": 0.474
+    },
+    {
+     "player": "归期",
+     "team": "济南RW侠",
+     "games": 19,
+     "wins": 6,
+     "teamIcon": "https://smobatv-pic.tga.qq.com/11ba263f0d5d6fd422c4efb14df3ad62.png",
+     "wr": 0.316
+    },
+    {
+     "player": "萝卜",
+     "team": "广州TTG",
+     "games": 18,
+     "wins": 10,
+     "teamIcon": "https://smhtv-pic.tga.qq.com/0a05fdfba20fa3823db5c8c44fae6abe.png",
+     "wr": 0.556
+    },
+    {
+     "player": "光明",
+     "team": "北京JDG",
+     "games": 16,
+     "wins": 9,
+     "teamIcon": "https://smhtv-pic.tga.qq.com/bc18df69dd91643409c09a3503737cb3.png",
+     "wr": 0.562
+    }
+   ],
+   "teams": [
+    {
+     "team": "成都AG超玩会",
+     "games": 21,
+     "wins": 8,
+     "teamIcon": "https://smhtv-pic.tga.qq.com/02e0582db3b0766ad6fab97e95743e6c.png",
+     "wr": 0.381
+    },
+    {
+     "team": "广州TTG",
+     "games": 20,
+     "wins": 12,
+     "teamIcon": "https://smhtv-pic.tga.qq.com/0a05fdfba20fa3823db5c8c44fae6abe.png",
+     "wr": 0.6
+    },
+    {
+     "team": "杭州LGD.NBW",
+     "games": 20,
+     "wins": 5,
+     "teamIcon": "https://smhtv-pic.tga.qq.com/a29bcb1a579369888cc9a87637274822.png",
+     "wr": 0.25
+    },
+    {
+     "team": "北京JDG",
+     "games": 19,
+     "wins": 11,
+     "teamIcon": "https://smhtv-pic.tga.qq.com/bc18df69dd91643409c09a3503737cb3.png",
+     "wr": 0.579
+    },
+    {
+     "team": "上海EDG.M",
+     "games": 19,
+     "wins": 10,
+     "teamIcon": "https://smhtv-pic.tga.qq.com/7209fb2509e991052852dd872981c8f3.png",
+     "wr": 0.526
+    }
+   ],
+   "recent": [
+    {
+     "date": "2026-10-16",
+     "matchId": "2026101602",
+     "player": "小乐",
+     "team": "深圳DYG",
+     "opp": "重庆狼队",
+     "won": false
+    },
+    {
+     "date": "2026-10-16",
+     "matchId": "2026101601",
+     "player": "坦然",
+     "team": "南通Hero久竞",
+     "opp": "北京WB",
+     "won": false
+    },
+    {
+     "date": "2026-10-15",
+     "matchId": "2026101502",
+     "player": "无幻",
+     "team": "长沙TES.A",
+     "opp": "广州TTG",
+     "won": true
+    },
+    {
+     "date": "2026-10-15",
+     "matchId": "2026101502",
+     "player": "萝卜",
+     "team": "广州TTG",
+     "opp": "长沙TES.A",
+     "won": false
+    },
+    {
+     "date": "2026-10-15",
+     "matchId": "2026101501",
+     "player": "轩染",
+     "team": "成都AG超玩会",
+     "opp": "上海EDG.M",
+     "won": true
+    },
+    {
+     "date": "2026-10-15",
+     "matchId": "2026101501",
+     "player": "流星",
+     "team": "上海EDG.M",
+     "opp": "成都AG超玩会",
+     "won": false
+    },
+    {
+     "date": "2026-10-14",
+     "matchId": "2026101402",
+     "player": "小落",
+     "team": "杭州LGD.NBW",
+     "opp": "重庆狼队",
+     "won": true
+    },
+    {
+     "date": "2026-10-14",
+     "matchId": "2026101401",
+     "player": "归期",
+     "team": "济南RW侠",
+     "opp": "北京JDG",
+     "won": false
+    }
+   ],
+   "trios": [
+    {
+     "combo": "夏洛特 / 敖隐 / 海月",
+     "n": 17,
+     "wr": 0.647
+    },
+    {
+     "combo": "夏洛特 / 敖隐 / 沈梦溪",
+     "n": 7,
+     "wr": 0.143
+    },
+    {
+     "combo": "夏洛特 / 敖隐 / 苏烈",
+     "n": 6,
+     "wr": 0.0
+    },
+    {
+     "combo": "夏洛特 / 张飞 / 赵云",
+     "n": 6,
+     "wr": 0.667
+    }
+   ],
+   "matchups": []
+  },
+  {
    "name": "沈梦溪",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/312.jpg",
    "games": 298,
-   "pickRate": 0.3292817679558011,
+   "pickRate": 0.32891832229580575,
    "wr": 0.4697986577181208,
    "ciLo": 0.41387726129288743,
    "ciHi": 0.5264888115082109,
-   "banRate": 0.2419889502762431,
+   "banRate": 0.24172185430463577,
    "tier": "B",
    "players": [
     {
@@ -8076,201 +8263,14 @@ window.SITE_DETAILS = {
    ]
   },
   {
-   "name": "夏洛特",
-   "icon": "https://res.edata.qq.com/sgame/static/images/hero/536.jpg",
-   "games": 298,
-   "pickRate": 0.3292817679558011,
-   "wr": 0.436241610738255,
-   "ciLo": 0.3811002215033134,
-   "ciHi": 0.4930059321878941,
-   "banRate": 0.13922651933701657,
-   "tier": "C",
-   "players": [
-    {
-     "player": "轩染",
-     "team": "成都AG超玩会",
-     "games": 20,
-     "wins": 8,
-     "teamIcon": "https://smhtv-pic.tga.qq.com/02e0582db3b0766ad6fab97e95743e6c.png",
-     "wr": 0.4
-    },
-    {
-     "player": "流星",
-     "team": "上海EDG.M",
-     "games": 19,
-     "wins": 10,
-     "teamIcon": "https://smhtv-pic.tga.qq.com/7209fb2509e991052852dd872981c8f3.png",
-     "wr": 0.526
-    },
-    {
-     "player": "无幻",
-     "team": "长沙TES.A",
-     "games": 19,
-     "wins": 9,
-     "teamIcon": "https://smhtv-pic.tga.qq.com/48f18204fa257197ec49bb6345d14a33.png",
-     "wr": 0.474
-    },
-    {
-     "player": "归期",
-     "team": "济南RW侠",
-     "games": 19,
-     "wins": 6,
-     "teamIcon": "https://smobatv-pic.tga.qq.com/11ba263f0d5d6fd422c4efb14df3ad62.png",
-     "wr": 0.316
-    },
-    {
-     "player": "萝卜",
-     "team": "广州TTG",
-     "games": 18,
-     "wins": 10,
-     "teamIcon": "https://smhtv-pic.tga.qq.com/0a05fdfba20fa3823db5c8c44fae6abe.png",
-     "wr": 0.556
-    },
-    {
-     "player": "光明",
-     "team": "北京JDG",
-     "games": 16,
-     "wins": 9,
-     "teamIcon": "https://smhtv-pic.tga.qq.com/bc18df69dd91643409c09a3503737cb3.png",
-     "wr": 0.562
-    }
-   ],
-   "teams": [
-    {
-     "team": "成都AG超玩会",
-     "games": 21,
-     "wins": 8,
-     "teamIcon": "https://smhtv-pic.tga.qq.com/02e0582db3b0766ad6fab97e95743e6c.png",
-     "wr": 0.381
-    },
-    {
-     "team": "广州TTG",
-     "games": 20,
-     "wins": 12,
-     "teamIcon": "https://smhtv-pic.tga.qq.com/0a05fdfba20fa3823db5c8c44fae6abe.png",
-     "wr": 0.6
-    },
-    {
-     "team": "杭州LGD.NBW",
-     "games": 20,
-     "wins": 5,
-     "teamIcon": "https://smhtv-pic.tga.qq.com/a29bcb1a579369888cc9a87637274822.png",
-     "wr": 0.25
-    },
-    {
-     "team": "北京JDG",
-     "games": 19,
-     "wins": 11,
-     "teamIcon": "https://smhtv-pic.tga.qq.com/bc18df69dd91643409c09a3503737cb3.png",
-     "wr": 0.579
-    },
-    {
-     "team": "上海EDG.M",
-     "games": 19,
-     "wins": 10,
-     "teamIcon": "https://smhtv-pic.tga.qq.com/7209fb2509e991052852dd872981c8f3.png",
-     "wr": 0.526
-    }
-   ],
-   "recent": [
-    {
-     "date": "2026-10-16",
-     "matchId": "2026101602",
-     "player": "小乐",
-     "team": "深圳DYG",
-     "opp": "重庆狼队",
-     "won": false
-    },
-    {
-     "date": "2026-10-16",
-     "matchId": "2026101601",
-     "player": "坦然",
-     "team": "南通Hero久竞",
-     "opp": "北京WB",
-     "won": false
-    },
-    {
-     "date": "2026-10-15",
-     "matchId": "2026101502",
-     "player": "无幻",
-     "team": "长沙TES.A",
-     "opp": "广州TTG",
-     "won": true
-    },
-    {
-     "date": "2026-10-15",
-     "matchId": "2026101502",
-     "player": "萝卜",
-     "team": "广州TTG",
-     "opp": "长沙TES.A",
-     "won": false
-    },
-    {
-     "date": "2026-10-15",
-     "matchId": "2026101501",
-     "player": "轩染",
-     "team": "成都AG超玩会",
-     "opp": "上海EDG.M",
-     "won": true
-    },
-    {
-     "date": "2026-10-15",
-     "matchId": "2026101501",
-     "player": "流星",
-     "team": "上海EDG.M",
-     "opp": "成都AG超玩会",
-     "won": false
-    },
-    {
-     "date": "2026-10-14",
-     "matchId": "2026101402",
-     "player": "小落",
-     "team": "杭州LGD.NBW",
-     "opp": "重庆狼队",
-     "won": true
-    },
-    {
-     "date": "2026-10-14",
-     "matchId": "2026101401",
-     "player": "归期",
-     "team": "济南RW侠",
-     "opp": "北京JDG",
-     "won": false
-    }
-   ],
-   "trios": [
-    {
-     "combo": "夏洛特 / 敖隐 / 海月",
-     "n": 17,
-     "wr": 0.647
-    },
-    {
-     "combo": "夏洛特 / 敖隐 / 沈梦溪",
-     "n": 7,
-     "wr": 0.143
-    },
-    {
-     "combo": "夏洛特 / 敖隐 / 苏烈",
-     "n": 6,
-     "wr": 0.0
-    },
-    {
-     "combo": "夏洛特 / 张飞 / 赵云",
-     "n": 6,
-     "wr": 0.667
-    }
-   ],
-   "matchups": []
-  },
-  {
    "name": "苏烈",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/194.jpg",
    "games": 293,
-   "pickRate": 0.3237569060773481,
+   "pickRate": 0.32339955849889623,
    "wr": 0.47440273037542663,
    "ciLo": 0.4179270833227679,
    "ciHi": 0.5315409157716988,
-   "banRate": 0.15027624309392265,
+   "banRate": 0.15011037527593818,
    "tier": "B",
    "players": [
     {
@@ -8453,11 +8453,11 @@ window.SITE_DETAILS = {
    "name": "狂铁",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/503.jpg",
    "games": 273,
-   "pickRate": 0.30165745856353593,
+   "pickRate": 0.30132450331125826,
    "wr": 0.46886446886446886,
    "ciLo": 0.4105099054436392,
    "ciHi": 0.5280831383763649,
-   "banRate": 0.19005524861878453,
+   "banRate": 0.18984547461368653,
    "tier": "B",
    "players": [
     {
@@ -8640,11 +8640,11 @@ window.SITE_DETAILS = {
    "name": "小乔",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/106.jpg",
    "games": 265,
-   "pickRate": 0.292817679558011,
+   "pickRate": 0.2924944812362031,
    "wr": 0.4981132075471698,
    "ciLo": 0.43837133361413094,
    "ciHi": 0.5579090039526742,
-   "banRate": 0.13259668508287292,
+   "banRate": 0.13245033112582782,
    "tier": "B",
    "players": [
     {
@@ -8881,12 +8881,12 @@ window.SITE_DETAILS = {
   {
    "name": "张飞",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/171.jpg",
-   "games": 251,
-   "pickRate": 0.2773480662983425,
-   "wr": 0.549800796812749,
-   "ciLo": 0.4879616767078711,
-   "ciHi": 0.610138476485328,
-   "banRate": 0.11049723756906077,
+   "games": 252,
+   "pickRate": 0.2781456953642384,
+   "wr": 0.5476190476190477,
+   "ciLo": 0.48590936936998713,
+   "ciHi": 0.607898674357069,
+   "banRate": 0.11037527593818984,
    "tier": "A",
    "players": [
     {
@@ -9068,12 +9068,12 @@ window.SITE_DETAILS = {
   {
    "name": "少司缘",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/577.jpg",
-   "games": 248,
-   "pickRate": 0.2740331491712707,
-   "wr": 0.4717741935483871,
-   "ciLo": 0.41054811523833096,
-   "ciHi": 0.5338613866072738,
-   "banRate": 0.13370165745856355,
+   "games": 249,
+   "pickRate": 0.27483443708609273,
+   "wr": 0.46987951807228917,
+   "ciLo": 0.40881602005013157,
+   "ciHi": 0.5318582993656608,
+   "banRate": 0.1335540838852097,
    "tier": "B",
    "players": [
     {
@@ -9245,9 +9245,9 @@ window.SITE_DETAILS = {
      "wr": 0.5
     },
     {
-     "combo": "少司缘 / 狂铁 / 苍",
+     "combo": "少司缘 / 曹操 / 海月",
      "n": 9,
-     "wr": 0.444
+     "wr": 0.667
     }
    ],
    "matchups": []
@@ -9256,11 +9256,11 @@ window.SITE_DETAILS = {
    "name": "武则天",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/136.jpg",
    "games": 244,
-   "pickRate": 0.2696132596685083,
+   "pickRate": 0.2693156732891832,
    "wr": 0.4385245901639344,
    "ciLo": 0.37769248407097633,
    "ciHi": 0.5012624613457738,
-   "banRate": 0.1867403314917127,
+   "banRate": 0.18763796909492272,
    "tier": "C",
    "players": [
     {
@@ -9498,11 +9498,11 @@ window.SITE_DETAILS = {
    "name": "赵云",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/107.jpg",
    "games": 236,
-   "pickRate": 0.26077348066298345,
+   "pickRate": 0.26048565121412803,
    "wr": 0.576271186440678,
    "ciLo": 0.5124985537387022,
    "ciHi": 0.6376005116444506,
-   "banRate": 0.23756906077348067,
+   "banRate": 0.23730684326710816,
    "tier": "S",
    "players": [
     {
@@ -9684,12 +9684,12 @@ window.SITE_DETAILS = {
   {
    "name": "曹操",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/128.jpg",
-   "games": 235,
-   "pickRate": 0.2596685082872928,
-   "wr": 0.5659574468085107,
-   "ciLo": 0.5020298224423145,
-   "ciHi": 0.6277633124219638,
-   "banRate": 0.06519337016574586,
+   "games": 236,
+   "pickRate": 0.26048565121412803,
+   "wr": 0.5635593220338984,
+   "ciLo": 0.4997667625938864,
+   "ciHi": 0.6253157918920744,
+   "banRate": 0.06512141280353201,
    "tier": "S",
    "players": [
     {
@@ -9847,8 +9847,8 @@ window.SITE_DETAILS = {
    "trios": [
     {
      "combo": "少司缘 / 曹操 / 海月",
-     "n": 8,
-     "wr": 0.75
+     "n": 9,
+     "wr": 0.667
     },
     {
      "combo": "曹操 / 盾山 / 艾琳",
@@ -9872,11 +9872,11 @@ window.SITE_DETAILS = {
    "name": "苍",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/177.jpg",
    "games": 234,
-   "pickRate": 0.2585635359116022,
+   "pickRate": 0.2582781456953642,
    "wr": 0.49145299145299143,
    "ciLo": 0.428055062385999,
    "ciHi": 0.5551270218246689,
-   "banRate": 0.08287292817679558,
+   "banRate": 0.08278145695364239,
    "tier": "B",
    "players": [
     {
@@ -10114,11 +10114,11 @@ window.SITE_DETAILS = {
    "name": "关羽",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/140.jpg",
    "games": 219,
-   "pickRate": 0.2419889502762431,
+   "pickRate": 0.24172185430463577,
    "wr": 0.5799086757990868,
    "ciLo": 0.5137113169980668,
    "ciHi": 0.6433509191373764,
-   "banRate": 0.4839779005524862,
+   "banRate": 0.48344370860927155,
    "tier": "S",
    "players": [
     {
@@ -10300,12 +10300,12 @@ window.SITE_DETAILS = {
   {
    "name": "海月",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/521.jpg",
-   "games": 213,
-   "pickRate": 0.23535911602209944,
-   "wr": 0.5446009389671361,
-   "ciLo": 0.4775203446882268,
-   "ciHi": 0.6101012187018238,
-   "banRate": 0.47845303867403316,
+   "games": 214,
+   "pickRate": 0.23620309050772628,
+   "wr": 0.5420560747663551,
+   "ciLo": 0.47514745943202547,
+   "ciHi": 0.6074813864817026,
+   "banRate": 0.47792494481236203,
    "tier": "A",
    "players": [
     {
@@ -10477,9 +10477,9 @@ window.SITE_DETAILS = {
      "wr": 0.462
     },
     {
-     "combo": "张飞 / 戈娅 / 海月",
+     "combo": "少司缘 / 曹操 / 海月",
      "n": 9,
-     "wr": 0.556
+     "wr": 0.667
     }
    ],
    "matchups": [
@@ -10543,11 +10543,11 @@ window.SITE_DETAILS = {
    "name": "艾琳",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/155.jpg",
    "games": 192,
-   "pickRate": 0.2121546961325967,
+   "pickRate": 0.2119205298013245,
    "wr": 0.546875,
    "ciLo": 0.4762295617184174,
    "ciHi": 0.6156814520804894,
-   "banRate": 0.022099447513812154,
+   "banRate": 0.02207505518763797,
    "tier": "A",
    "players": [
     {
@@ -10785,11 +10785,11 @@ window.SITE_DETAILS = {
    "name": "盾山",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/509.jpg",
    "games": 192,
-   "pickRate": 0.2121546961325967,
+   "pickRate": 0.2119205298013245,
    "wr": 0.5364583333333334,
    "ciLo": 0.4658976204958015,
    "ciHi": 0.605588723570015,
-   "banRate": 0.656353591160221,
+   "banRate": 0.6567328918322296,
    "tier": "A",
    "players": [
     {
@@ -10971,12 +10971,12 @@ window.SITE_DETAILS = {
   {
    "name": "安琪拉",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/142.jpg",
-   "games": 176,
-   "pickRate": 0.19447513812154696,
-   "wr": 0.48863636363636365,
-   "ciLo": 0.4158205266443258,
-   "ciHi": 0.5619376783538503,
-   "banRate": 0.16243093922651933,
+   "games": 177,
+   "pickRate": 0.19536423841059603,
+   "wr": 0.4858757062146893,
+   "ciLo": 0.41332949041373757,
+   "ciHi": 0.559022003932696,
+   "banRate": 0.16225165562913907,
    "tier": "B",
    "players": [
     {
@@ -11214,11 +11214,11 @@ window.SITE_DETAILS = {
    "name": "司空震",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/537.jpg",
    "games": 174,
-   "pickRate": 0.19226519337016573,
+   "pickRate": 0.19205298013245034,
    "wr": 0.4885057471264368,
    "ciLo": 0.4152862278449696,
    "ciHi": 0.5622218467562485,
-   "banRate": 0.19005524861878453,
+   "banRate": 0.18984547461368653,
    "tier": "B",
    "players": [
     {
@@ -11401,11 +11401,11 @@ window.SITE_DETAILS = {
    "name": "大司命",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/517.jpg",
    "games": 163,
-   "pickRate": 0.18011049723756906,
+   "pickRate": 0.17991169977924945,
    "wr": 0.5030674846625767,
    "ciLo": 0.42712758234081566,
    "ciHi": 0.5788661266622147,
-   "banRate": 0.3082872928176796,
+   "banRate": 0.3079470198675497,
    "tier": "A",
    "players": [
     {
@@ -11588,11 +11588,11 @@ window.SITE_DETAILS = {
    "name": "杨戬",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/178.jpg",
    "games": 158,
-   "pickRate": 0.17458563535911603,
+   "pickRate": 0.17439293598233996,
    "wr": 0.4936708860759494,
    "ciLo": 0.4167934023694563,
    "ciHi": 0.5708488354729773,
-   "banRate": 0.2751381215469613,
+   "banRate": 0.27593818984547464,
    "tier": "B",
    "players": [
     {
@@ -11775,11 +11775,11 @@ window.SITE_DETAILS = {
    "name": "马超",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/518.jpg",
    "games": 156,
-   "pickRate": 0.1723756906077348,
+   "pickRate": 0.17218543046357615,
    "wr": 0.46153846153846156,
    "ciLo": 0.38517280077153876,
    "ciHi": 0.5397528756481166,
-   "banRate": 0.1723756906077348,
+   "banRate": 0.17218543046357615,
    "tier": "B",
    "players": [
     {
@@ -11962,11 +11962,11 @@ window.SITE_DETAILS = {
    "name": "钟馗",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/175.jpg",
    "games": 149,
-   "pickRate": 0.16464088397790055,
+   "pickRate": 0.16445916114790288,
    "wr": 0.5033557046979866,
    "ciLo": 0.42400375273975244,
    "ciHi": 0.5825389686135966,
-   "banRate": 0.22983425414364642,
+   "banRate": 0.2306843267108168,
    "tier": "A",
    "players": [
     {
@@ -12149,11 +12149,11 @@ window.SITE_DETAILS = {
    "name": "百里守约",
    "icon": "https://res.edata.qq.com/sgame/static/images/hero/196.jpg",
    "games": 138,
-   "pickRate": 0.15248618784530388,
+   "pickRate": 0.152317880794702,
    "wr": 0.427536231884058,
    "ciLo": 0.3480582395159687,
    "ciHi": 0.5109394029246129,
-   "banRate": 0.08066298342541436,
+   "banRate": 0.08057395143487858,
    "tier": "C",
    "players": [
     {
