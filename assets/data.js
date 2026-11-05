@@ -1,5 +1,5 @@
 window.SITE_DATA = {
- "generatedAt": "2026-11-06 03:17",
+ "generatedAt": "2026-11-06 04:09",
  "season": "2026 年度总决赛",
  "stats": {
   "matches": 173,
