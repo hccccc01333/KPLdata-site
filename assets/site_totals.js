@@ -1,1 +1,1 @@
-window.KPL_TOTALS = {"leagues": 38, "matches": 3486, "battles": 11199, "replayMatches": 74, "replayBattles": 275, "search": 4187};
+window.KPL_TOTALS = {"leagues": 38, "matches": 3486, "battles": 11200, "replayMatches": 75, "replayBattles": 276, "search": 4187};
