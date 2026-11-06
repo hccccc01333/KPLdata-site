@@ -1,5 +1,5 @@
 window.SITE_DETAILS = {
- "generatedAt": "2026-11-07 01:16",
+ "generatedAt": "2026-11-07 02:19",
  "matches": [
   {
    "matchId": "2026101601",
@@ -3913,7 +3913,7 @@ window.SITE_DETAILS = {
      },
      {
       "m": 7.1,
-      "p": 0.5111111111111136,
+      "p": 0.5111111111111112,
       "gd": -1409.0
      },
      {
