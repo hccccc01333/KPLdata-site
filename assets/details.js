@@ -1,5 +1,5 @@
 window.SITE_DETAILS = {
- "generatedAt": "2026-11-08 16:05",
+ "generatedAt": "2026-11-08 17:07",
  "matches": [
   {
    "matchId": "2026101601",
@@ -611,7 +611,7 @@ window.SITE_DETAILS = {
        "td": 3.0,
        "rd": 3.0
       },
-      "prob_mean": 0.8414303997268197
+      "prob_mean": 0.8414303997268194
      },
      {
       "code": "late",
@@ -3182,7 +3182,7 @@ window.SITE_DETAILS = {
      },
      {
       "m": 3.5833333333333335,
-      "p": 0.5555555555555552,
+      "p": 0.5555555555555554,
       "gd": -200.0
      },
      {
@@ -4092,7 +4092,7 @@ window.SITE_DETAILS = {
        "td": 2.0,
        "rd": 0.0
       },
-      "prob_mean": 0.5953113553113554
+      "prob_mean": 0.5953113553113558
      },
      {
       "code": "mid",
@@ -4432,7 +4432,7 @@ window.SITE_DETAILS = {
        "td": -3.0,
        "rd": -1.0
       },
-      "prob_mean": 0.29279609279609276
+      "prob_mean": 0.29279609279609353
      },
      {
       "code": "mid",
