@@ -16,14 +16,12 @@
 <meta property="og:image" content="https://hccccc01333.github.io/KPLdata-site/assets/brand/kpl-research-social.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="assets/arena.css?v=1">
-<link rel="stylesheet" href="assets/arena-world.css?v=20261026">
-<script src="assets/arena-world.js?v=20261030a" type="module"></script>
-<link rel="stylesheet" href="assets/card-motion.css?v=1">
-<script src="assets/card-motion.js?v=1" type="module"></script>
 <link rel="stylesheet" href="assets/light.css?v=20261030a">
 <link rel="stylesheet" href="assets/theme.css?v=20261030b">
+<link rel="stylesheet" href="assets/site-v2.css?v=20261112a">
+<link rel="stylesheet" href="assets/player-v2.css?v=20261112a">
 </head>
-<body data-page="players.html">
+<body data-page="players.html" class="v2-page player-page">
 <header id="siteHeader" class="topbar"></header>
 <div id="wrapHero"></div>
 <main class="wrap" id="main" style="margin-top:24px"></main>
@@ -34,7 +32,7 @@
 <script src="assets/players_detail.js?v=85"></script>
 <script src="assets/deep.js?v=85"></script>
 <script src="assets/player_deep.js?v=85"></script>
-<script src="assets/common.js?v=20261102-brand"></script>
+<script src="assets/common.js?v=20261110-curve"></script>
 <script src="assets/share.js?v=20261102-brand"></script>
 <script>
 (function () {
@@ -48,27 +46,41 @@
   ((K.scopeOf("all") || {}).heroes || []).forEach(function (h) { heroIcon[h.name] = h.icon; });
 
   if (!P) {
-    $("#wrapHero").innerHTML = '<header class="page-hero"><div class="wrap">' +
-      '<div class="ph-kicker mono">PLAYER · 选手</div><h1>未找到该选手</h1>' +
-      "<p>选手详情覆盖出场 15 局以上的选手；可在选手榜搜索。</p>" +
-      '<div class="slide-cta" style="margin-top:18px"><a class="btn primary" href="players.html">返回选手榜</a></div></div></header>';
+    $("#wrapHero").innerHTML = '<header class="lg-hero detail-hero"><div class="lg-hero-gridlines" aria-hidden="true"></div>' +
+      '<div class="v2-wrap"><nav class="v2-crumb"><a href="players.html">选手榜</a><span class="sep">/</span><b>未找到</b></nav>' +
+      '<div class="v2-kicker"><i></i>PLAYER<b>·</b>选手</div>' +
+      '<h1 class="v2-h1">未找到该选手</h1>' +
+      '<p class="v2-lead">选手详情覆盖出场 15 局以上的选手；可在选手榜搜索，或检查链接里的 id 是否正确。</p>' +
+      '<div class="v2-actions" style="margin-top:24px"><a class="v2-btn solid" href="players.html">返回选手榜 <span class="arr">→</span></a></div>' +
+      "</div></header>";
     return;
   }
 
   /* ---------- 头部 ---------- */
-  $("#wrapHero").innerHTML = '<header class="page-hero"><div class="wrap"><div class="hd-top">' +
-    (P.icon ? '<img class="hd-ava" src="' + K.esc(P.icon) + '" alt="">'
-            : '<span class="hd-ava ph">' + K.esc(NAME.slice(0, 1)) + "</span>") +
-    '<div><div class="hd-name">' + K.esc(NAME) +
-    (P.pos ? ' <span class="tier B" style="vertical-align:middle">' + K.esc(P.pos) + "</span>" : "") +
+  $("#wrapHero").innerHTML = '<header class="lg-hero detail-hero"><div class="lg-hero-gridlines" aria-hidden="true"></div><div class="v2-wrap">' +
+    '<nav class="v2-crumb"><a href="players.html">选手榜</a><span class="sep">/</span><b>' + K.esc(NAME) + "</b></nav>" +
+    '<div class="v2-kicker"><i></i>PLAYER<b>·</b>选手档案</div>' +
+    '<div class="detail-id">' +
+    (P.icon ? '<span class="detail-ava"><img src="' + K.esc(P.icon) + '" alt=""></span>'
+            : '<span class="detail-ava ph">' + K.esc(NAME.slice(0, 1)) + "</span>") +
+    '<div class="detail-id-main"><h1 class="v2-h1">' + K.esc(NAME) +
+    (P.pos ? ' <span class="v2-chip pos">' + K.esc(P.pos) + "</span>" : "") +
     " " + K.favBtn({ kind: "player", id: NAME, label: NAME, icon: P.icon,
-                      href: "player.html?id=" + encodeURIComponent(NAME) }) + "</div>" +
-    '<div class="hd-sub">' + (P.teamIcon ? '<img src="' + K.esc(P.teamIcon) + '" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:5px">' : "") +
-    K.esc(P.team) + " · 全部赛事 " + K.fmtInt(P.games) + " 局 · 赢下 " + K.fmtInt(P.wins) + " 局</div></div>" +
-    "</div></div></header>";
+                      href: "player.html?id=" + encodeURIComponent(NAME) }) + "</h1>" +
+    '<p class="v2-lead">' + (P.teamIcon ? '<img class="detail-team-ic" src="' + K.esc(P.teamIcon) + '" alt="">' : "") +
+    '<a class="detail-team" href="team.html?id=' + encodeURIComponent(P.team) + '">' + K.esc(P.team) + "</a> · 全部赛事 " +
+    K.fmtInt(P.games) + " 局 · 赢下 " + K.fmtInt(P.wins) + " 局</p></div></div>" +
+    '<div class="v2-stats detail-stats" style="margin-top:26px">' +
+    '<div class="v2-stat"><b class="v2-mono">' + K.pct(P.wr) + "</b><span>单局胜率 · " + P.wins + " 胜</span></div>" +
+    '<div class="v2-stat"><b class="v2-mono">' + K.mnumText(P.kda, 2) + "</b><span>场均 KDA</span></div>" +
+    '<div class="v2-stat"><b class="v2-mono">' + P.mvp + "</b><span>MVP 次数</span></div>" +
+    '<div class="v2-stat"><b class="v2-mono">' + K.fmtInt(P.gold) + "</b><span>场均经济 · 参团 " + K.mfrac(P.part, P.partN, P.games) + "</span></div>" +
+    "</div>" +
+    '<div class="detail-actions"></div>' +
+    "</div></header>";
 
   /* ---------- 分享图：固定尺寸卡片，自带口径与生成时间（不截屏网页） ---------- */
-  SHARE.mount($("#wrapHero"), function () {
+  SHARE.mount($("#wrapHero .detail-actions"), function () {
     return {
       kind: "选手档案",
       title: NAME,
@@ -86,14 +98,6 @@
       url: "kpldata-site.hccccc01333.workers.dev/player.html?id=" + NAME
     };
   }, "kpldata-player.png");
-
-  /* ---------- KPI 四格 ---------- */
-  var kpi = '<div class="hd-stats">' +
-    '<div class="hd-cell hl"><div class="k">胜率</div><div class="v">' + K.pct(P.wr) + '</div><div class="s">' + P.wins + " 胜 / " + P.games + " 局</div></div>" +
-    '<div class="hd-cell"><div class="k">KDA</div><div class="v">' + K.mnumText(P.kda, 2) + '</div><div class="s">击杀 + 助攻 ÷ 死亡</div></div>' +
-    '<div class="hd-cell"><div class="k">MVP</div><div class="v">' + P.mvp + '</div><div class="s">共 ' + P.games + " 局中当选</div></div>" +
-    '<div class="hd-cell"><div class="k">场均数据</div><div class="v">' + K.fmtInt(P.gold) + '</div><div class="s">经济 · 参团 ' + K.mfrac(P.part, P.partN, P.games) + "</div></div>" +
-    "</div>";
 
   /* ---------- 赛季趋势（胜率折线） ---------- */
   var years = P.years || [];
@@ -448,7 +452,7 @@
       '<button type="button" data-tab="links">搭档与对位</button>' +
     '</div><span class="player-tab-note mono" id="playerTabNote">概览：生涯 KPI、赛季趋势、英雄池与最近比赛</span></div>';
 
-  var overviewHTML = kpi + trendHTML +
+  var overviewHTML = trendHTML +
     '<div class="pl-grid">' +
     '<div class="panel"><div class="panel-title">英雄池 <em class="mono">共 ' + poolN + " 个英雄 · 按使用局数展示前 " + (P.heroes || []).length + "</em>" +
     '<a class="hp-entry" href="hero-performance.html?player=' + encodeURIComponent(NAME) + '">逐系列赛英雄表现 →</a></div>' +

@@ -9,40 +9,6 @@
 <link rel="stylesheet" href="assets/style.css?v=20261102-brand">
 <link rel="stylesheet" href="assets/pages.css?v=20261102-brand">
 <link rel="stylesheet" href="assets/v55.css?v=92">
-<style>
-.q-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-.q-head .seg{margin-left:0}
-.q-table{width:100%;border-collapse:collapse;font-size:13px}
-.q-table th,.q-table td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
-.q-table th:first-child,.q-table td:first-child,.q-table th.left,.q-table td.left{text-align:left}
-.q-table thead th{font-size:11.5px;color:var(--muted);font-weight:600;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--card)}
-.q-table thead th:hover{color:var(--gold)}
-.q-table thead th.sorted{color:var(--gold)}
-.q-table tbody tr:hover{background:var(--inset)}
-.q-table .cell{display:flex;align-items:center;gap:8px}
-/* SQL 控制台（本地工作台） */
-.sql-area{width:100%;min-height:130px;resize:vertical;background:var(--inset);border:1px solid var(--line);
-  border-radius:10px;color:var(--ink);font:13px/1.7 var(--mono);padding:12px 14px;outline:none}
-.sql-area:focus{border-color:var(--line2)}
-.sql-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
-.sql-chip{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 13px;min-width:0}
-.sql-chip span{display:block;font-size:10px;color:var(--muted);letter-spacing:.05em}
-.sql-chip b{display:block;font-family:var(--mono);font-size:15.5px;font-weight:800;margin-top:2px;color:var(--ink)}
-.sql-chip b.gold{color:var(--gold)}
-.sql-tbl{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:11px 13px;cursor:pointer;transition:.15s;font-family:var(--mono)}
-.sql-tbl:hover{border-color:var(--gold)}
-.sql-tbl b{font-size:13px;color:var(--gold)}
-.sql-tbl small{display:block;color:var(--muted);font-size:10.5px;margin-top:3px}
-.sql-samples{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.sql-samples button{padding:5px 12px;border:1px dashed var(--line2);border-radius:999px;background:transparent;
-  color:var(--ink2);font-size:11.5px;cursor:pointer;font-family:inherit}
-.sql-samples button:hover{color:var(--gold);border-color:var(--gold)}
-.filterbar.sqlmode :is(.fld,.block-note,a.btn){display:none}
-.q-table .cell img{width:24px;height:24px;border-radius:50%;object-fit:cover;flex:none}
-.q-table .rk{font-family:var(--mono);color:var(--muted)}
-.q-table .best{color:var(--gold);font-weight:800}
-.q-wrap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 10px;overflow-x:auto;max-height:70vh}
-</style>
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KPL赛研">
 <meta property="og:title" content="数据查询 · KPL赛研">
@@ -50,28 +16,32 @@
 <meta property="og:image" content="https://hccccc01333.github.io/KPLdata-site/assets/brand/kpl-research-social.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="assets/arena.css?v=1">
-<link rel="stylesheet" href="assets/arena-world.css?v=20261026">
-<script src="assets/arena-world.js?v=20261030a" type="module"></script>
-<link rel="stylesheet" href="assets/card-motion.css?v=1">
-<script src="assets/card-motion.js?v=1" type="module"></script>
 <link rel="stylesheet" href="assets/light.css?v=20261030a">
 <link rel="stylesheet" href="assets/theme.css?v=20261030b">
+<link rel="stylesheet" href="assets/site-v2.css?v=20261112a">
+<link rel="stylesheet" href="assets/query-v2.css?v=20261112a">
 </head>
-<body data-page="query.html">
+<body data-page="query.html" class="v2-page query-page">
 <header id="siteHeader" class="topbar"></header>
 
-<header class="page-hero">
-  <div class="wrap">
-    <div class="ph-kicker mono">QUERY · 数据查询</div>
-    <h1>数据查询中心</h1>
-    <p>把全部指标摊在表里：选数据范围 → 切类型 → 搜名字 → 点列头排序。战队、选手、英雄的自由榜单，随时导出。</p>
+<header class="lg-hero">
+  <div class="lg-hero-gridlines" aria-hidden="true"></div>
+  <div class="v2-wrap">
+    <div class="v2-kicker"><i></i>QUERY<b>·</b>数据查询</div>
+    <h1 class="v2-h1">数据查询中心</h1>
+    <p class="v2-lead">把全部指标摊在表里：选数据范围 → 切类型 → 搜名字 → 点列头排序。战队、选手、英雄的自由榜单，随时导出。</p>
+    <div class="v2-stats lg-kpis" style="margin-top:26px">
+      <div class="v2-stat"><b class="v2-mono">3 榜 + SQL</b><span>可切换视图</span></div>
+      <div class="v2-stat"><b class="v2-mono">全历史</b><span>数据范围</span></div>
+      <div class="v2-stat"><b class="v2-mono">CSV</b><span>导出当前筛选</span></div>
+    </div>
   </div>
 </header>
 
-<main class="wrap" style="margin-top:24px">
+<main class="wrap query-main" style="margin-top:24px">
   <div class="scopebar" id="scopeBar"></div>
   <div class="filterbar" id="qFilter">
-    <div class="seg" id="typeTabs" style="margin-left:0">
+    <div class="seg" id="typeTabs">
       <button data-m="team" class="on">战队</button>
       <button data-m="player">选手</button>
       <button data-m="hero">英雄</button>
@@ -93,8 +63,8 @@
       </select>
     </label>
     <span class="block-note mono" id="qNote"></span>
-    <a class="btn ghost sm" href="find.html">智能找局 →</a>
-    <button class="btn ghost sm" id="qExport" type="button">导出 CSV</button>
+    <a class="v2-btn sm" href="find.html">智能找局 →</a>
+    <button class="v2-btn sm" id="qExport" type="button">导出 CSV</button>
   </div>
   <div class="q-wrap" id="qWrap">
     <table class="q-table"><thead id="qHead"></thead><tbody id="qBody"></tbody></table>
@@ -103,31 +73,31 @@
   <section id="sqlPanel" hidden>
     <div class="block-head"><h2><i></i>SQL 控制台</h2>
       <span class="block-note mono">本地 SQLite 只读查询 · 仅 SELECT / WITH · 超时 6s · 最多 2000 行</span></div>
-    <div class="panel" id="sqlOff" style="padding:28px;text-align:center" hidden>
+    <div class="panel" id="sqlOff" hidden>
       <p style="font-weight:700;color:var(--ink);margin-bottom:8px">SQL 控制台需要本地运行的服务</p>
       <p style="color:var(--muted);font-size:13px">把仓库下载到本地，在根目录执行下面一条命令（零第三方依赖，仅 Python 3.9+）：</p>
-      <p style="margin-top:12px"><code class="mono" style="background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:5px 14px;color:var(--gold)">python server.py</code></p>
+      <p style="margin-top:12px"><code class="mono">python server.py</code></p>
       <p style="color:var(--muted);font-size:12px;margin-top:12px">Windows 可直接双击 <span class="mono">启动本地版.bat</span>。启动后回到本页即可查询。</p>
     </div>
     <div id="sqlApp" hidden>
-      <div class="panel" style="padding:14px 16px"><div class="sql-grid" id="sqlChips"></div>
-        <div class="block-note mono" id="sqlDbNote" style="margin-top:10px"></div></div>
-      <div class="panel" style="padding:14px 16px">
+      <div class="panel"><div class="sql-grid" id="sqlChips"></div>
+        <div class="block-note mono" id="sqlDbNote"></div></div>
+      <div class="panel">
         <textarea id="sqlText" class="sql-area" spellcheck="false"></textarea>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
-          <button class="btn primary sm" id="sqlRun" type="button">运行查询（Ctrl+Enter）</button>
-          <button class="btn ghost sm" id="sqlCsv" type="button">导出 CSV</button>
-          <button class="btn ghost sm" id="sqlSave" type="button">★ 保存这条查询</button>
+        <div class="sql-actions">
+          <button class="v2-btn sm solid" id="sqlRun" type="button">运行查询（Ctrl+Enter）</button>
+          <button class="v2-btn sm" id="sqlCsv" type="button">导出 CSV</button>
+          <button class="v2-btn sm" id="sqlSave" type="button">★ 保存这条查询</button>
           <span class="block-note mono" id="sqlHint"></span>
         </div>
         <div class="sql-samples" id="sqlSaved"></div>
         <div class="sql-samples" id="sqlSamples"></div>
-        <div id="sqlErr" hidden style="background:rgba(240,116,131,.08);border:1px solid rgba(240,116,131,.4);color:var(--red);border-radius:10px;padding:10px 14px;font:12px/1.7 var(--mono);margin-top:10px;white-space:pre-wrap"></div>
-        <div class="block-note mono" id="sqlMeta" style="margin:10px 0 8px"></div>
+        <div id="sqlErr" hidden></div>
+        <div class="block-note mono" id="sqlMeta"></div>
         <div class="q-wrap"><table class="q-table"><thead id="sqlHead"></thead><tbody id="sqlBody"></tbody></table></div>
       </div>
-      <div class="panel" style="padding:14px 16px">
-        <div class="block-head" style="margin-bottom:10px"><h2><i></i>数据表</h2><span class="block-note mono">点击任意表 → 预览前 10 行</span></div>
+      <div class="panel">
+        <div class="block-head"><h2><i></i>数据表</h2><span class="block-note mono">点击任意表 → 预览前 10 行</span></div>
         <div class="sql-grid" id="sqlTables"></div>
       </div>
     </div>
@@ -138,7 +108,7 @@
 
 <script src="assets/data.js?v=85"></script>
 <script src="assets/seasons.js?v=85"></script>
-<script src="assets/common.js?v=20261102-brand"></script>
+<script src="assets/common.js?v=20261110-curve"></script>
 <script>
 (function () {
   "use strict";
