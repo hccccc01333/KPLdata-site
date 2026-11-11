@@ -22,6 +22,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const PAGES = [
   ["index.html", "首页", ["#focusHero > *", "#replayPicks .rp-pick", "#stTop tr", "#heroTop > *", "#plTop > *", ".entry"]],
   ["schedule.html", "赛程", ["#fStatus option", "#schBody tr, .day-block, .sched-row"]],
+  ["bracket.html", "赛事进程", ["#brSel option", "#brRail .br-stage", "#brMatchGrid .br-match", "#brStandings .br-stand-row", "#siteHeader #siteNav"]],
   ["bracket-forecast.html", "冠军预测", ["#siteHeader #siteNav", ".bf-page .mcard", ".bf-page .bracket", "#siteFooter .footer-in"]],
   ["teams.html", "战队榜", ["#teamGrid > *, .tcard, .team-card", ".champ", ".pw b"]],
   ["team.html?id=重庆狼队", "战队详情", ["#teamHead, .page-hero", ".tstat-grid, .panel", ".cmp-radar svg, .radar-wrap .empty-tip"]],
@@ -148,7 +149,7 @@ async function main() {
   if (!process.argv.includes('--ui-only')) {
   console.log("=== 逐页：未捕获异常 / 未处理 Promise 拒绝 + 关键区块渲染 ===");
   for (const [path, label, sels] of PAGES) {
-    const errs = await visit(BASE + path, path === "find.html" ? 3600 : (path === "hero-performance.html" || path === "team-bp.html" || path === "coach.html") ? 2800 : 1400);
+    const errs = await visit(BASE + path, path === "find.html" ? 3600 : (path === "hero-performance.html" || path === "team-bp.html" || path === "coach.html" || path === "bracket.html") ? 2800 : 1400);
     const counts = await evaluate(
       "(" + JSON.stringify(sels) + ").map(function(s){ return document.querySelectorAll(s).length; })"
     );
@@ -243,16 +244,17 @@ async function main() {
   })()`);
   check("复盘深链落到指定分钟", deep && deep.hasSlider && deep.value > 0, deep && deep.value + " · " + deep.time);
 
-  console.log("\n=== 复盘故事层：结论 / 三个转折 / 折叠 / 跳转 ===");
+  console.log("\n=== 复盘故事层：结论 / 关键节点 / 折叠 / 跳转 ===");
   await visit(BASE + "game.html?id=1054884368_8_1792576862", 2600);
   const story = await evaluate(`(function(){
     var d = document.getElementById('rpDetail');
     var lead = document.querySelector('.rp-story-lead');
-    var moments = document.querySelectorAll('.rp-moment');
+    var nodes = document.querySelectorAll('.rp-story .rp-node');
     return {
       has: !!document.querySelector('.rp-story'),
       lead: lead ? lead.textContent : '',
-      moments: moments.length,
+      nodes: nodes.length,
+      kpis: document.querySelectorAll('.rp-kpis .rp-kpi').length,
       detailHidden: d ? d.hasAttribute('hidden') : null,
       expand: (document.getElementById('rpExpand') || {}).textContent || '',
       cov: (document.querySelector('.rp-cov') || {}).textContent || '',
@@ -261,8 +263,8 @@ async function main() {
       labels: document.querySelectorAll('.rp-tag.official, .rp-tag.proxy, .rp-tag.est').length
     };
   })()`);
-  check("复盘首屏有结论与三个转折", story && story.has && story.lead.length > 40 && story.moments === 3,
-    story && (story.moments + " 个转折 · 结论 " + story.lead.slice(0, 36)));
+  check("复盘首屏有结论与关键节点", story && story.has && story.lead.length > 40 && story.nodes >= 1 && story.kpis >= 1,
+    story && (story.nodes + " 个节点 / " + story.kpis + " 个 KPI · 结论 " + story.lead.slice(0, 36)));
   check("复盘详细面板默认折叠", story && story.detailHidden === true, story && story.expand);
   check("复盘覆盖数字不回避（全历史）", story && /\d+\s*\/\s*11,1\d\d/.test(story.cov), story && story.cov.slice(0, 80));
   check("复盘结论区分官方 / 代理 / 估算", story && story.labels >= 3, story && story.labels);
@@ -270,14 +272,29 @@ async function main() {
   const expanded = await evaluate(`(function(){
     var b = document.getElementById('rpExpand'); if (b) b.click();
     var d = document.getElementById('rpDetail');
-    var m = document.querySelector('.rp-moment');
+    var rows = document.querySelectorAll('.rp-story .rp-node');
+    var m = rows[rows.length - 1] || rows[0];
     if (m) m.click();
     var r = document.getElementById('rpRange');
     return { hidden: d ? d.hasAttribute('hidden') : null, frame: r ? Number(r.value) : -1,
              text: (document.getElementById('rpExpand') || {}).textContent || '' };
   })()`);
-  check("展开后面板可见、转折可跳帧", expanded && expanded.hidden === false && expanded.frame > 0,
+  check("展开后面板可见、关键节点可跳帧", expanded && expanded.hidden === false && expanded.frame > 0,
     expanded && expanded.frame + " · " + expanded.text);
+
+  // 单局页只显示当前 G 标签；大场页仍保留整场 G 标签。
+  await visit(BASE + "game.html?id=48251408_66_1793613916", 2600);
+  const tabNav = await evaluate(`(function(){
+    var tabs = document.querySelectorAll('.rp-tab');
+    return { n: tabs.length, text: tabs.length ? tabs[0].textContent.replace(/\\s+/g, ' ').trim() : '' };
+  })()`);
+  check("单局页只显示当前 G 标签", tabNav && tabNav.n === 1 && /^G1/.test(tabNav.text),
+    tabNav && (tabNav.n + " 个 · " + tabNav.text));
+  await visit(BASE + "match.html?id=2026110201&g=1", 2600);
+  const matchTabs = await evaluate(`(function(){
+    return document.querySelectorAll('.rp-tab').length;
+  })()`);
+  check("大场页保留整场 G 标签", matchTabs >= 2, matchTabs + " 个");
 
   await visit(BASE + "game.html?id=1272988176_18_1782478925", 2600);
   const miss = await evaluate(`(function(){
@@ -376,8 +393,8 @@ async function main() {
   check("分路对位标注对齐口径", lay1 && /同一分路/.test(lay1.disc), lay1 && lay1.disc.slice(0, 28));
   const turn = await evaluate(`(function(){
     var items = document.querySelectorAll('#rpTurn .rp-tp-item');
-    return { has: !!document.querySelector('#rpTurn .rp-tp'), items: items.length,
-             disc: (document.querySelector('#rpTurn .rp-disc')||{}).textContent||'' };
+    return { has: !!document.querySelector('#rpTurn .rp-tp-fold'), items: items.length,
+             disc: (document.querySelector('#rpTurn .rp-tp-fold .rp-disc')||{}).textContent||'' };
   })()`);
   check("比赛转折面板已渲染", turn && turn.has && turn.items >= 1 && turn.items <= 3,
     turn && turn.items + " 段");
@@ -537,7 +554,7 @@ async function main() {
         var el = document.getElementById(id);
         return el && el.getBoundingClientRect().right > window.innerWidth + 1;
       }).join(',');
-      var ons = document.querySelectorAll('#stageTrack .st-step.on');
+      var ons = document.querySelectorAll('#stageTrack .sch-step.is-current, #stageTrack .st-step.on');
       return { over: de.scrollWidth - window.innerWidth, bad: bad, onN: ons.length,
                onText: ons.length ? ons[0].textContent.replace(/\\s+/g, ' ').trim().slice(0, 26) : '' };
     })()`);

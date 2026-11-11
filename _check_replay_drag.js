@@ -82,10 +82,17 @@ async function main() {
       return {
         same: same,
         labels: labels,
-        panels: document.querySelectorAll('#rpGrid .rp-panel').length,
+        panels: ['#rpGridGold', '#rpGridData', '#rpTurn'].filter(function (id) {
+          return document.querySelectorAll(id + ' .rp-panel').length > 0;
+        }).length,
         chartHasSvg: !!document.querySelector('#rpChart svg'),
         evOn: document.querySelectorAll('.rp-ev.on').length,
-        sliderCount: document.querySelectorAll('#rpRange').length
+        sliderCount: document.querySelectorAll('#rpRange').length,
+        ledgerRows: document.querySelectorAll('#rpTurn .rp-ledger tbody tr').length,
+        ledgerSample: (document.querySelector('#rpTurn .rp-ledger tbody tr') || {}).innerText || '',
+        nodeRows: document.querySelectorAll('.rp-story .rp-node').length,
+        evDg: document.querySelectorAll('#rpEvents .rp-evdg').length,
+        goldSrc: (document.querySelector('.rp-gold-src') || {}).textContent || ''
       };
     })()`);
 
@@ -97,6 +104,10 @@ async function main() {
     check("三块面板仍在", res.panels === 3, res.panels);
     check("图表 SVG 仍在", res.chartHasSvg);
     check("事件高亮有且仅有若干个", res.evOn >= 1, res.evOn);
+    check("事件经济账本有行", res.ledgerRows > 0, res.ledgerRows + " 行 · " + String(res.ledgerSample).slice(0, 80));
+    check("关键节点表有行", res.nodeRows > 0, res.nodeRows);
+    check("事件金差徽标存在", res.evDg > 0, res.evDg);
+    check("金差来源标注存在", /营地|本地/.test(res.goldSrc), res.goldSrc);
 
     // 键盘：ArrowRight 应推进一帧且不丢焦点
     const kb = await evaluate(`(function(){

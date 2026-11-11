@@ -36,6 +36,12 @@ CN = timezone(timedelta(hours=8))
 MIN_GAMES = 10
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
+# KPL 历史上有 14/16/18/20 手四种赛制：每方固定 5 个 pick，ban 则是 2/3/4/5 个。
+# 旧检查把 ban 也写成「每方 5」，于是 2020–2024（18 手时代）被整体误报成 SEVERE。
+PICKS_PER_SIDE = 5
+BANS_PER_SIDE = (2, 3, 4, 5)
+TOTAL_HANDS = {14, 16, 18, 20}
+
 
 def load_js(path: Path, var: str) -> dict:
     text = path.read_text(encoding="utf-8")
@@ -104,7 +110,13 @@ def main() -> None:
         games = base.get("games", 0)
         a.check(is_num(games) and games > 0, "baseline.games", f"{scope} 基准局数为 0")
         a.check(base.get("picks") == games * 10, "baseline.picks", f"{scope} 选用总数 {base.get('picks')} != {games * 10}")
-        a.check(base.get("bans") == games * 10, "baseline.bans", f"{scope} 禁用总数 {base.get('bans')} != {games * 10}")
+        # 禁用总数按赛制浮动：每局 2×(2..5) = 4/6/8/10 手，只能给区间和奇偶约束。
+        bans_total = base.get("bans", -1)
+        a.check(games * BANS_PER_SIDE[0] * 2 <= bans_total <= games * BANS_PER_SIDE[-1] * 2,
+                "baseline.bans",
+                f"{scope} 禁用总数 {bans_total} 不在 {games * 4}–{games * 10} 区间")
+        a.check(is_num(bans_total) and bans_total % 2 == 0,
+                "baseline.banParity", f"{scope} 禁用总数 {bans_total} 不是偶数（双方禁用手位应相等）")
         for key in ("pick", "pickWins", "ban"):
             arr = base.get(key)
             a.check(isinstance(arr, list) and len(arr) == H, "baseline.length", f"{scope}.{key} 长度不是 {H}")
@@ -204,9 +216,13 @@ def audit_team(a: Audit, name: str, obj: dict, H: int, leagues: dict, meta: dict
             total_league_wins += w
         a.check(is_num(g) and g > 0, "scope.games", f"{name}/{scope} 局数为 0")
         a.check(is_num(w) and 0 <= w <= g, "scope.wins", f"{name}/{scope} 胜负异常")
-        a.check(picks == g * 5, "scope.picks", f"{name}/{scope} 选用 {picks} != {g * 5}")
-        a.check(bans == g * 5, "scope.bans", f"{name}/{scope} 禁用 {bans} != {g * 5}")
-        a.check(opp_bans == g * 5, "scope.oppBans", f"{name}/{scope} 对手禁用 {opp_bans} != {g * 5}")
+        a.check(picks == g * PICKS_PER_SIDE, "scope.picks", f"{name}/{scope} 选用 {picks} != {g * 5}")
+        lo, hi = BANS_PER_SIDE[0] * g, BANS_PER_SIDE[-1] * g
+        a.check(lo <= bans <= hi, "scope.bans", f"{name}/{scope} 禁用 {bans} 不在 {lo}–{hi} 区间")
+        a.check(lo <= opp_bans <= hi, "scope.oppBans",
+                f"{name}/{scope} 对手禁用 {opp_bans} 不在 {lo}–{hi} 区间")
+        a.check(bans == opp_bans, "scope.banSymmetry",
+                f"{name}/{scope} 双方禁用不一致：{bans} vs {opp_bans}")
         rows = st.get("heroes") or []
         a.check(isinstance(rows, list) and rows, "scope.heroes", f"{name}/{scope} 没有英雄行")
         seen = set()
@@ -262,21 +278,30 @@ def audit_team(a: Audit, name: str, obj: dict, H: int, leagues: dict, meta: dict
     ev = obj.get("evidence") or []
     a.check(len(ev) == games, "evidence.count", f"{name} 证据 {len(ev)} != 局数 {games}")
     for r in ev:
-        if not isinstance(r, list) or len(r) != 11:
-            a.severe("evidence.shape", f"{name} 证据字段数异常")
+        # 构建器在证据行末尾追加了 partial 标记，检查器原先仍按 11 个字段解包，
+        # 于是每一条证据都被判成 shape 异常（19684 条），掩盖了真正的问题。
+        if not isinstance(r, list) or len(r) not in (11, 12):
+            a.severe("evidence.shape", f"{name} 证据字段数异常：{len(r) if isinstance(r, list) else type(r).__name__}")
             continue
-        date, match_id, lid, stage, opp, side, win, picks, bans, opp_picks, opp_bans = r
+        date, match_id, lid, stage, opp, side, win, picks, bans, opp_picks, opp_bans = r[:11]
+        partial = bool(r[11]) if len(r) > 11 else False
+        a.check(partial in (True, False), "evidence.partial", f"{name} partial 标记非法")
         a.check(bool(DATE_RE.match(str(date))), "evidence.date", f"{name} 证据日期非法：{date}")
         a.check(bool(match_id), "evidence.match", f"{name} 证据缺比赛")
         a.check(str(lid) in leagues, "evidence.league", f"{name} 证据未知赛事：{lid}")
         a.check(side in (1, 2), "evidence.side", f"{name} 阵营非法：{side}")
         a.check(win in (0, 1), "evidence.win", f"{name} 赛果非法：{win}")
-        a.check(isinstance(picks, list) and len(picks) == 5, "evidence.picks", f"{name} 我方选用不是 5")
-        a.check(isinstance(bans, list) and len(bans) == 5, "evidence.bans", f"{name} 我方禁用不是 5")
-        a.check(isinstance(opp_picks, list) and len(opp_picks) == 5, "evidence.oppPicks", f"{name} 对手选用不是 5")
-        a.check(isinstance(opp_bans, list) and len(opp_bans) == 5, "evidence.oppBans", f"{name} 对手禁用不是 5")
+        a.check(isinstance(picks, list) and len(picks) == PICKS_PER_SIDE, "evidence.picks", f"{name} 我方选用不是 5")
+        a.check(isinstance(opp_picks, list) and len(opp_picks) == PICKS_PER_SIDE, "evidence.oppPicks", f"{name} 对手选用不是 5")
+        a.check(isinstance(bans, list) and len(bans) in BANS_PER_SIDE, "evidence.bans",
+                f"{name} 我方禁用手位数非法：{len(bans) if isinstance(bans, list) else bans}")
+        a.check(isinstance(opp_bans, list) and len(opp_bans) in BANS_PER_SIDE, "evidence.oppBans",
+                f"{name} 对手禁用手位数非法：{len(opp_bans) if isinstance(opp_bans, list) else opp_bans}")
+        a.check(isinstance(bans, list) and isinstance(opp_bans, list) and len(bans) == len(opp_bans),
+                "evidence.banSymmetry", f"{name} 证据双方禁用手位数不一致")
         all_hands = picks + bans + opp_picks + opp_bans
-        a.check(len(set(all_hands)) == 20, "evidence.unique", f"{name} 证据 20 手不唯一")
+        a.check(len(set(all_hands)) in TOTAL_HANDS, "evidence.unique",
+                f"{name} 证据总手位数不是 14/16/18/20")
         a.check(all(is_num(i) and 0 <= i < H for i in all_hands), "evidence.index", f"{name} 证据英雄索引越界")
 
 

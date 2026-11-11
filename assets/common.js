@@ -262,8 +262,8 @@ window.KPL = (function () {
      detail 页（match/game/picks）沿用各自分组代表的 data-page，因此天然归组。 */
   var NAV = [
     { ic: "calendar", label: "赛事", href: "schedule.html",
-      pages: ["index.html", "schedule.html", "bracket.html"],
-      sub: [["赛程中心", "schedule.html"], ["赛事进程", "bracket.html"], ["精选对局", "picks.html"]] },
+      pages: ["index.html", "schedule.html", "bracket.html", "walkthrough.html"],
+      sub: [["赛程中心", "schedule.html"], ["赛事进程", "bracket.html"], ["精选对局", "picks.html"], ["从头看到尾", "walkthrough.html"]] },
     { ic: "shield", label: "战队", href: "teams.html",
       pages: ["teams.html", "h2h.html"],
       sub: [["战队榜", "teams.html"], ["交手记录", "h2h.html"]] },
@@ -284,10 +284,10 @@ window.KPL = (function () {
             ["赛段对比", "stage.html"]] },
     { ic: "target", label: "分析", href: "series.html",
       pages: ["series.html", "sandbox.html", "bracket-forecast.html", "predict.html",
-             "comeback.html", "query.html", "find.html", "simulator.html"],
+             "comeback.html", "query.html", "find.html", "simulator.html", "method.html"],
       sub: [["系列赛研究", "series.html"], ["胜率沙盘", "sandbox.html"], ["冠军预测", "bracket-forecast.html"],
             ["实时预测", "predict.html"], ["翻盘研究所", "comeback.html"],
-            ["数据查询", "query.html"], ["智能找局", "find.html"], ["赛前模拟", "simulator.html"]] },
+            ["数据查询", "query.html"], ["智能找局", "find.html"], ["赛前模拟", "simulator.html"], ["方法与口径", "method.html"]] },
     { ic: "layers", label: "荣誉", href: "honors.html",
       pages: ["honors.html", "records.html"],
       sub: [["荣誉中心", "honors.html"], ["赛事纪录", "records.html"]] }
@@ -895,39 +895,61 @@ window.KPL = (function () {
 
   /* ---------- 多系列折线图（指标曲线） ---------- */
   var _lcSeq = 0;
-  function smoothPath(pts, X, Y) {
-    if (pts.length < 3) return pts.map(function (pt, i) { return (i ? "L" : "M") + X(pt[0]).toFixed(1) + " " + Y(pt[1]).toFixed(1); }).join(" ");
-    var d = "M" + X(pts[0][0]).toFixed(1) + " " + Y(pts[0][1]).toFixed(1);
-    for (var i = 0; i < pts.length - 1; i++) {
-      var p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
-      var c1x = X(p1[0]) + (X(p2[0]) - X(p0[0])) / 6, c1y = Y(p1[1]) + (Y(p2[1]) - Y(p0[1])) / 6;
-      var c2x = X(p2[0]) - (X(p3[0]) - X(p1[0])) / 6, c2y = Y(p2[1]) - (Y(p3[1]) - Y(p1[1])) / 6;
-      d += " C" + c1x.toFixed(1) + " " + c1y.toFixed(1) + " " + c2x.toFixed(1) + " " + c2y.toFixed(1) + " " +
-        X(p2[0]).toFixed(1) + " " + Y(p2[1]).toFixed(1);
+  /* ---------- 多系列折线图（指标曲线 V2） ---------- */
+  var _lcSeq = 0;
+  // 阶梯线：概率是逐帧采样的，帧间不知道值。保持上一帧直到下一帧，
+  // 比斜线更诚实，也不会把离散跳变画成"飞来飞去"的斜坡。
+  function stepPath(pts, X, Y) {
+    var d = "";
+    for (var i = 0; i < pts.length; i++) {
+      var x = X(pts[i][0]).toFixed(1), y = Y(pts[i][1]).toFixed(1);
+      if (!i) { d = "M" + x + " " + y; continue; }
+      var py = Y(pts[i - 1][1]).toFixed(1);
+      d += " L" + x + " " + py + " L" + x + " " + y;
     }
     return d;
   }
-  /* ---------- 多系列折线图（指标曲线 V2） ---------- */
-  var _lcSeq = 0;
+
+  // 平滑曲线：控制点必须夹在「本段矩形」内。
+  // 之前用 (p2-p0)/6 这类跨点差分当切线，采样间隔不均匀时（3'→8'→9'）
+  // 控制点会冲到下一段外面，贝塞尔 x 不再单调，曲线看起来「往回走」。
   function smoothPath(pts, X, Y) {
     if (pts.length < 3) return pts.map(function (pt, i) { return (i ? "L" : "M") + X(pt[0]).toFixed(1) + " " + Y(pt[1]).toFixed(1); }).join(" ");
     var d = "M" + X(pts[0][0]).toFixed(1) + " " + Y(pts[0][1]).toFixed(1);
     for (var i = 0; i < pts.length - 1; i++) {
       var p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
-      var t = 0.18;
-      var c1x = X(p1[0]) + (X(p2[0]) - X(p0[0])) * t;
-      var c1y = Y(p1[1]) + (Y(p2[1]) - Y(p0[1])) * t;
-      var c2x = X(p2[0]) - (X(p3[0]) - X(p1[0])) * t;
-      var c2y = Y(p2[1]) - (Y(p3[1]) - Y(p1[1])) * t;
+      var x1 = X(p1[0]), y1 = Y(p1[1]), x2 = X(p2[0]), y2 = Y(p2[1]);
+      var dx = x2 - x1;
+      if (!(dx > 0)) {                       // x 不前移就直接连线，绝不回退
+        d += " L" + x2.toFixed(1) + " " + y2.toFixed(1);
+        continue;
+      }
+      var lo = Math.min(y1, y2), hi = Math.max(y1, y2);
+      var slope1 = (y2 - Y(p0[1])) / Math.max(1e-6, x2 - X(p0[0]));
+      var slope2 = (Y(p3[1]) - y1) / Math.max(1e-6, X(p3[0]) - x1);
+      var c1x = x1 + dx / 3, c1y = Math.min(hi, Math.max(lo, y1 + slope1 * dx / 3));
+      var c2x = x2 - dx / 3, c2y = Math.min(hi, Math.max(lo, y2 - slope2 * dx / 3));
       d += " C" + c1x.toFixed(1) + " " + c1y.toFixed(1) + " " + c2x.toFixed(1) + " " + c2y.toFixed(1) + " " +
-        X(p2[0]).toFixed(1) + " " + Y(p2[1]).toFixed(1);
+        x2.toFixed(1) + " " + y2.toFixed(1);
     }
     return d;
   }
   function lineChart(el, opts) {
     var CP2 = chartPalette();
     if (!el) return;
-    var series = (opts.series || []).filter(function (se) { return se.pts && se.pts.length > 1; });
+    // 先把点按 x 排序去重：上游可能是多条来源拼接，x 不一定递增。
+    var series = (opts.series || []).map(function (se) {
+      var pts = (se.pts || []).map(function (pt) { return [Number(pt[0]), Number(pt[1])]; })
+        .filter(function (pt) { return isFinite(pt[0]) && isFinite(pt[1]); })
+        .sort(function (a, b) { return a[0] - b[0]; });
+      var dedup = [];
+      pts.forEach(function (pt) {
+        if (dedup.length && Math.abs(pt[0] - dedup[dedup.length - 1][0]) < 1e-9) dedup[dedup.length - 1] = pt;
+        else dedup.push(pt);
+      });
+      se.pts = dedup;
+      return se;
+    }).filter(function (se) { return se.pts && se.pts.length > 1; });
     if (!series.length) { el.innerHTML = '<div class="empty-tip">暂无可展示的曲线</div>'; return; }
     var events = (opts.events || []).filter(function (e) { return e && isFinite(Number(e.m)) && e.label; });
     var refLines = (opts.refLines || []).filter(function (r) { return isFinite(Number(r.v)); });
@@ -1016,9 +1038,14 @@ window.KPL = (function () {
       s += '<line x1="' + P.l + '" y1="' + zy + '" x2="' + (W - P.r) + '" y2="' + zy + '" stroke=' +
         JSON.stringify(CP2.axis) + ' opacity=".8"/>';
     }
-    var x0 = Math.ceil(xMin / xEvery) * xEvery;
+    // 轴从 0 起：数据若从第 1 分钟开始，也从 0 标起，读者才有"这局打了多久"的参照
+    var x0 = (xMin >= 0 && xMin < xEvery) ? 0 : Math.ceil(xMin / xEvery) * xEvery;
     for (var m = x0; m <= xMax; m += xEvery) {
-      s += '<text x="' + X(m).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10.5" ' +
+      var gxm = X(m).toFixed(1);
+      // 竖向细网格：把刻度标签和曲线接上，读某一分钟时不用靠眼睛平移
+      s += '<line x1="' + gxm + '" y1="' + P.t + '" x2="' + gxm + '" y2="' + (H - P.b) +
+        '" stroke=' + JSON.stringify(CP2.grid) + ' stroke-dasharray="2 7" opacity=".45"/>';
+      s += '<text x="' + gxm + '" y="' + (H - 12) + '" text-anchor="middle" font-size="10.5" ' +
         'fill=' + JSON.stringify(CP2.label) + ' font-family="Inter,monospace">' + esc(xFmt(m)) + "</text>";
     }
     /* 柱状系列：先统计一组里有多少柱状系列，以便并排分组 */
@@ -1052,7 +1079,7 @@ window.KPL = (function () {
           return "L" + X(se.pts[i - 1][0]).toFixed(1) + " " + y + " L" + x + " " + y;
         }).join(" ");
       } else {
-        d = smooth ? smoothPath(se.pts, X, Y) : se.pts.map(function (pt, i) {
+        d = opts.step ? stepPath(se.pts, X, Y) : smooth ? smoothPath(se.pts, X, Y) : se.pts.map(function (pt, i) {
           return (i ? "L" : "M") + X(pt[0]).toFixed(1) + " " + Y(pt[1]).toFixed(1);
         }).join(" ");
       }

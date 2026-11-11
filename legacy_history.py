@@ -7,7 +7,7 @@ wanplus / scoregg 补充集生成；仓库自带该文件，构建不依赖主�
 被 build_history_data.py 在写出资产前调用；也可单独运行以修复被旧构建覆盖的资产：
     python legacy_history.py
 
-口径：legacy 赛事无逐局 BP；scoregg 2017–2018 无选手经济 / 伤害；相关页面按缺失展示。
+口径：legacy 赛程/战队统计进站点；逐局 BP 与选手经济保留在补充集，由 BP 工作台单独读取。
 """
 import json
 from pathlib import Path

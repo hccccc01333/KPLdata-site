@@ -35,6 +35,13 @@ REPORT = SITE.parent / "02-KPL实时胜率预测系统" / "reports" / "coach_qua
 CN = timezone(timedelta(hours=8))
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
+# KPL 历史上有 14/16/18/20 手四种赛制：每方固定 5 个 pick，ban 则是 2/3/4/5 个。
+# 旧检查把 ban 也写成「每方 5」，于是 2020–2024（18 手时代）被整体误报成 SEVERE，
+# 5157 条里绝大多数来自这里，不是数据坏了。
+PICKS_PER_SIDE = 5
+BANS_PER_SIDE = (2, 3, 4, 5)
+TOTAL_HANDS = {14, 16, 18, 20}
+
 
 def load_js(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
@@ -141,9 +148,14 @@ def main() -> None:
             if st.get("games"):
                 a.check(st.get("wr") is not None and 0 <= st["wr"] <= 100, "tenure.layerWr", f"{tid}.{layer}.wr 越界")
         b = t.get("bp") or {}
-        a.check(b.get("picks") == b.get("games", 0) * 5, "bp.picks", f"{tid} 选用手位不是 5×局数")
-        a.check(b.get("bans") == b.get("games", 0) * 5, "bp.bans", f"{tid} 禁用手位不是 5×局数")
-        a.check(b.get("oppBans") == b.get("games", 0) * 5, "bp.oppBans", f"{tid} 对手禁用不是 5×局数")
+        a.check(b.get("picks") == b.get("games", 0) * PICKS_PER_SIDE, "bp.picks", f"{tid} 选用手位不是 5×局数")
+        lo, hi = BANS_PER_SIDE[0], BANS_PER_SIDE[-1]
+        a.check(lo * b.get("games", 0) <= b.get("bans", -1) <= hi * b.get("games", 0),
+                "bp.bans", f"{tid} 禁用手位不在 {lo}–{hi}×局数 区间")
+        a.check(lo * b.get("games", 0) <= b.get("oppBans", -1) <= hi * b.get("games", 0),
+                "bp.oppBans", f"{tid} 对手禁用不在 {lo}–{hi}×局数 区间")
+        a.check(b.get("bans") == b.get("oppBans"), "bp.banSymmetry",
+                f"{tid} 双方禁用手位数不一致：{b.get('bans')} vs {b.get('oppBans')}")
         a.check(b.get("uniquePicks", 0) <= b.get("picks", 0), "bp.uniquePicks", f"{tid} 选用英雄数超过手位")
         a.check(b.get("uniqueBans", 0) <= b.get("bans", 0), "bp.uniqueBans", f"{tid} 禁用英雄数超过手位")
         a.check(b.get("effectiveHeroes") is None or (is_num(b.get("effectiveHeroes")) and b["effectiveHeroes"] >= 1),
@@ -179,11 +191,22 @@ def main() -> None:
             a.check(side in (1, 2), "evidence.side", f"{tid} 证据阵营非法")
             a.check(win in (0, 1), "evidence.win", f"{tid} 证据赛果非法")
             for key, arr in (("picks", picks), ("bans", bans), ("oppPicks", opp_picks), ("oppBans", opp_bans)):
-                a.check(isinstance(arr, list) and len(arr) == 5, f"evidence.{key}", f"{tid} 证据 {key} 不是 5")
-                a.check(all(is_num(i) and 0 <= i < H for i in (arr if isinstance(arr, list) else [])),
+                if not isinstance(arr, list):
+                    a.severe(f"evidence.{key}", f"{tid} 证据 {key} 不是数组")
+                    continue
+                expect = PICKS_PER_SIDE if key in ("picks", "oppPicks") else None
+                if expect is not None:
+                    a.check(len(arr) == expect, f"evidence.{key}", f"{tid} 证据 {key} 不是 {expect}")
+                else:
+                    a.check(len(arr) in BANS_PER_SIDE, f"evidence.{key}",
+                            f"{tid} 证据 {key} 手位数非法：{len(arr)}")
+                a.check(all(is_num(i) and 0 <= i < H for i in arr),
                         f"evidence.{key}Index", f"{tid} 证据 {key} 索引越界")
             if isinstance(picks, list) and isinstance(bans, list) and isinstance(opp_picks, list) and isinstance(opp_bans, list):
-                a.check(len(set(picks + bans + opp_picks + opp_bans)) == 20, "evidence.unique", f"{tid} 证据 20 手不唯一")
+                a.check(len(bans) == len(opp_bans), "evidence.banSymmetry",
+                        f"{tid} 证据双方禁用手位数不一致")
+                a.check(len(set(picks + bans + opp_picks + opp_bans)) in TOTAL_HANDS,
+                        "evidence.unique", f"{tid} 证据总手位数不是 14/16/18/20")
 
     for c in coaches:
         rows = [tenure_by_id[tid] for tid in c.get("tenures", []) if tid in tenure_by_id]

@@ -152,11 +152,17 @@ def main() -> None:
             if any(not (3 <= len(by_camp[c]["picks"]) <= 5 and 3 <= len(by_camp[c]["bans"]) <= 5) for c in (1, 2)):
                 skipped["bad_counts"] += 1
                 continue
-            partial = 0 if all(
-                len(by_camp[c]["picks"]) == 5 and len(by_camp[c]["bans"]) == 5 for c in (1, 2)
-            ) else 1
-            if partial:
-                skipped["partial_bp"] = skipped.get("partial_bp", 0) + 1
+            # 「完整」不等于「20 手」：KPL 历史上有 14/16/18/20 手四种赛制，
+            # 每方 pick 恒为 5，ban 则是 2/3/4/5。旧逻辑把 4 ban 的 18 手时代
+            # 全标成 partial（6369 局），既误导页面，又让下游误以为数据有缺口。
+            p1, p2 = len(by_camp[1]["picks"]), len(by_camp[2]["picks"])
+            b1, b2 = len(by_camp[1]["bans"]), len(by_camp[2]["bans"])
+            if p1 != 5 or p2 != 5 or b1 != b2:
+                # 真正残缺的局（少选/双方禁用手位不一致）不进聚合：
+                # 它会污染 pickRate 分母，也让所有「×5」不变量失效。
+                skipped["incomplete_bp"] = skipped.get("incomplete_bp", 0) + 1
+                continue
+            partial = 0
             for h in {h for _, _, h in hands}:
                 hero_counts[h] += 1
             games.append(
