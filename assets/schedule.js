@@ -833,7 +833,11 @@
       if (!L) return;
       liveData = L;
       var at = $("#liveAt");
-      if (at) at.textContent = String(L.updatedAt || "").slice(11, 19) || "—";
+      // 只有确实有局在进行时才显示同步时间；否则那串第二位数字是几天前的旧值，会误导。
+      var hasLiveNow = ALL.some(isLiveRow);
+      var sync = at ? at.closest(".sch-feature-sync") : null;
+      if (at) at.textContent = hasLiveNow ? (String(L.updatedAt || "").slice(11, 19) || "") : "";
+      if (sync) sync.hidden = !hasLiveNow;
       (L.today || []).forEach(function (t) {
         var row = document.querySelector('.sch-row[data-mid="' + t.matchId + '"]');
         paintLiveRow(row, t);
